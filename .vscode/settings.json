@@ -1,0 +1,45 @@
+{
+  // TypeScript settings for instant feedback
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+
+  // Error Lens settings - Show errors INLINE as you type!
+  "errorLens.enabled": true,
+  "errorLens.delay": 0,
+  "errorLens.fontSize": "0.9em",
+  "errorLens.fontWeight": "600",
+  "errorLens.enabledDiagnosticLevels": ["error", "warning", "info"],
+  "errorLens.excludeBySource": ["cSpell"],
+
+  // Editor settings for instant updates
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "files.autoSave": "onFocusChange",
+
+  // Show problems immediately
+  "editor.renderValidationDecorations": "on",
+  "editor.inlineSuggest.enabled": true,
+
+  // Tailwind IntelliSense
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+
+  // Live Server settings
+  "liveServer.settings.donotShowInfoMsg": true,
+  "liveServer.settings.donotVerifyTags": true,
+
+  // Prettier settings
+  "prettier.semi": true,
+  "prettier.singleQuote": false,
+  "prettier.tabWidth": 2,
+  "claudeCode.allowDangerouslySkipPermissions": true
+}

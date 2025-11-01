@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light dark; }
+html, body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+a {
+  color: var(--text);
+  opacity: 0.9;
+}
+
+.tabbar-link { @apply flex items-center justify-center text-xs; }
+
+/* Masked SVG icon that inherits currentColor */
+.icon-mask {
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* cards, inputs, buttons */
+.card{ @apply rounded-2xl border border-border bg-card p-4; }
+.input{ @apply w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-diet focus:ring-opacity-40; }
+.btn-accent{ @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-white bg-accent-diet active:scale-[.98]; }
+.btn-accent:hover{ @apply opacity-90; }
+.btn-accent-ghost{ @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-accent-diet border border-accent-diet border-opacity-60 bg-transparent; }
+.btn-accent-ghost:hover{ @apply bg-accent-diet bg-opacity-10; }
+
+/* CHANGE: Added tap-target utility for mobile accessibility (min 40px touch targets) */
+.tap-target {
+  @apply min-h-10 min-w-10;
+}
+
+/* CHANGE: Added fade-in animation for charts */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Theme tokens */
+:root {
+  /* Light mode (default) */
+  --bg: #FFFFFF;
+  --card: #FFFFFF;
+  --muted: #F5F5F5;
+  --border: #E5E7EB;
+  --text: #0A0A0A;
+  --text-muted: #525252;
+
+  /* Accent colors */
+  --accent-diet: #22C55E;
+  --accent-diet-fat: #FACC15;
+  --accent-workout: #FACC15;
+  --accent-progress: #8B5CF6;
+  --accent-home: #3B82F6;
+
+  /* Macro colors */
+  --macro-calories: #22C55E;
+  --macro-protein: #F87171;
+  --macro-carbs: #60A5FA;
+  --macro-fat: #FACC15;
+}
+
+.dark {
+  /* Dark mode overrides (dark grey, not blue) */
+  --bg: #0B0B0C;
+  --card: #121214;
+  --muted: #1A1A1B;
+  --border: #2A2A2C;
+  --text: #EAEAEA;
+  --text-muted: #A1A1AA;
+}

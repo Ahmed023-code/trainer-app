@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm run dev:*)",
+      "Bash(killall:*)",
+      "Bash(npm run quick-check:*)",
+      "Bash(chmod:*)",
+      "Bash(time npm run quick-check:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(node -c:*)",
+      "Bash(wc:*)",
+      "Bash(awk:*)",
+      "Bash(tail:*)",
+      "Bash(ipconfig getifaddr:*)",
+      "Bash(npm install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

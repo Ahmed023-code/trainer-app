@@ -1,0 +1,50 @@
+{
+  "name": "trainer-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev -H 0.0.0.0 -p 3000",
+    "dev:turbo": "next dev --turbo -H 0.0.0.0 -p 3000",
+    "dev:fast": "next dev --turbo -H 0.0.0.0 -p 3000",
+    "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
+    "start": "next start -H 0.0.0.0 -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "quick-check": "tsc --noEmit --incremental",
+    "test": "npm run typecheck",
+    "cap:init": "npx cap init",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:open:android": "npx cap open android",
+    "mobile:build": "npm run build && npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4",
+    "@tanstack/react-query": "5.56.2",
+    "clsx": "2.1.1",
+    "idb-keyval": "^6.2.2",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zustand": "4.5.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "20.14.12",
+    "@types/react": "18.3.5",
+    "@types/react-dom": "18.3.0",
+    "autoprefixer": "10.4.20",
+    "csv-parse": "^6.1.0",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.5",
+    "postcss": "8.4.47",
+    "tailwindcss": "3.4.13",
+    "typescript": "5.6.2"
+  }
+}
