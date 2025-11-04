@@ -128,7 +128,7 @@ export default function DataBackupSection() {
   };
 
   return (
-    <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+    <section className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
       <h2 className="font-semibold mb-3">Data Backup & Restore</h2>
 
       <div className="space-y-3">
@@ -136,7 +136,7 @@ export default function DataBackupSection() {
         <div>
           <button
             onClick={handleExport}
-            className="w-full px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center gap-2"
+            className="w-full px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center gap-2"
           >
             <span>⬇️</span>
             <span>Export Backup</span>
@@ -148,7 +148,7 @@ export default function DataBackupSection() {
 
         {/* Import */}
         <div>
-          <label className="w-full px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center gap-2 cursor-pointer">
+          <label className="w-full px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center gap-2 cursor-pointer">
             <span>⬆️</span>
             <span>{importing ? "Importing..." : "Import Backup"}</span>
             <input type="file" accept=".json" onChange={handleImport} className="hidden" disabled={importing} />
@@ -162,7 +162,7 @@ export default function DataBackupSection() {
         <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800">
           <button
             onClick={handleClearAll}
-            className="w-full px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600"
+            className="w-full px-4 py-2 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600"
           >
             🗑️ Clear All Data
           </button>

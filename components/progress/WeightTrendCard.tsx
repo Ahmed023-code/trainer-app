@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 type RangeType = "1w" | "1m" | "3m" | "1y";
 
@@ -35,11 +35,20 @@ const generateDateRange = (range: RangeType): string[] => {
 };
 
 type WeightTrendCardProps = {
-  range?: RangeType;
+  currentView?: "day" | "week" | "month" | "3months" | "year";
 };
 
-export default function WeightTrendCard({ range = "1w" }: WeightTrendCardProps) {
-  const [selectedRange, setSelectedRange] = useState<RangeType>(range);
+// Map view to range
+const viewToRange = (view: "day" | "week" | "month" | "3months" | "year"): RangeType => {
+  if (view === "week") return "1w";
+  if (view === "month") return "1m";
+  if (view === "3months") return "3m";
+  if (view === "year") return "1y";
+  return "1w"; // Default for day view
+};
+
+export default function WeightTrendCard({ currentView = "week" }: WeightTrendCardProps) {
+  const selectedRange = viewToRange(currentView);
 
   const allWeights = useMemo(() => getAllWeights(), []);
 
@@ -81,52 +90,13 @@ export default function WeightTrendCard({ range = "1w" }: WeightTrendCardProps) 
     };
   }, [windowData]);
 
-  // Window start and end labels
-  const windowLabels = useMemo(() => {
-    if (windowData.length === 0) return { start: "", end: "" };
-    const startDate = new Date(windowData[0].dateISO + "T00:00:00");
-    const endDate = new Date(windowData[windowData.length - 1].dateISO + "T00:00:00");
-
-    return {
-      start: `${startDate.getMonth() + 1}/${startDate.getDate()}`,
-      end: `${endDate.getMonth() + 1}/${endDate.getDate()}`,
-    };
-  }, [windowData]);
-
   const hasData = windowData.some((d) => d.weight !== null);
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold">Weight Trend</h3>
-          {hasData && (
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              {windowLabels.start} - {windowLabels.end}
-            </div>
-          )}
-        </div>
-
-        {/* Range selector */}
-        <div className="flex gap-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1">
-          {(["1w", "1m", "3m", "1y"] as const).map((r) => (
-            <button
-              key={r}
-              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                selectedRange === r
-                  ? "bg-[var(--accent-progress)] text-white"
-                  : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              }`}
-              onClick={() => setSelectedRange(r)}
-            >
-              {r === "1w" && "1W"}
-              {r === "1m" && "1M"}
-              {r === "3m" && "3M"}
-              {r === "1y" && "1Y"}
-            </button>
-          ))}
-        </div>
+        <h3 className="font-semibold">Weight Trend</h3>
       </div>
 
       {/* Chart */}
@@ -204,26 +174,42 @@ function WeightLineChart({ data, range }: { data: Array<{ dateISO: string; weigh
     return { x, y, weight: d.weight, dateISO: d.dateISO };
   });
 
-  // Build path segments (break on nulls)
-  const pathSegments: string[] = [];
-  let currentSegment: typeof allPoints = [];
+  // Build smooth path using cubic Bézier curves (connect all logged points, skip nulls)
+  const loggedPoints = allPoints.filter(p => p.y !== null);
 
-  for (const point of allPoints) {
-    if (point.y === null) {
-      if (currentSegment.length > 0) {
-        const pathD = currentSegment.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-        pathSegments.push(pathD);
-        currentSegment = [];
-      }
-    } else {
-      currentSegment.push(point);
+  // Helper to create smooth curve through points using cubic Bézier
+  const createSmoothPath = (points: typeof allPoints): string => {
+    if (points.length === 0) return "";
+    if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+    let path = `M ${points[0].x} ${points[0].y}`;
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const current = points[i];
+      const next = points[i + 1];
+
+      // Calculate control points for smooth curve
+      const tension = 0.3; // Lower = smoother, higher = closer to original points
+
+      // Get neighboring points for smoother transitions
+      const prev = i > 0 ? points[i - 1] : current;
+      const afterNext = i < points.length - 2 ? points[i + 2] : next;
+
+      // Calculate control point 1 (affects curve leaving current point)
+      const cp1x = current.x! + (next.x! - prev.x!) * tension;
+      const cp1y = current.y! + (next.y! - prev.y!) * tension;
+
+      // Calculate control point 2 (affects curve approaching next point)
+      const cp2x = next.x! - (afterNext.x! - current.x!) * tension;
+      const cp2y = next.y! - (afterNext.y! - current.y!) * tension;
+
+      path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
     }
-  }
 
-  if (currentSegment.length > 0) {
-    const pathD = currentSegment.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-    pathSegments.push(pathD);
-  }
+    return path;
+  };
+
+  const pathD = createSmoothPath(loggedPoints);
 
   // Format label for x-axis
   const labelEvery = range === "1w" ? 1 : range === "1m" ? 5 : range === "3m" ? 15 : 60;
@@ -264,10 +250,9 @@ function WeightLineChart({ data, range }: { data: Array<{ dateISO: string; weigh
         );
       })}
 
-      {/* Line segments */}
-      {pathSegments.map((pathD, i) => (
+      {/* Smooth line connecting all logged points */}
+      {pathD && (
         <path
-          key={i}
           d={pathD}
           fill="none"
           stroke="var(--accent-progress)"
@@ -275,26 +260,24 @@ function WeightLineChart({ data, range }: { data: Array<{ dateISO: string; weigh
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-      ))}
-
-      {/* Dots for logged weights only */}
-      {allPoints.map((p, i) =>
-        p.y !== null && p.weight !== null ? (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r="4"
-            fill="var(--accent-progress)"
-            stroke="white"
-            strokeWidth="2"
-          >
-            <title>
-              {p.dateISO}: {p.weight.toFixed(1)} lbs
-            </title>
-          </circle>
-        ) : null
       )}
+
+      {/* Dots for logged weights only (hidden for year view) */}
+      {range !== "1y" && loggedPoints.map((p, i) => (
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r="2"
+          fill="var(--accent-progress)"
+          stroke="white"
+          strokeWidth="1.5"
+        >
+          <title>
+            {p.dateISO}: {p.weight!.toFixed(1)} lbs
+          </title>
+        </circle>
+      ))}
 
       {/* X-axis labels */}
       {allPoints.map((p, i) => {

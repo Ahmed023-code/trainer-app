@@ -1,164 +1,102 @@
 "use client";
 
 import { useState } from "react";
-import type { Exercise, SetItem } from "@/components/workout/types";
+import type { Exercise } from "@/components/workout/types";
 
 type Props = {
   exercise: Exercise;
-  onChange: (next: Exercise) => void;
+  onClick: () => void;
   onDelete: () => void;
-  onHistory?: () => void;
 };
 
-const keepNum = (v: any) => Math.max(0, Math.floor(Number(v) || 0));
+export default function ExerciseSection({ exercise, onClick, onDelete }: Props) {
+  const [showConfirm, setShowConfirm] = useState(false);
 
-export default function ExerciseSection({ exercise, onChange, onDelete, onHistory }: Props) {
-  const updateSetField = (i: number, field: keyof SetItem, value: string | number) => {
-    const next = { ...exercise };
-    const sets = next.sets.slice();
-    const s = { ...sets[i] };
-    if (field === "weight") s.weight = Number(value) || 0;
-    else if (field === "repsMin") s.repsMin = keepNum(value);
-    else if (field === "repsMax") s.repsMax = Math.max(s.repsMin, keepNum(value));
-    else if (field === "rpe") s.rpe = Math.max(0, Math.min(10, Number(value) || 0));
-    else if (field === "type") s.type = String(value) as SetItem["type"];
-    sets[i] = s;
-    next.sets = sets;
-    onChange(next);
-  };
-
-  const deleteSet = (idx: number) => {
-    const next = { ...exercise, sets: exercise.sets.filter((_, i) => i !== idx) };
-    onChange(next);
-  };
-
-  const addSet = () => {
-    const prev = exercise.sets[exercise.sets.length - 1];
-    const clone: SetItem = prev
-      ? { ...prev }
-      : { weight: 0, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" };
-    const next = { ...exercise, sets: [...exercise.sets, clone] };
-    onChange(next);
+  const handleDelete = () => {
+    setShowConfirm(false);
+    onDelete();
   };
 
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="min-w-0">
-          <div className="font-medium truncate">{exercise.name}</div>
-
-          {/* Muscles subtitle */}
-          {Array.isArray((exercise as any).bodyParts) && (exercise as any).bodyParts.length > 0 && (
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Muscles: {(exercise as any).bodyParts.join(", ")}
+    <>
+      <div className="relative w-full rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors">
+        <button
+          onClick={onClick}
+          className="w-full text-left p-4 pr-12"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-medium truncate">{exercise.name}</h3>
+              <div className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                {exercise.sets.length} set{exercise.sets.length === 1 ? "" : "s"}
+              </div>
             </div>
-          )}
 
-          <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            {exercise.sets.length} set{exercise.sets.length === 1 ? "" : "s"}
+            {/* Arrow indicator */}
+            <svg
+              className="w-5 h-5 text-neutral-400 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
+        </button>
+
+        {/* Delete button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowConfirm(true);
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+          aria-label="Delete exercise"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
+          />
+
+          {/* Dialog */}
+          <div className="relative bg-white dark:bg-neutral-900 rounded-full border border-neutral-200 dark:border-neutral-800 p-6 max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Delete Exercise?</h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+              Are you sure you want to delete "{exercise.name}"? This will remove all {exercise.sets.length} set{exercise.sets.length === 1 ? "" : "s"} and cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          {onHistory && (
-            <button
-              onClick={onHistory}
-              className="tap-target px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              aria-label="View history"
-            >
-              📊
-            </button>
-          )}
-          <button
-            onClick={onDelete}
-            className="px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm text-red-600 dark:text-red-400"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-
-      {/* Sets table */}
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-        <div className="grid grid-cols-[56px,1fr,1fr,1fr,1fr,1fr,72px] items-center px-3 py-2 bg-neutral-50 dark:bg-neutral-900/60 text-[11px] text-neutral-600 dark:text-neutral-400">
-          <span className="font-medium">#</span>
-          <span className="font-medium">Type</span>
-          <span className="font-medium">Weight (lbs)</span>
-          <span className="font-medium">Reps Min</span>
-          <span className="font-medium">Reps Max</span>
-          <span className="font-medium">RPE</span>
-          <span className="text-right font-medium">Actions</span>
-        </div>
-
-        <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-          {exercise.sets.map((s, i) => (
-            <li key={i} className="grid grid-cols-[56px,1fr,1fr,1fr,1fr,1fr,72px] items-center px-3 py-2">
-              <span className="text-sm text-neutral-500">{i + 1}</span>
-
-              {/* Set type */}
-              <select
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                value={s.type}
-                onChange={(e) => updateSetField(i, "type", e.target.value)}
-              >
-                <option>Working</option>
-                <option>Warmup</option>
-                <option>Drop Set</option>
-              </select>
-
-              {/* Weight */}
-              <input
-                inputMode="decimal"
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 py-1 bg-white dark:bg-neutral-900"
-                value={String(s.weight)}
-                onChange={(e) => updateSetField(i, "weight", e.target.value)}
-              />
-
-              {/* Reps min */}
-              <input
-                inputMode="numeric"
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 py-1 bg-white dark:bg-neutral-900"
-                value={String(s.repsMin)}
-                onChange={(e) => updateSetField(i, "repsMin", e.target.value)}
-              />
-
-              {/* Reps max */}
-              <input
-                inputMode="numeric"
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 py-1 bg-white dark:bg-neutral-900"
-                value={String(s.repsMax)}
-                onChange={(e) => updateSetField(i, "repsMax", e.target.value)}
-              />
-
-              {/* RPE */}
-              <input
-                inputMode="decimal"
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 py-1 bg-white dark:bg-neutral-900"
-                value={String(s.rpe)}
-                onChange={(e) => updateSetField(i, "rpe", e.target.value)}
-              />
-
-              {/* Delete */}
-              <div className="flex justify-end">
-                <button
-                  onClick={() => deleteSet(i)}
-                  className="px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm text-red-600 dark:text-red-400"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Add set button */}
-      <button
-        onClick={addSet}
-        className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm"
-      >
-        + Add Set
-      </button>
-    </div>
+      )}
+    </>
   );
 }

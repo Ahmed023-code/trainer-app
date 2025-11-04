@@ -93,6 +93,7 @@ export type MediaItem = {
 // Storage keys
 const KEYS = {
   DIET_BY_DAY: "diet-by-day-v2",
+  DIET_DEFAULT_GOALS: "diet-default-goals-v2", // Default goals for all future dates
   WORKOUT_BY_DAY: "workout-by-day-v2",
   WEIGHT_BY_DAY: "progress-weight-by-day-v1",
   MEDIA_INDEX: "progress-media-index-v1",
@@ -160,7 +161,39 @@ const writeJSON = <T>(key: string, value: T): void => {
 // Diet operations
 export const readDiet = (dateISO: string): DietDayState => {
   const byDay = readJSON<DietByDay>(KEYS.DIET_BY_DAY, {});
-  return byDay[dateISO] || DEFAULT_DIET;
+  const dayData = byDay[dateISO];
+
+  // Check if this date is today or in the future
+  const today = getTodayISO();
+  const isTodayOrFuture = dateISO >= today;
+
+  // If no data for this date
+  if (!dayData) {
+    // Use default goals only for today and future dates
+    const defaultGoals = isTodayOrFuture
+      ? readJSON<Goals>(KEYS.DIET_DEFAULT_GOALS, DEFAULT_DIET.goals)
+      : DEFAULT_DIET.goals;
+
+    return {
+      meals: DEFAULT_DIET.meals,
+      goals: defaultGoals,
+    };
+  }
+
+  // If data exists but no goals set for this specific date
+  if (!dayData.goals) {
+    // Use default goals only for today and future dates
+    const defaultGoals = isTodayOrFuture
+      ? readJSON<Goals>(KEYS.DIET_DEFAULT_GOALS, DEFAULT_DIET.goals)
+      : DEFAULT_DIET.goals;
+
+    return {
+      ...dayData,
+      goals: defaultGoals,
+    };
+  }
+
+  return dayData;
 };
 
 export const writeDiet = (dateISO: string, partial: Partial<DietDayState>): void => {
@@ -168,6 +201,24 @@ export const writeDiet = (dateISO: string, partial: Partial<DietDayState>): void
   const current = byDay[dateISO] || DEFAULT_DIET;
   byDay[dateISO] = { ...current, ...partial };
   writeJSON(KEYS.DIET_BY_DAY, byDay);
+};
+
+// Update goals for today and all future dates (used when saving new diet settings)
+export const updateDietGoals = (dateISO: string, goals: Goals): void => {
+  console.log('[storageV2] updateDietGoals called:', { dateISO, goals });
+
+  // Save as default goals for all future dates
+  writeJSON(KEYS.DIET_DEFAULT_GOALS, goals);
+  console.log('[storageV2] Saved default goals for all future dates');
+
+  // Also update today's goals explicitly
+  writeDiet(dateISO, { goals });
+
+  // Dispatch custom event to notify components of goal changes
+  if (typeof window !== "undefined") {
+    console.log('[storageV2] Dispatching dietGoalsUpdated event');
+    window.dispatchEvent(new CustomEvent("dietGoalsUpdated", { detail: { dateISO, goals } }));
+  }
 };
 
 // Workout operations

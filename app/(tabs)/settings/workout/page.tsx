@@ -53,7 +53,7 @@ export default function WorkoutSettingsPage() {
       </div>
 
       {/* Sessions Per Week */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Training Frequency</h2>
         <label className="text-sm block">
           Sessions Per Week
@@ -81,14 +81,14 @@ export default function WorkoutSettingsPage() {
       </section>
 
       {/* Split */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Training Split</h2>
         <div className="space-y-2">
           {(["ppl", "upperLower", "fullBody", "bodyPart", "custom"] as WorkoutSplit[]).map((s) => (
             <button
               key={s}
               onClick={() => setSplit(s)}
-              className={`w-full px-4 py-3 rounded-lg text-sm font-medium text-left transition-colors ${
+              className={`w-full px-4 py-3 rounded-full text-sm font-medium text-left transition-colors ${
                 split === s
                   ? "bg-[var(--accent-workout)] text-white"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
@@ -101,7 +101,7 @@ export default function WorkoutSettingsPage() {
       </section>
 
       {/* Target Duration */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Target Session Duration</h2>
         <label className="text-sm block">
           Minutes Per Session
@@ -127,14 +127,14 @@ export default function WorkoutSettingsPage() {
       </section>
 
       {/* Primary Focus */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Primary Focus</h2>
         <div className="space-y-2">
           {(["strength", "hypertrophy", "endurance", "mixed"] as WorkoutFocus[]).map((f) => (
             <button
               key={f}
               onClick={() => setFocus(f)}
-              className={`w-full px-4 py-3 rounded-lg text-sm font-medium text-left transition-colors ${
+              className={`w-full px-4 py-3 rounded-full text-sm font-medium text-left transition-colors ${
                 focus === f
                   ? "bg-[var(--accent-workout)] text-white"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
@@ -147,7 +147,7 @@ export default function WorkoutSettingsPage() {
       </section>
 
       {/* Summary */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-[var(--accent-workout)]/10 to-[var(--accent-workout)]/5 p-4 shadow-sm">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-[var(--accent-workout)]/10 to-[var(--accent-workout)]/5 p-4 shadow-sm">
         <h2 className="font-semibold mb-3">Your Workout Plan</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
@@ -173,20 +173,20 @@ export default function WorkoutSettingsPage() {
       <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+16px)] flex gap-3">
         <button
           onClick={handleBack}
-          className="px-4 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className="px-4 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
-          className="flex-1 px-4 py-3 rounded-lg bg-[var(--accent-workout)] text-white font-medium hover:opacity-90"
+          className="flex-1 px-4 py-3 rounded-full bg-[var(--accent-workout)] text-white font-medium hover:opacity-90"
         >
           Save Settings
         </button>
       </div>
 
       {saved && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg z-50">
           ✓ Settings saved!
         </div>
       )}

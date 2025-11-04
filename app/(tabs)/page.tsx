@@ -1,65 +1,208 @@
-// CHANGE: Complete rewrite of Home tab with Today recap, reminders, messages, alerts, and deep links
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getTodayISO, isDayComplete } from "@/utils/completion";
-import { readDiet, readWorkout, readWeight } from "@/stores/storageV2";
+import { getTodayISO } from "@/utils/completion";
+import { readDiet, readWorkout, readWeight, writeWeight } from "@/stores/storageV2";
 import { useInboxStore } from "@/stores/inboxStore";
 import MacroRings from "@/components/diet/MacroRings";
-import CompletionBadge from "@/components/ui/CompletionBadge";
+import DaySelector from "@/components/ui/DaySelector";
+
+// Load exercises data for body parts
+let exercisesData: Array<{ name: string; bodyParts: string[] }> = [];
+if (typeof window !== "undefined") {
+  fetch("/data/exercises.json")
+    .then(res => res.json())
+    .then(data => { exercisesData = data; })
+    .catch(() => {});
+}
+
+// Get body parts for an exercise name
+function getBodyPartsForExercise(exerciseName: string): string[] {
+  const exercise = exercisesData.find(e => e.name === exerciseName);
+  return exercise?.bodyParts || [];
+}
+
+// Aggregate body parts from workout
+function getWorkoutBodyParts(exerciseNames: string[]): string {
+  const bodyPartsSet = new Set<string>();
+  exerciseNames.forEach(name => {
+    getBodyPartsForExercise(name).forEach(bp => bodyPartsSet.add(bp));
+  });
+
+  const bodyParts = Array.from(bodyPartsSet);
+  if (bodyParts.length === 0) return "";
+  if (bodyParts.length <= 2) return bodyParts.join(" & ");
+  return bodyParts.slice(0, 2).join(", ") + ` +${bodyParts.length - 2}`;
+}
 
 export default function HomePage() {
   const router = useRouter();
   const todayISO = getTodayISO();
-  const isComplete = isDayComplete(todayISO);
 
-  const { reminders, messages, alerts, addReminder, toggleReminder, removeReminder } = useInboxStore();
+  // Create Date object for today to use with DaySelector
+  const todayObj = useMemo(() => new Date(todayISO + "T00:00:00"), [todayISO]);
 
+  // Go to Today function (no-op for Home since it's always today, but needed for consistency)
+  const goToToday = () => {
+    // Home is always on today, but we reload data to ensure freshness
+    window.location.reload();
+  };
+
+  const { reminders, addReminder, toggleReminder, removeReminder } = useInboxStore();
+
+  // Weight state
+  const [weightValue, setWeightValue] = useState<string>("");
+  const [weightHistory, setWeightHistory] = useState<number[]>([]);
+  const [savedWeight, setSavedWeight] = useState<number | null>(null);
+
+  // Diet/workout data
+  const [dietSummary, setDietSummary] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0, goals: { cal: 2400, p: 180, c: 240, f: 70 } });
+  const [workoutSummary, setWorkoutSummary] = useState({ exerciseCount: 0, setCount: 0, exerciseNames: [] as string[] });
+
+  // Reminder modal state
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderTitle, setReminderTitle] = useState("");
   const [reminderDue, setReminderDue] = useState("");
 
-  // Load today's data
-  const dietData = useMemo(() => {
-    const diet = readDiet(todayISO);
-    const totals = diet.meals.reduce(
-      (acc, meal) => {
-        return meal.items.reduce(
-          (sum, item) => {
-            const qty = item.quantity || 1;
-            return {
-              calories: sum.calories + item.calories * qty,
-              protein: sum.protein + item.protein * qty,
-              carbs: sum.carbs + item.carbs * qty,
-              fat: sum.fat + item.fat * qty,
-            };
-          },
-          acc
-        );
-      },
-      { calories: 0, protein: 0, carbs: 0, fat: 0 }
-    );
-    return { totals, goals: diet.goals };
+  // Load data for today
+  useEffect(() => {
+    const loadData = () => {
+      // Load weight
+      const weight = readWeight(todayISO);
+      setSavedWeight(weight);
+      setWeightValue(weight !== null ? weight.toFixed(1) : "");
+
+      // Load weight history (last 7 days)
+      const history: number[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(todayISO);
+        d.setDate(d.getDate() - i);
+        const w = readWeight(d.toISOString().split("T")[0]);
+        if (w !== null) history.push(w);
+      }
+      setWeightHistory(history.reverse());
+
+      // Load diet summary
+      const diet = readDiet(todayISO);
+      const totals = diet.meals.reduce((acc, meal) => {
+        return meal.items.reduce((sum, item) => ({
+          calories: sum.calories + (item.calories * (item.quantity || 1)),
+          protein: sum.protein + (item.protein * (item.quantity || 1)),
+          carbs: sum.carbs + (item.carbs * (item.quantity || 1)),
+          fat: sum.fat + (item.fat * (item.quantity || 1)),
+        }), acc);
+      }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+      setDietSummary({ ...totals, goals: diet.goals });
+
+      // Load workout summary
+      const workout = readWorkout(todayISO);
+      const setCount = workout.exercises.reduce((sum, ex) => sum + ex.sets.filter(s => s.type === "Working" || s.type === "Drop Set").length, 0);
+
+      setWorkoutSummary({
+        exerciseCount: workout.exercises.length,
+        setCount,
+        exerciseNames: workout.exercises.map(ex => ex.name),
+      });
+    };
+
+    loadData();
+
+    // Reload diet goals when page becomes visible or storage changes
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const diet = readDiet(todayISO);
+        const totals = diet.meals.reduce((acc, meal) => {
+          return meal.items.reduce((sum, item) => ({
+            calories: sum.calories + (item.calories * (item.quantity || 1)),
+            protein: sum.protein + (item.protein * (item.quantity || 1)),
+            carbs: sum.carbs + (item.carbs * (item.quantity || 1)),
+            fat: sum.fat + (item.fat * (item.quantity || 1)),
+          }), acc);
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        setDietSummary({ ...totals, goals: diet.goals });
+      }
+    };
+
+    const handleFocus = () => {
+      const diet = readDiet(todayISO);
+      const totals = diet.meals.reduce((acc, meal) => {
+        return meal.items.reduce((sum, item) => ({
+          calories: sum.calories + (item.calories * (item.quantity || 1)),
+          protein: sum.protein + (item.protein * (item.quantity || 1)),
+          carbs: sum.carbs + (item.carbs * (item.quantity || 1)),
+          fat: sum.fat + (item.fat * (item.quantity || 1)),
+        }), acc);
+      }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+      setDietSummary({ ...totals, goals: diet.goals });
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "diet-by-day-v2" || e.key === null) {
+        const diet = readDiet(todayISO);
+        const totals = diet.meals.reduce((acc, meal) => {
+          return meal.items.reduce((sum, item) => ({
+            calories: sum.calories + (item.calories * (item.quantity || 1)),
+            protein: sum.protein + (item.protein * (item.quantity || 1)),
+            carbs: sum.carbs + (item.carbs * (item.quantity || 1)),
+            fat: sum.fat + (item.fat * (item.quantity || 1)),
+          }), acc);
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        setDietSummary({ ...totals, goals: diet.goals });
+      }
+    };
+
+    // Custom event from updateDietGoals (same tab/window updates)
+    const handleDietGoalsUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.dateISO === todayISO) {
+        const diet = readDiet(todayISO);
+        const totals = diet.meals.reduce((acc, meal) => {
+          return meal.items.reduce((sum, item) => ({
+            calories: sum.calories + (item.calories * (item.quantity || 1)),
+            protein: sum.protein + (item.protein * (item.quantity || 1)),
+            carbs: sum.carbs + (item.carbs * (item.quantity || 1)),
+            fat: sum.fat + (item.fat * (item.quantity || 1)),
+          }), acc);
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        setDietSummary({ ...totals, goals: diet.goals });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("dietGoalsUpdated", handleDietGoalsUpdated);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("dietGoalsUpdated", handleDietGoalsUpdated);
+    };
   }, [todayISO]);
 
-  const workoutData = useMemo(() => {
-    const workout = readWorkout(todayISO);
-    const exerciseCount = workout.exercises.length;
-    const setCount = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-    const volume = workout.exercises.reduce((sum, ex) => {
-      return (
-        sum +
-        ex.sets.reduce((s, set) => {
-          const avgReps = (set.repsMin + set.repsMax) / 2;
-          return s + set.weight * avgReps;
-        }, 0)
-      );
-    }, 0);
-    return { exerciseCount, setCount, volume: Math.round(volume) };
-  }, [todayISO]);
+  // Save weight
+  const saveWeight = () => {
+    const value = parseFloat(weightValue);
+    if (!isNaN(value) && value > 0) {
+      writeWeight(todayISO, value);
+      setSavedWeight(value);
+      setWeightValue(value.toFixed(1));
+    }
+  };
 
-  const weight = readWeight(todayISO);
+  // Navigate to diet/workout with date
+  const openDiet = () => {
+    localStorage.setItem("ui-last-date-diet", todayISO);
+    router.push(`/diet`);
+  };
+
+  const openWorkout = () => {
+    localStorage.setItem("ui-last-date-workout", todayISO);
+    router.push(`/workout`);
+  };
 
   const handleAddReminder = () => {
     if (reminderTitle.trim()) {
@@ -70,114 +213,138 @@ export default function HomePage() {
     }
   };
 
-  const openDiet = () => {
-    localStorage.setItem("ui-last-date-diet", todayISO);
-    router.push("/diet");
-  };
-
-  const openWorkout = () => {
-    localStorage.setItem("ui-last-date-workout", todayISO);
-    router.push("/workout");
-  };
-
-  const openProgress = () => {
-    localStorage.setItem("ui-last-date-progress", todayISO);
-    router.push("/schedule");
-  };
-
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] space-y-4">
-      {/* Header with Today badge and completion badge */}
-      <header className="pt-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Today</h1>
-          <span className="px-2 py-1 text-xs bg-accent-home text-white rounded-full">
-            {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
-          </span>
-        </div>
-        {isComplete && <CompletionBadge />}
+      {/* Header with date display */}
+      <header className="pt-4">
+        <DaySelector
+          dateISO={todayISO}
+          dateObj={todayObj}
+          onPrev={() => {}}
+          onNext={() => {}}
+          onSelect={() => {}}
+          isToday={true}
+          showNavigation={false}
+          onGoToToday={goToToday}
+          accentColor="var(--accent-home)"
+        />
       </header>
 
-      {/* Quick actions */}
-      <section className="grid grid-cols-3 gap-2">
-        <button
-          onClick={openProgress}
-          className="tap-target rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-3 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-        >
-          Log Weight
-        </button>
-        <button
-          onClick={openDiet}
-          className="tap-target rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-3 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-        >
-          Add Meal
-        </button>
-        <button
-          onClick={openWorkout}
-          className="tap-target rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-3 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-        >
-          Start Workout
-        </button>
-      </section>
+      {/* Weight card */}
+      <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-3 shadow-sm">
+        <label className="block text-sm font-medium mb-2">Weight</label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            inputMode="decimal"
+            value={weightValue}
+            onChange={(e) => {
+              setWeightValue(e.target.value);
+              // Allow editing by resetting saved state when value changes
+              const newValue = parseFloat(e.target.value);
+              if (savedWeight !== null && !isNaN(newValue) && newValue !== savedWeight) {
+                setSavedWeight(null);
+              }
+            }}
+            placeholder="0.0"
+            className="flex-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 bg-white dark:bg-neutral-900 text-sm"
+          />
+          {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
+            <button
+              onClick={saveWeight}
+              className="px-3 py-1.5 rounded-full bg-accent-home text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Save
+            </button>
+          ) : (
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 text-green-600 dark:text-green-400">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* Mini sparkline */}
+        {weightHistory.length > 1 && (
+          <div className="mt-2 flex items-end gap-1 h-12">
+            {weightHistory.map((w, i) => {
+              const max = Math.max(...weightHistory);
+              const height = (w / max) * 100;
+              return (
+                <div key={i} className="flex-1 bg-accent-home/30 rounded-t" style={{ height: `${height}%` }} />
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Diet summary */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">Diet Summary</h2>
+          <h2 className="font-medium">Diet Summary</h2>
           <button
             onClick={openDiet}
-            className="tap-target px-3 py-1.5 rounded-lg bg-accent-diet text-white text-xs font-medium hover:opacity-90 transition-opacity"
+            className="tap-target px-3 py-1.5 rounded-full bg-accent-diet text-white text-xs font-medium hover:opacity-90 transition-opacity"
           >
             Open Diet
           </button>
         </div>
-        <div className="flex justify-center scale-[0.85]">
-          <MacroRings
-            calories={{ label: "Cal", color: "var(--accent-diet)", current: Math.round(dietData.totals.calories), target: dietData.goals.cal }}
-            protein={{ label: "P", color: "#F87171", current: Math.round(dietData.totals.protein), target: dietData.goals.p }}
-            fat={{ label: "F", color: "var(--accent-diet-fat)", current: Math.round(dietData.totals.fat), target: dietData.goals.f }}
-            carbs={{ label: "C", color: "#60A5FA", current: Math.round(dietData.totals.carbs), target: dietData.goals.c }}
-          />
+        <div className="flex justify-center overflow-hidden">
+          <div className="w-full max-w-full">
+            <MacroRings
+              calories={{ label: "Cal", color: "var(--accent-diet)", current: Math.round(dietSummary.calories), target: dietSummary.goals.cal }}
+              protein={{ label: "P", color: "#F87171", current: Math.round(dietSummary.protein), target: dietSummary.goals.p }}
+              fat={{ label: "F", color: "var(--accent-diet-fat)", current: Math.round(dietSummary.fat), target: dietSummary.goals.f }}
+              carbs={{ label: "C", color: "#60A5FA", current: Math.round(dietSummary.carbs), target: dietSummary.goals.c }}
+              onMenuClick={() => router.push(`/settings/diet?returnDate=${todayISO}`)}
+            />
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Workout snapshot */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      {/* Workout summary */}
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">Workout Snapshot</h2>
+          <h2 className="font-medium">Workout Summary</h2>
           <button
             onClick={openWorkout}
-            className="tap-target px-3 py-1.5 rounded-lg bg-[var(--accent-workout)] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+            className="tap-target px-3 py-1.5 rounded-full bg-[var(--accent-workout)] text-white text-xs font-medium hover:opacity-90 transition-opacity"
           >
             Open Workout
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold">{workoutData.exerciseCount}</div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">Exercises</div>
+        {workoutSummary.exerciseCount > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-4 text-center mb-3">
+              <div>
+                <div className="text-2xl font-bold">{workoutSummary.exerciseCount}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Exercises</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{workoutSummary.setCount}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Sets</div>
+              </div>
+            </div>
+            {(() => {
+              const bodyParts = getWorkoutBodyParts(workoutSummary.exerciseNames);
+              return bodyParts ? (
+                <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800">
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Body Parts</div>
+                  <div className="text-sm font-medium">{bodyParts}</div>
+                </div>
+              ) : null;
+            })()}
+          </>
+        ) : (
+          <div className="text-center py-4 text-sm text-neutral-500 dark:text-neutral-400">
+            No workout logged
           </div>
-          <div>
-            <div className="text-2xl font-bold">{workoutData.setCount}</div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">Sets</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold">{workoutData.volume}</div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">Volume (lbs)</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Weight */}
-      {weight && (
-        <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
-          <h2 className="font-semibold mb-2">Weight</h2>
-          <div className="text-3xl font-bold">{weight.toFixed(1)} lbs</div>
-        </section>
-      )}
+        )}
+      </div>
 
       {/* Reminders */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Reminders</h2>
           <button
@@ -215,47 +382,10 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Messages */}
-      {messages.length > 0 && (
-        <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
-          <h2 className="font-semibold mb-3">Messages</h2>
-          <ul className="space-y-2">
-            {messages.slice(0, 2).map((m) => (
-              <li key={m.id} className="text-sm">
-                <span className="font-medium">{m.from}:</span> {m.text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
-          <h2 className="font-semibold mb-3">Alerts</h2>
-          <ul className="space-y-2">
-            {alerts.slice(0, 2).map((a) => (
-              <li
-                key={a.id}
-                className={`text-sm p-2 rounded-lg ${
-                  a.type === "error"
-                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                    : a.type === "warn"
-                    ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                    : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                }`}
-              >
-                {a.text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* Reminder modal */}
       {showReminderModal && (
         <div className="fixed inset-0 z-[10000] bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">Add Reminder</h3>
             <div className="space-y-3">
               <div>
@@ -281,13 +411,13 @@ export default function HomePage() {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={() => setShowReminderModal(false)}
-                className="flex-1 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                className="flex-1 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddReminder}
-                className="flex-1 py-2 rounded-lg bg-accent-home text-white font-medium hover:opacity-90 transition-opacity"
+                className="flex-1 py-2 rounded-full bg-accent-home text-white font-medium hover:opacity-90 transition-opacity"
               >
                 Add
               </button>

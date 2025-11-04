@@ -54,7 +54,7 @@ export default function SettingsPage() {
       <h1 className="text-xl font-semibold pt-4">Settings</h1>
 
       {/* Profile */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Profile</h2>
           <button
@@ -73,13 +73,13 @@ export default function SettingsPage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-text focus:ring-2 focus:ring-accent-home focus:outline-none"
+                className="w-full px-5 py-2 rounded-full border border-border bg-card text-text focus:ring-2 focus:ring-accent-home focus:outline-none"
               />
             </div>
             <button
               onClick={handleSaveProfile}
               disabled={!displayName.trim()}
-              className="w-full px-4 py-2 rounded-lg bg-accent-home text-white font-medium hover:opacity-90 disabled:opacity-50"
+              className="w-full px-6 py-2 rounded-full bg-accent-home text-white font-medium hover:opacity-90 disabled:opacity-50"
             >
               Save Profile
             </button>
@@ -95,7 +95,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Appearance */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <h2 className="font-semibold mb-3">Appearance</h2>
         <div className="space-y-3">
           <div>
@@ -105,9 +105,9 @@ export default function SettingsPage() {
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
                     theme === t
-                      ? "bg-[var(--accent-progress)] text-white"
+                      ? "bg-[var(--accent-home)] text-white"
                       : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                   }`}
                 >
@@ -122,7 +122,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Units */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <h2 className="font-semibold mb-3">Units</h2>
         <div className="space-y-3">
           <div>
@@ -132,9 +132,9 @@ export default function SettingsPage() {
                 <button
                   key={unit}
                   onClick={() => setWeightUnit(unit)}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
                     weightUnit === unit
-                      ? "bg-[var(--accent-progress)] text-white"
+                      ? "bg-[var(--accent-home)] text-white"
                       : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                   }`}
                 >
@@ -151,9 +151,9 @@ export default function SettingsPage() {
                 <button
                   key={unit}
                   onClick={() => setEnergyUnit(unit)}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
                     energyUnit === unit
-                      ? "bg-[var(--accent-progress)] text-white"
+                      ? "bg-[var(--accent-home)] text-white"
                       : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                   }`}
                 >
@@ -166,7 +166,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Workout Settings link */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-full border border-[var(--accent-workout)]/30 bg-gradient-to-br from-[var(--accent-workout)]/10 to-white/70 dark:to-neutral-900/60 backdrop-blur p-4 shadow-sm hover:shadow-md transition-shadow">
         <a href="/settings/workout" className="block">
           <div className="flex items-center justify-between">
             <div>
@@ -175,13 +175,13 @@ export default function SettingsPage() {
                 Set your training frequency, split, and focus.
               </div>
             </div>
-            <span className="text-neutral-400">›</span>
+            <span className="text-[var(--accent-workout)]">›</span>
           </div>
         </a>
       </section>
 
       {/* Diet Settings link */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-full border border-[var(--accent-diet)]/30 bg-gradient-to-br from-[var(--accent-diet)]/10 to-white/70 dark:to-neutral-900/60 backdrop-blur p-4 shadow-sm hover:shadow-md transition-shadow">
         <a href="/settings/diet" className="block">
           <div className="flex items-center justify-between">
             <div>
@@ -190,13 +190,13 @@ export default function SettingsPage() {
                 Set your calorie and macro goals.
               </div>
             </div>
-            <span className="text-neutral-400">›</span>
+            <span className="text-[var(--accent-diet)]">›</span>
           </div>
         </a>
       </section>
 
       {/* Logout */}
-      <section className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50/70 dark:bg-red-950/60 backdrop-blur p-4 shadow-sm">
+      <section className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50/70 dark:bg-red-950/60 backdrop-blur p-4 shadow-sm">
         <h2 className="font-semibold mb-2 text-red-600 dark:text-red-400">Logout</h2>
         <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-3">
           This will clear all app data including workouts, meals, and progress.
@@ -205,13 +205,13 @@ export default function SettingsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowLogoutConfirm(false)}
-              className="flex-1 px-4 py-2 rounded-lg border border-border font-medium hover:bg-muted"
+              className="flex-1 px-6 py-2 rounded-full border border-border font-medium hover:bg-muted"
             >
               Cancel
             </button>
             <button
               onClick={handleLogout}
-              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:opacity-90"
+              className="flex-1 px-6 py-2 rounded-full bg-red-600 text-white font-medium hover:opacity-90"
             >
               Confirm Logout
             </button>
@@ -219,7 +219,7 @@ export default function SettingsPage() {
         ) : (
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full px-4 py-2 rounded-lg border border-red-600 dark:border-red-500 text-red-600 dark:text-red-400 font-medium hover:bg-red-600/10"
+            className="w-full px-6 py-2 rounded-full border border-red-600 dark:border-red-500 text-red-600 dark:text-red-400 font-medium hover:bg-red-600/10"
           >
             Logout
           </button>

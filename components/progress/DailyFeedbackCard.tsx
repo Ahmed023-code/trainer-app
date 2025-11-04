@@ -44,7 +44,7 @@ export default function DailyFeedbackCard({ dateISO }: DailyFeedbackCardProps) {
   const energyLabels = ["😴 Exhausted", "🥱 Tired", "😐 Average", "💪 Energetic", "⚡ Pumped"];
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
       <h3 className="font-semibold mb-4">How are you feeling?</h3>
 
       <div className="space-y-4">
@@ -60,7 +60,7 @@ export default function DailyFeedbackCard({ dateISO }: DailyFeedbackCardProps) {
             max="5"
             value={feedback.mood}
             onChange={(e) => handleSave("mood", Number(e.target.value))}
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 rounded-full appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right, #ef4444 0%, #f59e0b 25%, #eab308 50%, #84cc16 75%, #22c55e 100%)`,
             }}
@@ -86,7 +86,7 @@ export default function DailyFeedbackCard({ dateISO }: DailyFeedbackCardProps) {
             max="5"
             value={feedback.energy}
             onChange={(e) => handleSave("energy", Number(e.target.value))}
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 rounded-full appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right, #6366f1 0%, #8b5cf6 25%, #a855f7 50%, #d946ef 75%, #ec4899 100%)`,
             }}
@@ -113,7 +113,7 @@ export default function DailyFeedbackCard({ dateISO }: DailyFeedbackCardProps) {
               value={feedback.notes || ""}
               onChange={(e) => handleNotesChange(e.target.value)}
               placeholder="How are you feeling today? Any observations?"
-              className="w-full mt-2 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm resize-none"
+              className="w-full mt-2 px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm resize-none"
               rows={3}
             />
           )}

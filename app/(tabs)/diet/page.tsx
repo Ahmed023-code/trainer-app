@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import MacroRings from "@/components/diet/MacroRings";
 import MealSection from "@/components/diet/MealSection";
+import MealDetailModal from "@/components/diet/MealDetailModal";
 import FoodLibraryModal from "@/components/diet/FoodLibraryModal";
+import SaveMealModal from "@/components/diet/SaveMealModal";
+import LoadMealModal from "@/components/diet/LoadMealModal";
 import DaySelector from "@/components/ui/DaySelector";
 import { useDaySelector } from "@/hooks/useDaySelector";
-import { readDiet, writeDiet } from "@/stores/storageV2";
+import { readDiet, writeDiet, getTodayISO } from "@/stores/storageV2";
 import type { Meal, FoodItem } from "@/components/diet/types";
+import type { MealTemplate } from "@/stores/mealTemplates";
 
 // Small icon masker so SVGs inherit currentColor
 function IconMask({ src, size = 18, className = "" }: { src: string; size?: number; className?: string }) {
@@ -51,9 +55,24 @@ type Goals = { cal: number; p: number; c: number; f: number };
 export default function DietPage() {
   // Date selector
   const { dateISO, dateObj, goPrevDay, goNextDay, setDateISO, isToday } = useDaySelector("ui-last-date-diet");
-  
-  // goals
-  const [goals, setGoals] = useState<Goals>({ cal: 2400, p: 180, c: 240, f: 70 });
+
+  // Go to Today function
+  const goToToday = () => {
+    const today = getTodayISO();
+    setDateISO(today);
+    localStorage.setItem("ui-last-date-diet", today);
+  };
+
+  // Track if we're loading data to prevent circular updates
+  const isLoadingRef = useRef(false);
+
+  // goals with logging
+  const [goals, setGoalsInternal] = useState<Goals>({ cal: 2400, p: 180, c: 240, f: 70 });
+
+  const setGoals = (newGoals: Goals) => {
+    console.log('[Diet] setGoals called with:', newGoals);
+    setGoalsInternal(newGoals);
+  };
 
   // meals
   const [meals, setMeals] = useState<Meal[]>(DEFAULT_MEALS);
@@ -61,9 +80,9 @@ export default function DietPage() {
   // Add key for transition effect on date change
   const [contentKey, setContentKey] = useState(0);
 
-  // FAB state
-  const [showFabMenu, setShowFabMenu] = useState(false);
-  const [showMealOptions, setShowMealOptions] = useState<null | { meal: string }>(null);
+  // FAB state - removed meal selection states since we skip that step now
+  // const [showFabMenu, setShowFabMenu] = useState(false);
+  // const [showMealOptions, setShowMealOptions] = useState<null | { meal: string }>(null);
 
   // Quick Add / Edit shared bubble state
   const [showForm, setShowForm] = useState<null | { meal: string }>(null);
@@ -80,18 +99,98 @@ export default function DietPage() {
   // Search modal
   const [showLibraryFor, setShowLibraryFor] = useState<null | { meal: string }>(null);
 
-  // Load data for selected date
+  // Meal detail modal
+  const [showMealDetail, setShowMealDetail] = useState<null | { mealIndex: number }>(null);
+
+  // Meal template modals
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [showLoadTemplate, setShowLoadTemplate] = useState(false);
+
+  // Diet settings menu (three-dot menu next to rings)
+  const [showDietMenu, setShowDietMenu] = useState(false);
+
+  // Track if bubble was triggered from Log Meal button - no longer needed
+  // const [bubbleSource, setBubbleSource] = useState<"fab" | "button">("fab");
+  // const logMealButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Load data for selected date and reload on visibility/focus/storage changes
   useEffect(() => {
-    const state = readDiet(dateISO);
-    if (state.goals) setGoals(state.goals);
-    if (state.meals && state.meals.length > 0) setMeals(state.meals);
-    setContentKey((k) => k + 1); // Trigger transition
+    const loadData = () => {
+      isLoadingRef.current = true;
+      const state = readDiet(dateISO);
+      if (state.goals) setGoals(state.goals);
+      if (state.meals && state.meals.length > 0) setMeals(state.meals);
+      setContentKey((k) => k + 1); // Trigger transition
+      // Reset loading flag after a brief delay to allow state updates to settle
+      setTimeout(() => {
+        isLoadingRef.current = false;
+      }, 100);
+    };
+
+    loadData();
+
+    // Reload goals when:
+    // 1. Page becomes visible (switching back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const state = readDiet(dateISO);
+        if (state.goals) setGoals(state.goals);
+      }
+    };
+
+    // 2. Window gains focus (navigating back from settings)
+    const handleFocus = () => {
+      const state = readDiet(dateISO);
+      if (state.goals) setGoals(state.goals);
+    };
+
+    // 3. Storage changes (when diet goals are updated in settings)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "diet-by-day-v2" || e.key === null) {
+        const state = readDiet(dateISO);
+        if (state.goals) setGoals(state.goals);
+      }
+    };
+
+    // 4. Custom event from updateDietGoals (same tab/window updates)
+    const handleDietGoalsUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('[Diet] dietGoalsUpdated event received:', customEvent.detail);
+      if (customEvent.detail?.dateISO === dateISO) {
+        console.log('[Diet] Updating goals to:', customEvent.detail.goals);
+        setGoals(customEvent.detail.goals);
+        setContentKey((k) => k + 1); // Force re-render of MacroRings
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("dietGoalsUpdated", handleDietGoalsUpdated);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("dietGoalsUpdated", handleDietGoalsUpdated);
+    };
   }, [dateISO]);
 
-  // Persist meals
+  // Log goals changes
   useEffect(() => {
-    writeDiet(dateISO, { meals, goals });
-  }, [meals, goals, dateISO]);
+    console.log('[Diet] Goals state changed to:', goals);
+  }, [goals]);
+
+  // Persist meals only (NOT goals - goals are persisted via updateDietGoals from settings)
+  // This prevents infinite loops where persisting goals triggers events that update goals again
+  useEffect(() => {
+    if (isLoadingRef.current) {
+      console.log('[Diet] Skipping persist during load');
+      return;
+    }
+    console.log('[Diet] Persisting meals to localStorage:', { dateISO, meals: meals.length });
+    writeDiet(dateISO, { meals });
+  }, [meals, dateISO]);
 
   // CHANGE: Memoize totals with dateISO to prevent stale data across date changes
   // totals for day
@@ -131,8 +230,6 @@ export default function DietPage() {
   function openForm(mealName: string) {
     setEditTarget(null);
     setForm({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" });
-    setShowMealOptions(null);
-    setShowFabMenu(false);
     setShowForm({ meal: mealName });
   }
 
@@ -147,8 +244,6 @@ export default function DietPage() {
       fat: String(item.fat ?? 0),
       quantity: String(item.quantity ?? 1),
     });
-    setShowMealOptions(null);
-    setShowFabMenu(false);
     setShowForm({ meal: mealName });
   }
 
@@ -204,151 +299,131 @@ export default function DietPage() {
     });
   }
 
+  // Auto-generate meal name based on count
+  function generateMealName(): string {
+    const existingCount = meals.filter(m => m.items.length > 0).length;
+    return `Meal ${existingCount + 1}`;
+  }
+
+  // Create new meal and open detail modal
+  function createNewMeal() {
+    const newMeal: Meal = {
+      name: generateMealName(),
+      items: []
+    };
+
+    setMeals(prev => [...prev, newMeal]);
+
+    // Open detail modal for the newly created meal
+    setTimeout(() => {
+      setShowMealDetail({ mealIndex: meals.length });
+    }, 0);
+  }
+
   // CHANGE: Added responsive container with max-width and safe-area support
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
       {/* Header */}
-      <header className="pt-4">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex-1">
-            <DaySelector
-              dateISO={dateISO}
-              dateObj={dateObj}
-              onPrev={goPrevDay}
-              onNext={goNextDay}
-              onSelect={setDateISO}
-              isToday={isToday}
-            />
-          </div>
-          <a
-            href={`/settings/diet?returnDate=${dateISO}`}
-            className="tap-target min-w-10 min-h-10 flex items-center justify-center px-3 py-2 rounded-lg text-xs font-medium bg-accent-diet text-white hover:opacity-90 transition-opacity"
-            aria-label="Edit Diet Goals"
-          >
-            <img src="/icons/fi-sr-settings.svg" alt="" className="w-4 h-4" />
-          </a>
-        </div>
+      <header className="pt-4 space-y-3">
+        {/* Date selector with full-width Today button */}
+        <DaySelector
+          dateISO={dateISO}
+          dateObj={dateObj}
+          onPrev={goPrevDay}
+          onNext={goNextDay}
+          onSelect={setDateISO}
+          isToday={isToday}
+          onGoToToday={goToToday}
+          accentColor="var(--accent-diet)"
+          fullWidthLayout={true}
+        />
       </header>
 
       {/* CHANGE: Removed key from wrapper to prevent duplicate ring mounting on date change */}
-      {/* Rings under header */}
-      <div className="mt-3 flex justify-center transition-all duration-150">
+      {/* Rings under header with integrated three-dot menu */}
+      <div className="mt-3 flex justify-center transition-all duration-150 relative">
         <MacroRings
+          key={`${goals.cal}-${goals.p}-${goals.c}-${goals.f}`}
           calories={{ label: "Cal", color: "var(--accent-diet)", current: Math.round(totals.calories), target: goals.cal }}
           protein={{ label: "P",   color: "#F87171", current: Math.round(totals.protein),  target: goals.p }}
           fat={{     label: "F",   color: "var(--accent-diet-fat)", current: Math.round(totals.fat),      target: goals.f }}
           carbs={{   label: "C",   color: "#60A5FA", current: Math.round(totals.carbs),    target: goals.c }}
+          onMenuClick={() => setShowDietMenu(!showDietMenu)}
         />
+
+        {/* Menu popup positioned relative to rings */}
+        {showDietMenu && (
+          <>
+            <button
+              className="fixed inset-0 z-[9498]"
+              aria-label="Close"
+              onClick={() => setShowDietMenu(false)}
+            />
+            <div className="absolute right-0 top-full mt-2 z-[9499] rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-2 w-48">
+              <a
+                href={`/settings/diet?returnDate=${dateISO}`}
+                className="block w-full text-left px-3 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                onClick={() => setShowDietMenu(false)}
+              >
+                Diet Settings
+              </a>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Meals list in page-level bubbles */}
       <section key={contentKey} className="space-y-6 relative z-0 overflow-visible mt-4 transition-all duration-150">
-        {meals.map((meal, i) => (
+        {meals.filter(meal => meal.items.length > 0).map((meal, i) => (
           <div
             key={meal.name}
-            className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm overflow-visible"
+            className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm overflow-visible"
           >
             <MealSection
               meal={meal}
               onChange={(updated) => {
                 const next = [...meals];
-                next[i] = updated;
+                const originalIndex = meals.findIndex(m => m.name === meal.name);
+                next[originalIndex] = updated;
                 setMeals(next);
               }}
               onRequestEdit={(mealName, index, item) => openEditForm(mealName, index, item)}
               onAddFood={(mealName) => {
                 setShowLibraryFor({ meal: mealName });
               }}
+              onOpenDetail={() => {
+                const originalIndex = meals.findIndex(m => m.name === meal.name);
+                setShowMealDetail({ mealIndex: originalIndex });
+              }}
+              onDelete={() => {
+                const next = meals.filter(m => m.name !== meal.name);
+                setMeals(next);
+              }}
             />
           </div>
         ))}
         {meals.every(m => m.items.length === 0) && (
-          <div className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-16">
-            No entries for {dateISO}. Tap the + to add a meal.
+          <div className="flex items-center justify-center py-16">
+            <button
+              onClick={createNewMeal}
+              className="px-8 py-4 rounded-full text-lg font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
+              style={{ borderColor: "var(--accent-diet)", color: "var(--accent-diet)", backgroundColor: "transparent" }}
+            >
+              Log Meal
+            </button>
           </div>
         )}
       </section>
 
-      {/* FAB */}
+      {/* FAB - simplified to create new meal directly */}
       <div className="fixed right-6 bottom-24 z-[9500]">
-        {/* Main FAB */}
         <button
-          className="w-14 h-14 rounded-full bg-accent-diet text-black shadow-lg grid place-items-center text-4xl leading-none"
-          onClick={() => {
-            setShowFabMenu((v) => !v);
-            setShowMealOptions(null);
-          }}
-          aria-label="Add"
+          className="w-14 h-14 rounded-full bg-accent-diet text-black shadow-lg flex items-center justify-center"
+          onClick={createNewMeal}
+          aria-label="Add meal"
         >
-          +
+          <span className="text-4xl leading-none" style={{ marginTop: '-2px' }}>+</span>
         </button>
-
-        {/* First-level meal picker */}
-        {showFabMenu && (
-          <>
-            <button
-              className="fixed inset-0 z-[9498]"
-              aria-label="Close"
-              onClick={() => {
-                setShowFabMenu(false);
-                setShowMealOptions(null);
-              }}
-            />
-            <div className="absolute right-0 bottom-20 z-[9499] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-2 w-44">
-              {["Breakfast", "Lunch", "Dinner", "Snacks"].map((m) => (
-                <button
-                  key={m}
-                  className="block w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                  onClick={() => {
-                    setShowFabMenu(false);
-                    setShowMealOptions({ meal: m });
-                  }}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Second-level options with icons */}
-        {showMealOptions && (
-          <>
-            <button
-              className="fixed inset-0 z-[9498]"
-              aria-label="Close"
-              onClick={() => setShowMealOptions(null)}
-            />
-            <div className="absolute right-0 bottom-20 z-[9499] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-2 w-48">
-              {["Quick Add", "Search"].map((label) => (
-                <button
-                  key={label}
-                  className="flex w-full items-center gap-2 text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                  onClick={() => {
-                    if (label === "Back") {
-                      setShowMealOptions(null);
-                      return;
-                    }
-                    if (label === "Quick Add") {
-                      openForm(showMealOptions.meal);
-                      return;
-                    }
-                    if (label === "Search") {
-                      setShowLibraryFor({ meal: showMealOptions.meal });
-                      setShowFabMenu(false);
-                      setShowMealOptions(null);
-                    }
-                  }}
-                >
-                  {optionIcons[label] && (
-                    <IconMask src={optionIcons[label]} className="text-neutral-700 dark:text-neutral-200" />
-                  )}
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
       {/* Quick Add / Edit bubble */}
@@ -363,13 +438,13 @@ export default function DietPage() {
             }}
           />
           <div className="fixed right-6 bottom-24 z-[9999] w-[min(560px,calc(100vw-2rem))]">
-            <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-4">
+            <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-4">
               <div className="flex items-center justify-between">
                 <div className="font-semibold">
                   {editTarget ? `Edit • ${showForm.meal}` : `Quick Add • ${showForm.meal}`}
                 </div>
                 <button
-                  className="px-3 py-1 rounded-md border border-neutral-300 dark:border-neutral-700"
+                  className="px-5 py-1 rounded-full border border-neutral-300 dark:border-neutral-700"
                   onClick={() => {
                     setShowForm(null);
                     setEditTarget(null);
@@ -383,7 +458,7 @@ export default function DietPage() {
                 <label className="text-sm col-span-2">
                   Name
                   <input
-                    className="mt-1 w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   />
@@ -393,7 +468,7 @@ export default function DietPage() {
                   Calories
                   <input
                     inputMode="decimal"
-                    className="mt-1 w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
                     value={form.calories}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -407,7 +482,7 @@ export default function DietPage() {
                   Protein
                   <input
                     inputMode="decimal"
-                    className="mt-1 w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
                     value={form.protein}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -421,7 +496,7 @@ export default function DietPage() {
                   Carbs
                   <input
                     inputMode="decimal"
-                    className="mt-1 w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
                     value={form.carbs}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -435,7 +510,7 @@ export default function DietPage() {
                   Fat
                   <input
                     inputMode="decimal"
-                    className="mt-1 w-full rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
                     value={form.fat}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -453,7 +528,7 @@ export default function DietPage() {
                 <div className="flex items-center gap-2 justify-center">
                   <button
                     type="button"
-                    className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
+                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
                     onClick={() => decQty(1)}
                     aria-label="Decrease quantity"
                   >
@@ -462,7 +537,7 @@ export default function DietPage() {
 
                   <input
                     inputMode="decimal"
-                    className="w-20 text-center h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                    className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
                     value={form.quantity ?? "1"}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -475,7 +550,7 @@ export default function DietPage() {
 
                   <button
                     type="button"
-                    className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
+                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
                     onClick={() => incQty(1)}
                     aria-label="Increase quantity"
                   >
@@ -487,7 +562,7 @@ export default function DietPage() {
               {/* Actions */}
               <div className="mt-4 flex justify-end gap-2">
                 <button
-                  className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                  className="px-5 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
                   onClick={() => {
                     setShowForm(null);
                     setEditTarget(null);
@@ -495,7 +570,7 @@ export default function DietPage() {
                 >
                   Cancel
                 </button>
-                <button className="px-3 py-2 rounded-lg bg-accent-diet text-black" onClick={saveForm}>
+                <button className="px-6 py-2 rounded-full bg-accent-diet text-black" onClick={saveForm}>
                   Save
                 </button>
               </div>
@@ -510,8 +585,79 @@ export default function DietPage() {
         onClose={() => setShowLibraryFor(null)}
         onPick={(item) => {
           if (!showLibraryFor) return;
-          addPickedToMeal(showLibraryFor.meal, item);
+
+          // If meal detail is open, add food directly to that meal
+          if (showMealDetail) {
+            const next = [...meals];
+            // Create a new meal object to trigger React re-render
+            next[showMealDetail.mealIndex] = {
+              ...next[showMealDetail.mealIndex],
+              items: [...next[showMealDetail.mealIndex].items, item]
+            };
+            setMeals(next);
+          } else {
+            // Otherwise use the old flow for adding to meals from main view
+            addPickedToMeal(showLibraryFor.meal, item);
+          }
+
           setShowLibraryFor(null);
+        }}
+      />
+
+      {/* Meal detail modal */}
+      <MealDetailModal
+        isOpen={!!showMealDetail}
+        meal={showMealDetail ? meals[showMealDetail.mealIndex] : null}
+        onClose={() => setShowMealDetail(null)}
+        onChange={(updated) => {
+          if (!showMealDetail) return;
+          const next = [...meals];
+          next[showMealDetail.mealIndex] = updated;
+          setMeals(next);
+        }}
+        onRequestEdit={(index, item) => {
+          if (!showMealDetail) return;
+          const mealName = meals[showMealDetail.mealIndex].name;
+          openEditForm(mealName, index, item);
+        }}
+        onAddFood={() => {
+          if (!showMealDetail) return;
+          const mealName = meals[showMealDetail.mealIndex].name;
+          setShowLibraryFor({ meal: mealName });
+        }}
+        onSaveTemplate={() => {
+          setShowSaveTemplate(true);
+        }}
+        onLoadTemplate={() => {
+          setShowLoadTemplate(true);
+        }}
+      />
+
+      {/* Save meal template modal */}
+      <SaveMealModal
+        isOpen={showSaveTemplate}
+        meal={showMealDetail ? meals[showMealDetail.mealIndex] : null}
+        onClose={() => setShowSaveTemplate(false)}
+        onSaved={() => {
+          setShowSaveTemplate(false);
+        }}
+      />
+
+      {/* Load meal template modal */}
+      <LoadMealModal
+        isOpen={showLoadTemplate}
+        onClose={() => setShowLoadTemplate(false)}
+        onLoad={(template: MealTemplate) => {
+          if (!showMealDetail) return;
+          const next = [...meals];
+
+          // Create a new meal object to trigger React re-render
+          next[showMealDetail.mealIndex] = {
+            ...next[showMealDetail.mealIndex],
+            items: [...next[showMealDetail.mealIndex].items, ...template.items]
+          };
+          setMeals(next);
+          setShowLoadTemplate(false);
         }}
       />
     </main>

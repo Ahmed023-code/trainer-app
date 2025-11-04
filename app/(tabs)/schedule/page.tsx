@@ -36,6 +36,7 @@ import WeekView from "@/components/progress/WeekView";
 import MonthView from "@/components/progress/MonthView";
 import YearView from "@/components/progress/YearView";
 import { shiftPeriod, formatPeriodLabel, type ViewType } from "@/utils/dateHelpers";
+import { getTodayISO } from "@/stores/storageV2";
 
 export default function ProgressPage() {
   const [view, setView] = useState<ViewType>("day");
@@ -61,6 +62,12 @@ export default function ProgressPage() {
     return formatPeriodLabel(view, dateISO, dateObj);
   }, [view, dateISO, dateObj]);
 
+  const goToToday = () => {
+    const today = getTodayISO();
+    setDateISO(today);
+    localStorage.setItem("ui-last-date-progress", today);
+  };
+
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
       {/* Header with period navigation */}
@@ -68,7 +75,7 @@ export default function ProgressPage() {
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={handlePrevPeriod}
-            className="w-10 h-10 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             aria-label="Previous period"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
@@ -82,7 +89,7 @@ export default function ProgressPage() {
 
           <button
             onClick={handleNextPeriod}
-            className="w-10 h-10 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             aria-label="Next period"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
@@ -91,26 +98,43 @@ export default function ProgressPage() {
           </button>
         </div>
 
-        {/* View selector */}
-        <div className="flex gap-2 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1">
-          {(["day", "week", "month", "year"] as ViewType[]).map(v => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${view === v ? "bg-[var(--accent-progress)] text-white" : "text-neutral-600 dark:text-neutral-400"}`}
-            >
-              {v.charAt(0).toUpperCase() + v.slice(1)}
-            </button>
-          ))}
+        {/* View selector and Go to Today button */}
+        <div className="flex gap-2">
+          <div className="flex-1 flex gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1">
+            {(["day", "week", "month", "3months", "year"] as ViewType[]).map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`flex-1 py-2 rounded-full text-xs font-medium transition-colors ${view === v ? "bg-[var(--accent-progress)] text-white" : "text-neutral-600 dark:text-neutral-400"}`}
+              >
+                {v === "3months" ? "3M" : v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              goToToday();
+              setView("day");
+            }}
+            className={`px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm font-medium transition-colors whitespace-nowrap ${
+              isToday && view === "day"
+                ? "bg-[var(--accent-progress)] text-white border-[var(--accent-progress)]"
+                : "bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+            }`}
+            aria-label="Go to today"
+          >
+            {isToday && view === "day" ? "Today" : "Go to Today"}
+          </button>
         </div>
       </header>
 
       {/* Content based on view */}
       <div className="mt-4">
         {view === "day" && <DayView dateISO={dateISO} isToday={isToday} />}
-        {view === "week" && <WeekView dateISO={dateISO} setDateISO={setDateISO} />}
-        {view === "month" && <MonthView dateISO={dateISO} setDateISO={setDateISO} />}
-        {view === "year" && <YearView dateISO={dateISO} setDateISO={setDateISO} />}
+        {view === "week" && <WeekView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
+        {view === "month" && <MonthView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
+        {view === "3months" && <MonthView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
+        {view === "year" && <YearView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
       </div>
     </main>
   );

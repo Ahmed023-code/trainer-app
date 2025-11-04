@@ -28,7 +28,7 @@ export default function WorkoutMiniChart({
   if (data.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur"
+        className="flex items-center justify-center rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur"
         style={{ minHeight: height }}
       >
         <p className="text-sm text-neutral-500 dark:text-neutral-400">No data</p>
@@ -91,7 +91,7 @@ export default function WorkoutMiniChart({
     };
 
     return (
-      <div className="relative w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-2">
+      <div className="relative w-full rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-2">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           preserveAspectRatio="xMidYMid meet"
@@ -170,7 +170,7 @@ export default function WorkoutMiniChart({
         {/* Tooltip */}
         {tooltip && (
           <div
-            className="absolute z-10 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 shadow-lg pointer-events-none"
+            className="absolute z-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 shadow-lg pointer-events-none"
             style={{
               left: tooltip.x,
               top: tooltip.y - 50,
@@ -218,7 +218,7 @@ export default function WorkoutMiniChart({
   };
 
   return (
-    <div className="relative w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-2">
+    <div className="relative w-full rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-3 py-2">
       <svg
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
@@ -283,7 +283,7 @@ export default function WorkoutMiniChart({
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="absolute z-10 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 shadow-lg pointer-events-none"
+          className="absolute z-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 shadow-lg pointer-events-none"
           style={{
             left: tooltip.x,
             top: tooltip.y - 50,

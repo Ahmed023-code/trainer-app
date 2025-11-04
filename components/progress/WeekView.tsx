@@ -7,9 +7,11 @@ import { getWeekRange } from "@/utils/dateHelpers";
 interface WeekViewProps {
   dateISO: string;
   setDateISO: (date: string) => void;
+  setView?: (view: "day" | "week" | "month" | "3months" | "year") => void;
+  currentView: "day" | "week" | "month" | "3months" | "year";
 }
 
-export default function WeekView({ dateISO, setDateISO }: WeekViewProps) {
+export default function WeekView({ dateISO, setDateISO, setView, currentView }: WeekViewProps) {
   const range = getWeekRange(dateISO);
   const weekData = range.dates.map(date => {
     const diet = readDiet(date);
@@ -58,10 +60,10 @@ export default function WeekView({ dateISO, setDateISO }: WeekViewProps) {
   return (
     <div className="space-y-4">
       {/* Weight Trend Card */}
-      <WeightTrendCard range="1w" />
+      <WeightTrendCard currentView={currentView} />
 
       {/* Week at a glance */}
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <h2 className="font-medium mb-3">Week at a Glance</h2>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex justify-between">
@@ -101,36 +103,40 @@ export default function WeekView({ dateISO, setDateISO }: WeekViewProps) {
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 text-center shadow-sm">
+        <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 text-center shadow-sm">
           <div className="text-2xl font-bold">{totalWorkouts}</div>
           <div className="text-xs text-neutral-500 dark:text-neutral-400">Workouts</div>
         </div>
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 text-center shadow-sm">
+        <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 text-center shadow-sm">
           <div className="text-2xl font-bold">{totalSets}</div>
           <div className="text-xs text-neutral-500 dark:text-neutral-400">Sets</div>
         </div>
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 text-center shadow-sm">
+        <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 text-center shadow-sm">
           <div className="text-2xl font-bold">{adherenceDays}</div>
           <div className="text-xs text-neutral-500 dark:text-neutral-400">Diet Days</div>
         </div>
       </div>
 
       {/* Week grid */}
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <h2 className="font-medium mb-3">Week Overview</h2>
         <div className="grid grid-cols-7 gap-2">
           {range.dates.map((date, i) => {
             const data = weekData[i];
-            const d = new Date(date);
-            const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
-            const dayNum = d.getDate();
+            // Parse date correctly to avoid timezone issues
+            const [y, m, dayNum] = date.split("-").map(Number);
+            const dateObj = new Date(y, m - 1, dayNum);
+            const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'short' });
             const isToday = date === getTodayISO();
 
             return (
               <button
                 key={date}
-                onClick={() => setDateISO(date)}
-                className={`aspect-square rounded-lg border ${isToday ? 'border-accent-home bg-accent-home/10' : 'border-neutral-300 dark:border-neutral-700'} flex flex-col items-center justify-center text-xs transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800`}
+                onClick={() => {
+                  setDateISO(date);
+                  if (setView) setView("day");
+                }}
+                className={`aspect-square rounded-full border ${isToday ? 'border-accent-home bg-accent-home/10' : 'border-neutral-300 dark:border-neutral-700'} flex flex-col items-center justify-center text-xs transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800`}
               >
                 <div className="font-medium">{dayName}</div>
                 <div className="text-lg font-bold">{dayNum}</div>

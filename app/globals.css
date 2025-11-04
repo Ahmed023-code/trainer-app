@@ -27,16 +27,28 @@ a {
 }
 
 /* cards, inputs, buttons */
-.card{ @apply rounded-2xl border border-border bg-card p-4; }
-.input{ @apply w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-diet focus:ring-opacity-40; }
-.btn-accent{ @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-white bg-accent-diet active:scale-[.98]; }
+.card{ @apply rounded-full border border-border bg-card p-4; }
+.input{ @apply w-full rounded-full border border-border bg-card px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-diet focus:ring-opacity-40; }
+.btn-accent{ @apply inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-medium text-white bg-accent-diet active:scale-[.98]; }
 .btn-accent:hover{ @apply opacity-90; }
-.btn-accent-ghost{ @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-accent-diet border border-accent-diet border-opacity-60 bg-transparent; }
+.btn-accent-ghost{ @apply inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-medium text-accent-diet border border-accent-diet border-opacity-60 bg-transparent; }
 .btn-accent-ghost:hover{ @apply bg-accent-diet bg-opacity-10; }
 
 /* CHANGE: Added tap-target utility for mobile accessibility (min 40px touch targets) */
 .tap-target {
   @apply min-h-10 min-w-10;
+}
+
+/* Hide number input spinners for better mobile UX */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* CHANGE: Added fade-in animation for charts */
@@ -67,7 +79,7 @@ a {
   --accent-diet: #22C55E;
   --accent-diet-fat: #FACC15;
   --accent-workout: #FACC15;
-  --accent-progress: #8B5CF6;
+  --accent-progress: #3d48ff;
   --accent-home: #3B82F6;
 
   /* Macro colors */

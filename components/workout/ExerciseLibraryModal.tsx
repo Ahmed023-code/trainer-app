@@ -14,6 +14,7 @@ type Row = {
   bodyParts?: string[]; // new dataset uses array
   bodyPart?: string;    // legacy single string
   equipment?: string;
+  category?: string;    // strength, cardio, mobility
 };
 
 const norm = (s: string) =>
@@ -50,6 +51,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
   const [data, setData] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [qDeb, setQDeb] = useState("");
+  const [category, setCategory] = useState<"strength" | "cardio" | "mobility">("strength");
 
   // custom-exercise muscle selection
   const [showCustomMuscles, setShowCustomMuscles] = useState(false);
@@ -93,6 +95,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
               : undefined,
             bodyPart: r?.bodyPart ? String(r.bodyPart) : undefined,
             equipment: r?.equipment ? String(r.equipment) : undefined,
+            category: r?.category ? String(r.category) : "strength",
           }))
           .filter((r) => r.name.length > 0);
         setData(rows);
@@ -122,7 +125,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
   };
 
   const results = useMemo(() => {
-    const list = data;
+    const list = data.filter(r => r.category === category);
     const query = qDeb;
     if (!query) return list.slice(0, 50);
 
@@ -160,7 +163,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
       .filter((x) => x.s >= 2)
       .sort((a, b) => (b.s - a.s) || a.r.name.localeCompare(b.r.name))
       .map((x) => x.r);
-  }, [data, qDeb]);
+  }, [data, qDeb, category]);
 
   if (!isOpen) return null;
 
@@ -201,7 +204,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
         {/* Header */}
         <div className="sticky top-0 z-[9501] p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
           <button
-            className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700"
+            className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
             onClick={() => {
               setShowCustomMuscles(false);
               setCustomName("");
@@ -214,15 +217,49 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search exercises or body parts (e.g., chest, quads, barbell)"
-            className="flex-1 rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+            className="flex-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
           />
+        </div>
+
+        {/* Category Tabs */}
+        <div className="sticky top-[60px] z-[9500] px-3 pt-3 pb-2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex gap-2">
+          <button
+            className={`px-4 py-2 rounded-full border transition-colors ${
+              category === "strength"
+                ? "bg-[#FACC15] border-[#FACC15] text-black font-medium"
+                : "border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            }`}
+            onClick={() => setCategory("strength")}
+          >
+            Strength
+          </button>
+          <button
+            className={`px-4 py-2 rounded-full border transition-colors ${
+              category === "cardio"
+                ? "bg-[#FACC15] border-[#FACC15] text-black font-medium"
+                : "border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            }`}
+            onClick={() => setCategory("cardio")}
+          >
+            Cardio
+          </button>
+          <button
+            className={`px-4 py-2 rounded-full border transition-colors ${
+              category === "mobility"
+                ? "bg-[#FACC15] border-[#FACC15] text-black font-medium"
+                : "border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            }`}
+            onClick={() => setCategory("mobility")}
+          >
+            Mobility
+          </button>
         </div>
 
         {/* Results */}
         <ul className="p-3 space-y-2 overflow-y-auto">
           {/* Always offer custom add when query is non-empty */}
           {q.trim() && (
-            <li className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
+            <li className="rounded-full border border-neutral-200 dark:border-neutral-800 p-3">
               <button
                 className="w-full text-left"
                 onClick={() => startCustomFlow(q.trim())}
@@ -242,7 +279,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
             return (
               <li
                 key={`${r.name}-${i}`}
-                className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3"
+                className="rounded-full border border-neutral-200 dark:border-neutral-800 p-3"
               >
                 <button
                   className="w-full text-left"
@@ -296,7 +333,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
                 return (
                   <label
                     key={m}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer ${
+                    className={`flex items-center gap-2 rounded-full border px-3 py-2 cursor-pointer ${
                       checked
                         ? "border-blue-400 bg-blue-50 dark:bg-neutral-800"
                         : "border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
@@ -318,13 +355,13 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
 
             <div className="mt-4 flex justify-end gap-2">
               <button
-                className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
                 onClick={() => setShowCustomMuscles(false)}
               >
                 Cancel
               </button>
               <button
-                className="px-3 py-2 rounded-lg bg-[#FACC15] text-black"
+                className="px-3 py-2 rounded-full bg-[#FACC15] text-black"
                 onClick={confirmCustom}
               >
                 Add Exercise

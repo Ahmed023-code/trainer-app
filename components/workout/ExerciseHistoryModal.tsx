@@ -65,7 +65,7 @@ const getExerciseHistory = (exerciseName: string) => {
 // Calculate weekly aggregates
 const getWeeklyData = (
   history: Array<{ dateISO: string; sets: Array<{ weight: number; reps: number; rpe: number }> }>,
-  metric: "weight" | "volume" | "reps"
+  metric: "weight" | "reps"
 ) => {
   // Group by week (YYYY-Www)
   const weekMap = new Map<string, { dateISO: string; value: number }>();
@@ -87,9 +87,6 @@ const getWeeklyData = (
     if (metric === "weight") {
       // Top set weight
       value = Math.max(...session.sets.map(s => s.weight), 0);
-    } else if (metric === "volume") {
-      // Total volume (weight × reps)
-      value = session.sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
     } else if (metric === "reps") {
       // Total reps
       value = session.sets.reduce((sum, s) => sum + s.reps, 0);
@@ -127,7 +124,7 @@ export default function ExerciseHistoryModal({
   dateISO,
 }: ExerciseHistoryModalProps) {
   const [activeTab, setActiveTab] = useState<"weekly" | "best" | "e1rm">("weekly");
-  const [metric, setMetric] = useState<"weight" | "volume" | "reps">("weight");
+  const [metric, setMetric] = useState<"weight" | "reps">("weight");
 
   const history = useMemo(() => getExerciseHistory(exerciseName), [exerciseName]);
 
@@ -183,7 +180,7 @@ export default function ExerciseHistoryModal({
       />
 
       {/* Modal */}
-      <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-[480px] mx-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/98 dark:bg-neutral-900/98 shadow-2xl backdrop-blur p-4">
+      <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-[480px] mx-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold truncate">{exerciseName}</h2>
@@ -201,7 +198,7 @@ export default function ExerciseHistoryModal({
           {(["weekly", "best", "e1rm"] as const).map((tab) => (
             <button
               key={tab}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 rounded-full text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? "bg-accent-workout text-black"
                   : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -221,10 +218,10 @@ export default function ExerciseHistoryModal({
             <div>
               {/* Metric selector */}
               <div className="flex gap-2 mb-3">
-                {(["weight", "volume", "reps"] as const).map((m) => (
+                {(["weight", "reps"] as const).map((m) => (
                   <button
                     key={m}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
                       metric === m
                         ? "bg-neutral-200 dark:bg-neutral-800"
                         : "text-neutral-500 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -232,7 +229,6 @@ export default function ExerciseHistoryModal({
                     onClick={() => setMetric(m)}
                   >
                     {m === "weight" && "Top Weight"}
-                    {m === "volume" && "Volume"}
                     {m === "reps" && "Reps"}
                   </button>
                 ))}
@@ -267,7 +263,7 @@ export default function ExerciseHistoryModal({
                     })}
                   </div>
                   <button
-                    className="mt-3 px-4 py-2 rounded-lg text-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                    className="mt-3 px-4 py-2 rounded-full text-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                     onClick={() => {
                       // Deep link to that date's workout
                       localStorage.setItem("ui-last-date-workout", bestSet.dateISO);

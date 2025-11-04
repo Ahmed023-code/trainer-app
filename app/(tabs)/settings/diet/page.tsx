@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSettingsStore, cmToFeetInches, feetInchesToCm } from "@/stores/settingsStore";
+import { updateDietGoals, getTodayISO } from "@/stores/storageV2";
 
 const KEY_V2 = "diet-goals-v2";
 const KEY_V1 = "diet-goals-v1";
@@ -270,15 +271,19 @@ export default function DietSettingsPage() {
     setTimeout(() => setSaved(false), 2000);
 
     // Also update v1 for backwards compatibility
-    localStorage.setItem(
-      KEY_V1,
-      JSON.stringify({
-        cal: targets.kcal,
-        p: targets.protein_g,
-        c: targets.carbs_g,
-        f: targets.fat_g,
-      })
-    );
+    const newGoals = {
+      cal: targets.kcal,
+      p: targets.protein_g,
+      c: targets.carbs_g,
+      f: targets.fat_g,
+    };
+
+    localStorage.setItem(KEY_V1, JSON.stringify(newGoals));
+
+    // Apply new goals to today's date immediately
+    const todayISO = getTodayISO();
+    console.log('[Settings] Calling updateDietGoals with:', { todayISO, newGoals });
+    updateDietGoals(todayISO, newGoals);
   };
 
   const handleBack = () => {
@@ -313,7 +318,7 @@ export default function DietSettingsPage() {
       </div>
 
       {/* Profile */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Profile</h2>
         <div className="space-y-3">
           <label className="text-sm">
@@ -321,7 +326,7 @@ export default function DietSettingsPage() {
             <select
               value={profile.sex}
               onChange={(e) => setProfile({ ...profile, sex: e.target.value as Sex })}
-              className="mt-1 rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 w-full bg-white dark:bg-neutral-900"
+              className="mt-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 w-full bg-white dark:bg-neutral-900"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -334,7 +339,7 @@ export default function DietSettingsPage() {
               <button
                 type="button"
                 onClick={() => setProfile({ ...profile, age: Math.max(10, profile.age - 1) })}
-                className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                className="px-3 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
               >
                 −
               </button>
@@ -346,12 +351,12 @@ export default function DietSettingsPage() {
                   const val = e.target.value.replace(/[^0-9]/g, "");
                   setProfile({ ...profile, age: val === "" ? 0 : Math.min(100, Math.max(10, Number(val))) });
                 }}
-                className="w-16 text-center rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 py-2 bg-white dark:bg-neutral-900"
+                className="w-16 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-2 py-2 bg-white dark:bg-neutral-900"
               />
               <button
                 type="button"
                 onClick={() => setProfile({ ...profile, age: Math.min(100, profile.age + 1) })}
-                className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                className="px-3 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
               >
                 +
               </button>
@@ -367,7 +372,7 @@ export default function DietSettingsPage() {
                     const minKg = weightUnit === "lbs" ? 30 / 2.20462 : 30;
                     setProfile({ ...profile, weightKg: Math.max(minKg, profile.weightKg - step / (weightUnit === "lbs" ? 2.20462 : 1)) });
                   }}
-                  className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                  className="px-3 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                 >
                   −
                 </button>
@@ -380,7 +385,7 @@ export default function DietSettingsPage() {
                     const value = val === "" ? 0 : Number(val);
                     setProfile({ ...profile, weightKg: weightUnit === "lbs" ? value / 2.20462 : value });
                   }}
-                  className="w-20 text-center rounded-lg border border-neutral-300 dark:border-neutral-700 px-2 py-2 bg-white dark:bg-neutral-900"
+                  className="w-20 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-2 py-2 bg-white dark:bg-neutral-900"
                 />
                 <button
                   type="button"
@@ -389,7 +394,7 @@ export default function DietSettingsPage() {
                     const maxKg = weightUnit === "lbs" ? 300 / 2.20462 : 300;
                     setProfile({ ...profile, weightKg: Math.min(maxKg, profile.weightKg + step / (weightUnit === "lbs" ? 2.20462 : 1)) });
                   }}
-                  className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                  className="px-3 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                 >
                   +
                 </button>
@@ -404,7 +409,7 @@ export default function DietSettingsPage() {
                   <button
                     type="button"
                     onClick={() => setProfile({ ...profile, heightCm: Math.max(100, profile.heightCm - 1) })}
-                    className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                    className="px-3 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                   >
                     −
                   </button>
@@ -416,12 +421,12 @@ export default function DietSettingsPage() {
                       const val = e.target.value.replace(/[^0-9]/g, "");
                       setProfile({ ...profile, heightCm: val === "" ? 0 : Math.min(250, Math.max(100, Number(val))) });
                     }}
-                    className="w-12 text-center rounded-lg border border-neutral-300 dark:border-neutral-700 px-1 py-2 bg-white dark:bg-neutral-900"
+                    className="w-12 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-2 bg-white dark:bg-neutral-900"
                   />
                   <button
                     type="button"
                     onClick={() => setProfile({ ...profile, heightCm: Math.min(250, profile.heightCm + 1) })}
-                    className="px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                    className="px-3 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                   >
                     +
                   </button>
@@ -436,7 +441,7 @@ export default function DietSettingsPage() {
                       setHeightFeet(newFeet);
                       setProfile({ ...profile, heightCm: feetInchesToCm(newFeet, typeof heightInches === "number" ? heightInches : 0) });
                     }}
-                    className="px-2 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                    className="px-2 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                   >
                     −
                   </button>
@@ -451,7 +456,7 @@ export default function DietSettingsPage() {
                       setHeightFeet(feet);
                       setProfile({ ...profile, heightCm: feetInchesToCm(feet, typeof heightInches === "number" ? heightInches : 0) });
                     }}
-                    className="w-12 text-center rounded-lg border border-neutral-300 dark:border-neutral-700 px-1 py-2 bg-white dark:bg-neutral-900"
+                    className="w-12 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-2 bg-white dark:bg-neutral-900"
                   />
                   <button
                     type="button"
@@ -461,7 +466,7 @@ export default function DietSettingsPage() {
                       setHeightFeet(newFeet);
                       setProfile({ ...profile, heightCm: feetInchesToCm(newFeet, typeof heightInches === "number" ? heightInches : 0) });
                     }}
-                    className="px-2 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                    className="px-2 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                   >
                     +
                   </button>
@@ -473,7 +478,7 @@ export default function DietSettingsPage() {
                       setHeightInches(newInches);
                       setProfile({ ...profile, heightCm: feetInchesToCm(typeof heightFeet === "number" ? heightFeet : 0, newInches) });
                     }}
-                    className="px-2 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                    className="px-2 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                   >
                     −
                   </button>
@@ -488,7 +493,7 @@ export default function DietSettingsPage() {
                       setHeightInches(inches);
                       setProfile({ ...profile, heightCm: feetInchesToCm(typeof heightFeet === "number" ? heightFeet : 0, inches) });
                     }}
-                    className="w-12 text-center rounded-lg border border-neutral-300 dark:border-neutral-700 px-1 py-2 bg-white dark:bg-neutral-900"
+                    className="w-12 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-2 bg-white dark:bg-neutral-900"
                   />
                   <button
                     type="button"
@@ -498,7 +503,7 @@ export default function DietSettingsPage() {
                       setHeightInches(newInches);
                       setProfile({ ...profile, heightCm: feetInchesToCm(typeof heightFeet === "number" ? heightFeet : 0, newInches) });
                     }}
-                    className="px-2 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
+                    className="px-2 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-bold text-lg"
                   >
                     +
                   </button>
@@ -507,7 +512,7 @@ export default function DietSettingsPage() {
               <select
                 value={heightUnit}
                 onChange={(e) => setHeightUnit(e.target.value as "cm" | "ft")}
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                className="rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
               >
                 <option value="cm">cm</option>
                 <option value="ft">ft</option>
@@ -520,7 +525,7 @@ export default function DietSettingsPage() {
           <select
             value={profile.activityLevel}
             onChange={(e) => setProfile({ ...profile, activityLevel: e.target.value as ActivityLevel })}
-            className="mt-1 rounded-lg border border-neutral-300 dark:border-neutral-700 px-3 py-2 w-full bg-white dark:bg-neutral-900"
+            className="mt-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 w-full bg-white dark:bg-neutral-900"
           >
             <option value="sedentary">Sedentary (little/no exercise)</option>
             <option value="light">Light (1-3 days/week)</option>
@@ -532,7 +537,7 @@ export default function DietSettingsPage() {
       </section>
 
       {/* Goal */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Goal</h2>
         <div className="space-y-2">
           <label className="text-sm block">
@@ -555,7 +560,7 @@ export default function DietSettingsPage() {
                     setGoalConfig({ ...goalConfig, goal: "maintain" });
                   }
                 }}
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gradient-to-r from-red-200 via-neutral-200 to-green-200 dark:from-red-900/30 dark:via-neutral-700 dark:to-green-900/30"
+                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gradient-to-r from-red-200 via-neutral-200 to-green-200 dark:from-red-900/30 dark:via-neutral-700 dark:to-green-900/30"
                 style={{
                   background: `linear-gradient(to right,
                     rgb(254 202 202) 0%,
@@ -596,14 +601,14 @@ export default function DietSettingsPage() {
       </section>
 
       {/* Preset */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm space-y-3">
         <h2 className="font-semibold">Macro Preset</h2>
         <div className="grid grid-cols-2 gap-2">
           {(["balanced", "highProtein", "veryHighProtein", "lowCarb", "keto", "custom"] as Preset[]).map((p) => (
             <button
               key={p}
               onClick={() => setPreset(p)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                 preset === p
                   ? "bg-accent-diet text-white"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
@@ -717,7 +722,7 @@ export default function DietSettingsPage() {
 
                       setCustomTargets({ protein_g, carbs_g, fat_g });
                     }}
-                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                    className={`w-full h-2 rounded-full appearance-none cursor-pointer ${
                       isLocked ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     style={{
@@ -750,7 +755,7 @@ export default function DietSettingsPage() {
       </section>
 
       {/* Summary */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-accent-diet/10 to-accent-diet/5 p-4 shadow-sm">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-accent-diet/10 to-accent-diet/5 p-4 shadow-sm">
         <h2 className="font-semibold mb-3">Your Daily Targets</h2>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -789,17 +794,17 @@ export default function DietSettingsPage() {
       <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+16px)] flex gap-3">
         <button
           onClick={handleBack}
-          className="px-4 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className="px-4 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
         >
           Cancel
         </button>
-        <button onClick={handleSave} className="flex-1 px-4 py-3 rounded-lg bg-accent-diet text-white font-medium hover:opacity-90">
+        <button onClick={handleSave} className="flex-1 px-4 py-3 rounded-full bg-accent-diet text-white font-medium hover:opacity-90">
           Save Targets
         </button>
       </div>
 
       {saved && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg z-50">
           ✓ Targets saved!
         </div>
       )}

@@ -1,45 +1,79 @@
 {
-  // TypeScript settings for instant feedback
+  // ---------- TypeScript ----------
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.suggestionActions.enabled": true,
   "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
 
-  // Error Lens settings - Show errors INLINE as you type!
+  // ---------- ErrorLens ----------
   "errorLens.enabled": true,
-  "errorLens.delay": 0,
   "errorLens.fontSize": "0.9em",
   "errorLens.fontWeight": "600",
   "errorLens.enabledDiagnosticLevels": ["error", "warning", "info"],
   "errorLens.excludeBySource": ["cSpell"],
 
-  // Editor settings for instant updates
+  // ---------- Editor ----------
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
   "files.autoSave": "onFocusChange",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": false,
+  "files.eol": "\n",
 
-  // Show problems immediately
+  // ---------- Problems Display ----------
   "editor.renderValidationDecorations": "on",
   "editor.inlineSuggest.enabled": true,
 
-  // Tailwind IntelliSense
+  // ---------- Tailwind ----------
   "files.associations": {
     "*.css": "tailwindcss"
   },
   "tailwindCSS.experimental.classRegex": [
-    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^'\"`]*)"]
   ],
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html",
+    "typescriptreact": "html"
+  },
 
-  // Live Server settings
+  // ---------- Live Server ----------
   "liveServer.settings.donotShowInfoMsg": true,
   "liveServer.settings.donotVerifyTags": true,
 
-  // Prettier settings
-  "prettier.semi": true,
-  "prettier.singleQuote": false,
+  // ---------- Prettier ----------
+  "prettier.semi": false,
+  "prettier.singleQuote": true,
+  "prettier.trailingComma": "all",
   "prettier.tabWidth": 2,
-  "claudeCode.allowDangerouslySkipPermissions": true
+
+  // ---------- ESLint ----------
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  // ---------- Claude ----------
+  "claudeCode.allowDangerouslySkipPermissions": true,
+  "anthropic.showWelcomeOnStartup": false,
+  "anthropic.enableInlineChat": true,
+
+  // ---------- UI ----------
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.colorTheme": "Default Dark Modern",
+
+  // ---------- File Exclusions ----------
+  "files.exclude": {
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/.turbo": true,
+    "**/dist": true
+  }
 }

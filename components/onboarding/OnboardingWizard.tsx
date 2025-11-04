@@ -107,7 +107,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       <button
                         key={unit}
                         onClick={() => setWeightUnit(unit)}
-                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        className={`flex-1 px-4 py-3 rounded-full text-sm font-medium transition-colors ${
                           weightUnit === unit
                             ? "bg-[var(--accent-progress)] text-white"
                             : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
@@ -125,7 +125,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       <button
                         key={unit}
                         onClick={() => setEnergyUnit(unit)}
-                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        className={`flex-1 px-4 py-3 rounded-full text-sm font-medium transition-colors ${
                           energyUnit === unit
                             ? "bg-[var(--accent-progress)] text-white"
                             : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
@@ -151,7 +151,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder={`Enter weight in ${weightUnit}`}
-                  className="w-full px-4 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-lg text-center"
+                  className="w-full px-4 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-lg text-center"
                   autoFocus
                 />
                 <p className="text-sm text-neutral-500 mt-2">You can skip this and add it later</p>
@@ -167,7 +167,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   <button
                     key={preset}
                     onClick={() => setMacroPreset(preset)}
-                    className={`w-full p-4 rounded-lg border-2 transition-all ${
+                    className={`w-full p-4 rounded-full border-2 transition-all ${
                       macroPreset === preset
                         ? "border-[var(--accent-progress)] bg-[var(--accent-progress)]/10"
                         : "border-neutral-300 dark:border-neutral-700"
@@ -188,7 +188,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
           {step === "goals" && (
             <>
               <h2 className="text-2xl font-bold">Your Weekly Goals</h2>
-              <div className="p-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 space-y-3 text-left">
+              <div className="p-6 rounded-full bg-neutral-100 dark:bg-neutral-800 space-y-3 text-left">
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">Workouts per week:</span>
                   <span className="font-semibold">
@@ -228,14 +228,14 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
           {step !== "welcome" && step !== "finish" && (
             <button
               onClick={prevStep}
-              className="px-6 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="px-6 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               Back
             </button>
           )}
           <button
             onClick={step === "finish" ? handleComplete : nextStep}
-            className="flex-1 px-6 py-3 rounded-lg bg-[var(--accent-progress)] text-white font-medium hover:opacity-90"
+            className="flex-1 px-6 py-3 rounded-full bg-[var(--accent-progress)] text-white font-medium hover:opacity-90"
           >
             {step === "welcome" ? "Get Started" : step === "finish" ? "Start Using App" : "Next"}
           </button>

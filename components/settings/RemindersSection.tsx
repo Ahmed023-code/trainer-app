@@ -49,7 +49,7 @@ export default function RemindersSection() {
   };
 
   return (
-    <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+    <section className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold">Reminders</h2>
         <button
@@ -62,7 +62,7 @@ export default function RemindersSection() {
 
       {/* Permission status */}
       {permissionStatus !== "granted" && (
-        <div className="mb-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+        <div className="mb-4 p-3 rounded-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
           <div className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
             Notifications are {permissionStatus === "denied" ? "blocked" : "not enabled"}.
           </div>
@@ -84,7 +84,7 @@ export default function RemindersSection() {
 
       {/* Add form */}
       {showAddForm && (
-        <div className="mb-4 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 space-y-3">
+        <div className="mb-4 p-3 rounded-full bg-neutral-50 dark:bg-neutral-800/50 space-y-3">
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
@@ -92,7 +92,7 @@ export default function RemindersSection() {
               value={newReminder.title}
               onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
               placeholder="e.g., Time for morning workout"
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+              className="w-full px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
             />
           </div>
           <div>
@@ -101,7 +101,7 @@ export default function RemindersSection() {
               type="time"
               value={newReminder.timeISO}
               onChange={(e) => setNewReminder({ ...newReminder, timeISO: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+              className="w-full px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
             />
           </div>
           <div>
@@ -109,7 +109,7 @@ export default function RemindersSection() {
             <select
               value={newReminder.repeat}
               onChange={(e) => setNewReminder({ ...newReminder, repeat: e.target.value as any })}
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+              className="w-full px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
             >
               <option value="none">One-time</option>
               <option value="daily">Daily</option>
@@ -118,7 +118,7 @@ export default function RemindersSection() {
           </div>
           <button
             onClick={handleAddReminder}
-            className="w-full px-4 py-2 rounded-lg bg-[var(--accent-progress)] text-white text-sm font-medium hover:opacity-90"
+            className="w-full px-4 py-2 rounded-full bg-[var(--accent-progress)] text-white text-sm font-medium hover:opacity-90"
           >
             Add Reminder
           </button>
@@ -133,7 +133,7 @@ export default function RemindersSection() {
           reminders.map((reminder) => (
             <div
               key={reminder.id}
-              className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 flex items-start gap-3"
+              className="p-3 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-start gap-3"
             >
               <input
                 type="checkbox"
