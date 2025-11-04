@@ -333,7 +333,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
 
                     {/* Column headers - centered */}
                     {ex.sets.length > 0 && (
-                      <div className="grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 px-1 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                      <div className="grid grid-cols-[28px,85px,65px,1fr,52px,36px] gap-1 px-1 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         <div className="text-center">#</div>
                         <div className="text-center">Type</div>
                         <div className="text-center">lbs</div>
@@ -348,7 +348,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                       {ex.sets.map((s, setIdx) => (
                         <div
                           key={setIdx}
-                          className={`grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 items-center rounded-full border px-1 py-1.5 ${getSetColor(s.type)}`}
+                          className={`grid grid-cols-[28px,85px,65px,1fr,52px,36px] gap-1 items-center rounded-full border px-1 py-1.5 ${getSetColor(s.type)}`}
                         >
                           {/* Set number */}
                           <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 text-center">
