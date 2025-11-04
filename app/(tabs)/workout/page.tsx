@@ -309,7 +309,7 @@ export default function WorkoutPage() {
       {/* FAB */}
       <div className="fixed right-6 bottom-24 z-[9500]">
         <button
-          className="w-14 h-14 rounded-full bg-accent-workout text-black shadow-lg flex items-center justify-center"
+          className="w-14 h-14 rounded-full bg-red-600 text-white shadow-lg flex items-center justify-center hover:bg-red-700 transition-colors"
           aria-label="Add"
           onClick={() => setShowFabMenu((v) => !v)}
         >
