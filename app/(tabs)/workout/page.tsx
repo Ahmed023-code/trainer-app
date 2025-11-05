@@ -293,21 +293,21 @@ export default function WorkoutPage() {
               onClick={() => setSelectedExerciseIndex(i)}
               onDelete={() => deleteExercise(i)}
               onAddSet={addSetToExercise}
+              onUpdateExercise={(updated) => updateExercise(i, updated)}
             />
           </div>
         ))}
 
-        {exercises.length === 0 && (
-          <div className="flex items-center justify-center py-16">
-            <button
-              onClick={() => setShowFabMenu(true)}
-              className="px-8 py-4 rounded-full text-lg font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
-              style={{ borderColor: "var(--accent-workout)", color: "var(--accent-workout)", backgroundColor: "transparent" }}
-            >
-              Log Workout
-            </button>
-          </div>
-        )}
+        {/* Log Workout button always visible */}
+        <div className="flex items-center justify-center pt-4">
+          <button
+            onClick={() => setShowFabMenu(true)}
+            className="px-8 py-3 rounded-full text-base font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
+            style={{ borderColor: "var(--accent-workout)", color: "var(--accent-workout)", backgroundColor: "transparent" }}
+          >
+            Log Workout
+          </button>
+        </div>
       </section>
 
       {/* Workout-level notes */}

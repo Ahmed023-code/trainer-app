@@ -406,17 +406,17 @@ export default function DietPage() {
             />
           </div>
         ))}
-        {meals.every(m => m.items.length === 0) && (
-          <div className="flex items-center justify-center py-16">
-            <button
-              onClick={createNewMeal}
-              className="px-8 py-4 rounded-full text-lg font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
-              style={{ borderColor: "var(--accent-diet)", color: "var(--accent-diet)", backgroundColor: "transparent" }}
-            >
-              Log Meal
-            </button>
-          </div>
-        )}
+
+        {/* Log Meal button always visible */}
+        <div className="flex items-center justify-center pt-4">
+          <button
+            onClick={createNewMeal}
+            className="px-8 py-3 rounded-full text-base font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
+            style={{ borderColor: "var(--accent-diet)", color: "var(--accent-diet)", backgroundColor: "transparent" }}
+          >
+            Log Meal
+          </button>
+        </div>
       </section>
 
       {/* FAB - simplified to create new meal directly */}

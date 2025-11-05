@@ -294,25 +294,34 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
           {/* Backdrop */}
           <button
             className="fixed inset-0 z-[9998] bg-black/20 dark:bg-black/40"
-            onClick={cancelDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelDelete();
+            }}
             aria-label="Cancel"
           />
           {/* Dialog */}
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-xl p-6 max-w-sm w-full">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-semibold text-lg mb-2">Delete Meal?</h3>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                 Are you sure you want to delete "{meal.name}"? This action cannot be undone.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={cancelDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelDelete();
+                  }}
                   className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={confirmDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    confirmDelete();
+                  }}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                 >
                   Delete

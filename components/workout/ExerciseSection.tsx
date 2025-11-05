@@ -10,6 +10,7 @@ type Props = {
   onClick: () => void;
   onDelete: () => void;
   onAddSet?: (exercise: Exercise) => void;
+  onUpdateExercise?: (exercise: Exercise) => void;
 };
 
 const getSetColor = (type: string): string => {
@@ -28,17 +29,17 @@ const getSetColor = (type: string): string => {
 const getSetTypeLabel = (type: string): string => {
   switch (type) {
     case "Warmup":
-      return "W";
+      return "Warm-up";
     case "Working":
-      return "Work";
+      return "Working";
     case "Drop Set":
-      return "Drop";
+      return "Drop Set";
     default:
-      return type.substring(0, 4);
+      return type;
   }
 };
 
-export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet }: Props) {
+export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet, onUpdateExercise }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -57,11 +58,44 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet 
     }
   };
 
-  // Calculate set summary
+  const updateSetField = (setIndex: number, field: keyof SetItem, value: string | number) => {
+    if (!onUpdateExercise) return;
+
+    const isQuickAdd = !exercise.source || exercise.source === "quick-add";
+    const updatedSets = exercise.sets.map((set, idx) => {
+      if (idx !== setIndex) return set;
+
+      const updated = { ...set };
+      if (field === "weight") {
+        updated.weight = Number(value) || 0;
+      } else if (field === "repsMin") {
+        updated.repsMin = Math.max(0, Math.floor(Number(value) || 0));
+        if (isQuickAdd) updated.repsMax = updated.repsMin;
+      } else if (field === "repsMax") {
+        updated.repsMax = Math.max(updated.repsMin, Math.floor(Number(value) || 0));
+      } else if (field === "rpe") {
+        updated.rpe = Math.max(0, Math.min(10, Number(value) || 0));
+      } else if (field === "type") {
+        updated.type = String(value) as SetItem["type"];
+      }
+      return updated;
+    });
+
+    onUpdateExercise({ ...exercise, sets: updatedSets });
+  };
+
+  const deleteSet = (setIndex: number) => {
+    if (!onUpdateExercise) return;
+    const updatedSets = exercise.sets.filter((_, idx) => idx !== setIndex);
+    onUpdateExercise({ ...exercise, sets: updatedSets });
+  };
+
+  // Calculate set summary by type
   const setSummary = useMemo(() => {
-    const workingSets = exercise.sets.filter(s => s.type === "Working" || s.type === "Drop Set").length;
-    const warmupSets = exercise.sets.filter(s => s.type === "Warmup").length;
-    return { total: exercise.sets.length, working: workingSets, warmup: warmupSets };
+    const warmup = exercise.sets.filter(s => s.type === "Warmup").length;
+    const working = exercise.sets.filter(s => s.type === "Working").length;
+    const dropSet = exercise.sets.filter(s => s.type === "Drop Set").length;
+    return { warmup, working, dropSet };
   }, [exercise.sets]);
 
   return (
@@ -84,15 +118,31 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet 
 
             <div className="min-w-0 flex-1">
               <h3 className="font-medium truncate">{exercise.name}</h3>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-[#8ff000]/20 dark:bg-[#8ff000]/10 border border-[#8ff000]/40 dark:border-[#8ff000]/30 text-[#6bb000] dark:text-[#8ff000]">
-                  {setSummary.working} working
-                </span>
-                {setSummary.warmup > 0 && (
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300">
-                    {setSummary.warmup} warmup
-                  </span>
-                )}
+              <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                {[
+                  setSummary.warmup > 0 && (
+                    <span key="warmup" className="text-blue-700 dark:text-blue-400 font-medium">
+                      {setSummary.warmup} Warm-up
+                    </span>
+                  ),
+                  setSummary.working > 0 && (
+                    <span key="working" className="text-[#6bb000] dark:text-[#8ff000] font-medium">
+                      {setSummary.working} Working
+                    </span>
+                  ),
+                  setSummary.dropSet > 0 && (
+                    <span key="drop" className="text-violet-700 dark:text-violet-400 font-medium">
+                      {setSummary.dropSet} Drop Set
+                    </span>
+                  ),
+                ]
+                  .filter(Boolean)
+                  .map((item, idx, arr) => (
+                    <span key={idx}>
+                      {item}
+                      {idx < arr.length - 1 && <span className="mx-1.5">·</span>}
+                    </span>
+                  ))}
               </div>
             </div>
           </div>
@@ -154,34 +204,128 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet 
           className={`overflow-hidden transition-all duration-300 ease-in-out ${
             isExpanded ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'
           }`}
+          onClick={(e) => e.stopPropagation()}
         >
           {exercise.sets && exercise.sets.length > 0 ? (
             <div className="space-y-2">
               {exercise.sets.map((set, idx) => {
                 const isQuickAdd = !exercise.source || exercise.source === "quick-add";
-                const repsDisplay = isQuickAdd
-                  ? `${set.repsMin}`
-                  : set.repsPerformed !== undefined
-                    ? `${set.repsPerformed}/${set.repsMin}-${set.repsMax}`
-                    : `${set.repsMin}-${set.repsMax}`;
 
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-full border ${getSetColor(set.type)}`}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Left: Set number and type */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-sm font-semibold tabular-nums w-6">#{idx + 1}</span>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/50 dark:bg-black/20">
-                        {getSetTypeLabel(set.type)}
-                      </span>
-                      <span className="text-sm font-medium tabular-nums">{set.weight} lbs</span>
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">×</span>
-                      <span className="text-sm font-medium tabular-nums">{repsDisplay}</span>
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">@</span>
-                      <span className="text-sm font-medium tabular-nums">{set.rpe} RPE</span>
-                    </div>
+                    {/* Set number */}
+                    <span className="text-sm font-semibold tabular-nums w-6 shrink-0">#{idx + 1}</span>
+
+                    {/* Set Type Select */}
+                    <select
+                      value={set.type}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        updateSetField(idx, "type", e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs font-medium px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                    >
+                      <option value="Warmup">Warm-up</option>
+                      <option value="Working">Working</option>
+                      <option value="Drop Set">Drop Set</option>
+                    </select>
+
+                    {/* Weight */}
+                    <input
+                      type="number"
+                      value={set.weight}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        updateSetField(idx, "weight", e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-16 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                      placeholder="lbs"
+                    />
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400 shrink-0">lbs</span>
+
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">×</span>
+
+                    {/* Reps */}
+                    {isQuickAdd ? (
+                      <input
+                        type="number"
+                        value={set.repsMin}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          updateSetField(idx, "repsMin", e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-14 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                        placeholder="reps"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={set.repsMin}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateSetField(idx, "repsMin", e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-12 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                          placeholder="min"
+                        />
+                        <span className="text-xs text-neutral-600 dark:text-neutral-400">-</span>
+                        <input
+                          type="number"
+                          value={set.repsMax}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateSetField(idx, "repsMax", e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-12 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                          placeholder="max"
+                        />
+                      </div>
+                    )}
+
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">@</span>
+
+                    {/* RPE */}
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.5"
+                      value={set.rpe}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        updateSetField(idx, "rpe", e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-14 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                      placeholder="RPE"
+                    />
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400 shrink-0">RPE</span>
+
+                    {/* Delete set button */}
+                    {onUpdateExercise && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSet(idx);
+                        }}
+                        className="ml-auto shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                        aria-label={`Delete set ${idx + 1}`}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="w-3 h-3">
+                          <path d="M2 4h12M5.5 4V2.5A1.5 1.5 0 0 1 7 1h2a1.5 1.5 0 0 1 1.5 1.5V4m2 0v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -200,25 +344,34 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet 
           {/* Backdrop */}
           <button
             className="fixed inset-0 z-[9998] bg-black/20 dark:bg-black/40"
-            onClick={() => setShowConfirm(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowConfirm(false);
+            }}
             aria-label="Cancel"
           />
           {/* Dialog */}
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-xl p-6 max-w-sm w-full">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-semibold text-lg mb-2">Delete Exercise?</h3>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                 Are you sure you want to delete "{exercise.name}"? This will remove all {exercise.sets.length} set{exercise.sets.length === 1 ? "" : "s"} and cannot be undone.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => setShowConfirm(false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowConfirm(false);
+                  }}
                   className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                 >
                   Delete
