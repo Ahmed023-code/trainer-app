@@ -44,8 +44,25 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
 
   function openMenu(i: number) {
     const r = btnRefs.current[i]?.getBoundingClientRect();
-    const top = (r?.bottom ?? 0) + 8;
-    const left = (r?.right ?? 0) - 144; // ~ menu width
+    if (!r) return;
+
+    const menuWidth = 160;
+    const menuHeight = 100; // approximate
+    const spacing = 8;
+
+    // Position below and to the right of button
+    let top = r.bottom + spacing;
+    let left = r.right - menuWidth;
+
+    // Keep on screen
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (left < spacing) left = spacing;
+    if (left + menuWidth > viewportWidth - spacing) left = viewportWidth - menuWidth - spacing;
+    if (top + menuHeight > viewportHeight - spacing) top = r.top - menuHeight - spacing;
+    if (top < spacing) top = spacing;
+
     setPos({ top, left });
     setOpenIdx(i);
   }
@@ -72,15 +89,24 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
     setShowDeleteConfirm(false);
   };
 
-  // Escape key handler for 3-dot menu
+  // Escape key and scroll handler for 3-dot menu
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && openIdx !== null) {
         closeMenu();
       }
     };
+    const handleScroll = () => {
+      if (openIdx !== null) {
+        closeMenu();
+      }
+    };
     window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
+    window.addEventListener("scroll", handleScroll, true); // Use capture phase
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, [openIdx]);
 
   return (
@@ -265,7 +291,7 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
         )}
       </div>
 
-      {/* Food item context menu - rectangular box with pill buttons */}
+      {/* Food item context menu - rectangular box with pill buttons positioned near button */}
       {openIdx !== null && typeof document !== "undefined" && createPortal(
         <>
           <button
@@ -276,12 +302,12 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
             }}
             aria-label="Close menu"
           />
-          {/* Centered rectangular menu with pill-shaped buttons */}
-          <div className="fixed inset-0 z-[9997] flex items-center justify-center p-4">
-            <div
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
-              onClick={(e) => e.stopPropagation()}
-            >
+          {/* Menu positioned near trigger button */}
+          <div
+            className="fixed z-[9997] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
+            style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
+            onClick={(e) => e.stopPropagation()}
+          >
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -303,7 +329,6 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
               >
                 Delete Food
               </button>
-            </div>
           </div>
         </>,
         document.body

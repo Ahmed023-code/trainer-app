@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Exercise, SetItem } from "@/components/workout/types";
 import ExerciseGif from "@/components/workout/ExerciseGif";
@@ -43,6 +43,13 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
   const [showConfirm, setShowConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [setMenuOpen, setSetMenuOpen] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  // Refs for menu trigger buttons
+  const menuBtnRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const setMenuBtnRef = (idx: number) => (el: HTMLButtonElement | null) => {
+    menuBtnRefs.current[idx] = el;
+  };
 
   const handleDelete = () => {
     setShowConfirm(false);
@@ -99,15 +106,50 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
     return { warmup, working, dropSet };
   }, [exercise.sets]);
 
-  // Escape key handler for 3-dot menu
+  // Function to open menu with position calculation
+  const openSetMenu = (idx: number) => {
+    const r = menuBtnRefs.current[idx]?.getBoundingClientRect();
+    if (!r) return;
+
+    const menuWidth = 160;
+    const menuHeight = 100; // approximate
+    const spacing = 8;
+
+    // Position below and to the right of button
+    let top = r.bottom + spacing;
+    let left = r.right - menuWidth;
+
+    // Keep on screen
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (left < spacing) left = spacing;
+    if (left + menuWidth > viewportWidth - spacing) left = viewportWidth - menuWidth - spacing;
+    if (top + menuHeight > viewportHeight - spacing) top = r.top - menuHeight - spacing;
+    if (top < spacing) top = spacing;
+
+    setMenuPos({ top, left });
+    setSetMenuOpen(idx);
+  };
+
+  // Escape key and scroll handler for 3-dot menu
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && setMenuOpen !== null) {
         setSetMenuOpen(null);
       }
     };
+    const handleScroll = () => {
+      if (setMenuOpen !== null) {
+        setSetMenuOpen(null);
+      }
+    };
     window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
+    window.addEventListener("scroll", handleScroll, true); // Use capture phase
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, [setMenuOpen]);
 
   return (
@@ -335,9 +377,14 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                     {onUpdateExercise && (
                       <div className="relative ml-auto">
                         <button
+                          ref={setMenuBtnRef(idx)}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSetMenuOpen(setMenuOpen === idx ? null : idx);
+                            if (setMenuOpen === idx) {
+                              setSetMenuOpen(null);
+                            } else {
+                              openSetMenu(idx);
+                            }
                           }}
                           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                           aria-label={`Options for set ${idx + 1}`}
@@ -361,12 +408,12 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                               }}
                               aria-label="Close menu"
                             />
-                            {/* Rectangular menu with pill buttons */}
-                            <div className="fixed inset-0 z-[9997] flex items-center justify-center p-4">
-                              <div
-                                className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
-                                onClick={(e) => e.stopPropagation()}
-                              >
+                            {/* Rectangular menu with pill buttons positioned near button */}
+                            <div
+                              className="fixed z-[9997] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
+                              style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -387,7 +434,6 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                                 >
                                   Delete Set
                                 </button>
-                              </div>
                             </div>
                           </>,
                           document.body

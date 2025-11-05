@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { Exercise, Routine, SetItem, SetType } from "@/components/workout/types";
 import ExerciseLibraryModal from "@/components/workout/ExerciseLibraryModal";
 import ExerciseGif from "@/components/workout/ExerciseGif";
@@ -67,7 +67,14 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
 
   const [showLibrary, setShowLibrary] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // Refs for menu trigger buttons
+  const menuBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const setMenuBtnRef = (id: string) => (el: HTMLButtonElement | null) => {
+    menuBtnRefs.current[id] = el;
+  };
 
   // Load routines on open. Reset draft state.
   useEffect(() => {
@@ -187,6 +194,53 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
     setDraftExercises([]);
   };
 
+  // Function to open routine menu with position calculation
+  const openRoutineMenu = (id: string) => {
+    const r = menuBtnRefs.current[id]?.getBoundingClientRect();
+    if (!r) return;
+
+    const menuWidth = 160;
+    const menuHeight = 130; // approximate for 3 buttons
+    const spacing = 8;
+
+    // Position below and to the right of button
+    let top = r.bottom + spacing;
+    let left = r.right - menuWidth;
+
+    // Keep on screen
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (left < spacing) left = spacing;
+    if (left + menuWidth > viewportWidth - spacing) left = viewportWidth - menuWidth - spacing;
+    if (top + menuHeight > viewportHeight - spacing) top = r.top - menuHeight - spacing;
+    if (top < spacing) top = spacing;
+
+    setMenuPos({ top, left });
+    setMenuOpenId(id);
+  };
+
+  // Scroll and escape handler for routine menu
+  useEffect(() => {
+    if (!menuOpenId) return;
+
+    const handleScroll = () => {
+      setMenuOpenId(null);
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpenId(null);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuOpenId]);
+
   // ---------- Render ----------
   return (
     <div className="fixed inset-0 z-[9500]">
@@ -276,18 +330,23 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                   {/* Three-dot menu button */}
                   <div className="relative">
                     <button
+                      ref={setMenuBtnRef(r.id)}
                       className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setMenuOpenId(menuOpenId === r.id ? null : r.id);
+                        if (menuOpenId === r.id) {
+                          setMenuOpenId(null);
+                        } else {
+                          openRoutineMenu(r.id);
+                        }
                       }}
                       aria-label="Options"
                     >
                       <span className="text-lg font-bold">⋮</span>
                     </button>
 
-                    {/* Rectangular menu with pill buttons */}
-                    {menuOpenId === r.id && (
+                    {/* Rectangular menu with pill buttons positioned near button */}
+                    {menuOpenId === r.id && typeof document !== "undefined" && createPortal(
                       <>
                         {/* Backdrop to close menu */}
                         <button
@@ -298,9 +357,12 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                           }}
                           aria-label="Close menu"
                         />
-                        {/* Centered rectangular menu with pill-shaped buttons */}
-                        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2">
+                        {/* Menu positioned near trigger button */}
+                        <div
+                          className="fixed z-[9999] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
+                          style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                             <button
                               className="w-full px-4 py-2 rounded-full text-sm font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                               onClick={(e) => {
@@ -335,9 +397,9 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                             >
                               Delete
                             </button>
-                          </div>
                         </div>
-                      </>
+                      </>,
+                      document.body
                     )}
                   </div>
                 </li>
