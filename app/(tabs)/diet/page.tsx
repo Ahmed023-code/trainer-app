@@ -291,7 +291,7 @@ export default function DietPage() {
           onMenuClick={() => setShowDietMenu(!showDietMenu)}
         />
 
-        {/* Menu popup positioned relative to rings */}
+        {/* Menu popup positioned relative to rings - rectangular box with pill buttons */}
         {showDietMenu && (
           <>
             <button
@@ -299,10 +299,10 @@ export default function DietPage() {
               aria-label="Close"
               onClick={() => setShowDietMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-2 z-[9499] rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-2 w-48">
+            <div className="absolute right-0 top-full mt-2 z-[9499] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-3 w-48">
               <a
                 href={`/settings/diet?returnDate=${dateISO}`}
-                className="block w-full text-left px-3 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 onClick={() => setShowDietMenu(false)}
               >
                 Diet Settings
