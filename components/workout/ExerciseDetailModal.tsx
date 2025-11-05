@@ -301,18 +301,18 @@ export default function ExerciseDetailModal({
           </div>
         </div>
 
-        {/* Bottom buttons - sticky */}
+        {/* Bottom buttons - sticky, pill-shaped to match meal view */}
         <div className="sticky bottom-0 z-10 p-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
           <div className="flex gap-3">
             <button
               onClick={handleCancel}
-              className="flex-1 px-4 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium"
+              className="flex-1 px-4 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 px-4 py-3 rounded-lg bg-[var(--accent-workout)] text-black font-medium hover:opacity-90 transition-opacity"
+              className="flex-1 px-4 py-3 rounded-full bg-[#FACC15] text-black font-medium hover:bg-[#EAB308] transition-colors"
             >
               Save
             </button>

@@ -194,30 +194,26 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
         {/* Tab Switcher - only show if onSwitchToQuickAdd is provided */}
         {onSwitchToQuickAdd && (
           <div className="sticky top-0 z-[9502] bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <h2 className="text-lg font-semibold">Log Workout</h2>
+            <div className="flex items-center gap-2 px-4 pt-4 pb-3">
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center"
-                aria-label="Close"
+                className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" className="w-5 h-5">
-                  <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+                Back
               </button>
-            </div>
-            <div className="flex gap-1 px-4 pb-3">
-              <button
-                onClick={onSwitchToQuickAdd}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              >
-                Quick Add
-              </button>
-              <button
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[var(--accent-workout)] text-black"
-              >
-                Routines
-              </button>
+              <div className="flex flex-1 gap-1">
+                <button
+                  onClick={onSwitchToQuickAdd}
+                  className="flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors bg-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-700"
+                >
+                  Quick Add
+                </button>
+                <button
+                  className="flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors bg-[var(--accent-workout)] text-black"
+                >
+                  Routines
+                </button>
+              </div>
             </div>
           </div>
         )}
