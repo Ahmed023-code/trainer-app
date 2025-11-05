@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, onOpenDetail, onDelete }: Props) {
-  // Collapsed/expanded state (no longer used, kept for compatibility)
+  // Collapsed/expanded state for food items
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Kebab state + fixed menu coordinates
@@ -122,8 +122,29 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
           </div>
         </button>
 
-        {/* Right: Plus icon and trash icon */}
+        {/* Right: Chevron, Plus icon and trash icon */}
         <div className="flex items-center gap-2 shrink-0 pt-0.5">
+          {/* Chevron button for expand/collapse */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="tap-target min-w-9 min-h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all"
+            aria-label={isExpanded ? `Collapse ${meal.name}` : `Expand ${meal.name}`}
+            aria-expanded={isExpanded}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+            >
+              <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
           {onAddFood && (
             <button
               onClick={(e) => {
@@ -153,6 +174,72 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
             </button>
           )}
         </div>
+      </div>
+
+      {/* Expanded food items */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'
+        }`}
+      >
+        {meal.items && meal.items.length > 0 ? (
+          <div className="space-y-2">
+            {meal.items.map((item, idx) => {
+              const qty = Number(item.quantity ?? 1) || 1;
+              const displayCal = Math.round((Number(item.calories) || 0) * qty);
+              const displayP = Math.round((Number(item.protein) || 0) * qty);
+              const displayF = Math.round((Number(item.fat) || 0) * qty);
+              const displayC = Math.round((Number(item.carbs) || 0) * qty);
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-start justify-between gap-3 p-3 rounded-2xl bg-white/50 dark:bg-neutral-800/30 border border-neutral-100 dark:border-neutral-700/50"
+                >
+                  {/* Left: Food name and quantity */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm truncate">{item.name}</h3>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {qty} {item.unit || 'serving'}{qty !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+
+                  {/* Right: Macros */}
+                  <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                    <span
+                      className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                      style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
+                    >
+                      {displayCal}
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                      style={{ color: "#F87171", backgroundColor: "#F871711F" }}
+                    >
+                      {displayP}g
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                      style={{ color: "#FACC15", backgroundColor: "#FACC151F" }}
+                    >
+                      {displayF}g
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                      style={{ color: "#60A5FA", backgroundColor: "#60A5FA1F" }}
+                    >
+                      {displayC}g
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-sm text-neutral-400 dark:text-neutral-500">
+            No foods added yet
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}
