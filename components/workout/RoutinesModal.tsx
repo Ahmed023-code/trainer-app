@@ -62,10 +62,12 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [draftName, setDraftName] = useState<string>("");
+  const [draftEmoji, setDraftEmoji] = useState<string>("");
   const [draftExercises, setDraftExercises] = useState<Exercise[]>([]);
 
   const [showLibrary, setShowLibrary] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Load routines on open. Reset draft state.
   useEffect(() => {
@@ -79,9 +81,11 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
     setTab("mine");
     setEditingId(null);
     setDraftName("");
+    setDraftEmoji("");
     setDraftExercises([]);
     setShowLibrary(false);
     setMenuOpenId(null);
+    setShowEmojiPicker(false);
   }, [isOpen]);
 
   // Persist routines while open
@@ -109,6 +113,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
       id: editingId ?? uid(),
       name: finalName,
       exercises: deepCopyExercises(draftExercises),
+      emoji: draftEmoji || undefined,
     };
     setRoutines((prev) => {
       if (editingId) return prev.map((r) => (r.id === editingId ? base : r));
@@ -120,7 +125,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
   };
 
   const logRoutine = (r: Routine) => {
-    onPickRoutine({ id: uid(), name: r.name, exercises: deepCopyExercises(r.exercises, r.id) });
+    onPickRoutine({ id: uid(), name: r.name, exercises: deepCopyExercises(r.exercises, r.id), emoji: r.emoji });
     onClose();
   };
 
@@ -178,6 +183,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
     // Auto-generate name
     const count = routines.length + 1;
     setDraftName(`Routine ${count}`);
+    setDraftEmoji("💪"); // Default emoji
     setDraftExercises([]);
   };
 
@@ -218,30 +224,32 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
           </div>
         )}
 
-        {/* Header */}
-        <div className="sticky top-0 z-10 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-          <button className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700" onClick={onClose}>
-            Back
-          </button>
-          <div className="flex gap-2">
-            <button
-              className={`px-3 py-2 rounded-full border border-[#FACC15] ${
-                tab === "mine"
-                  ? "bg-neutral-100 dark:bg-neutral-800 text-[#FACC15]"
-                  : "text-[#FACC15] hover:bg-[#FACC15]/10"
-              }`}
-              onClick={() => setTab("mine")}
-            >
-              My Routines
+        {/* Header - only show when NOT in workout log mode */}
+        {!onSwitchToQuickAdd && (
+          <div className="sticky top-0 z-10 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+            <button className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700" onClick={onClose}>
+              Back
             </button>
-            <button
-              className="px-3 py-2 rounded-full bg-[#FACC15] text-black font-medium hover:bg-[#EAB308] transition-colors"
-              onClick={handleNewRoutine}
-            >
-              + New
-            </button>
+            <div className="flex gap-2">
+              <button
+                className={`px-3 py-2 rounded-full border border-[#FACC15] ${
+                  tab === "mine"
+                    ? "bg-neutral-100 dark:bg-neutral-800 text-[#FACC15]"
+                    : "text-[#FACC15] hover:bg-[#FACC15]/10"
+                }`}
+                onClick={() => setTab("mine")}
+              >
+                My Routines
+              </button>
+              <button
+                className="px-3 py-2 rounded-full bg-[#FACC15] text-black font-medium hover:bg-[#EAB308] transition-colors"
+                onClick={handleNewRoutine}
+              >
+                + New
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4 pb-24">
@@ -252,13 +260,16 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                   key={r.id}
                   className="rounded-full border border-neutral-200 dark:border-neutral-800 p-3 flex items-center justify-between relative"
                 >
-                  {/* Clickable routine name area */}
+                  {/* Clickable routine name area with emoji */}
                   <button
                     onClick={() => logRoutine(r)}
-                    className="flex-1 text-left min-w-0"
+                    className="flex-1 text-left min-w-0 flex items-center gap-2"
                   >
-                    <div className="font-semibold truncate">{r.name}</div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{r.exercises.length} exercises</div>
+                    {r.emoji && <span className="text-2xl flex-shrink-0">{r.emoji}</span>}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold truncate">{r.name}</div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">{r.exercises.length} exercises</div>
+                    </div>
                   </button>
 
                   {/* Three-dot menu button */}
@@ -295,6 +306,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                                 e.stopPropagation();
                                 setEditingId(r.id);
                                 setDraftName(r.name);
+                                setDraftEmoji(r.emoji || "💪");
                                 setDraftExercises(deepCopyExercises(r.exercises));
                                 setTab("new");
                                 setMenuOpenId(null);
@@ -333,18 +345,51 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                 <li className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-8">No routines yet.</li>
               )}
             </ul>
-          ) : (
+          ) : tab === "new" ? (
             /* tab === "new" */
             <div className="space-y-4">
-              <label className="block text-sm">
-                Routine name
-                <input
-                  className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
-                  value={draftName}
-                  onChange={(e) => setDraftName(e.target.value)}
-                  placeholder="Routine name"
-                />
-              </label>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <label className="block text-sm mb-1">Emoji</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="w-16 h-16 rounded-full border-2 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-3xl flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    {draftEmoji || "💪"}
+                  </button>
+                </div>
+                <label className="block text-sm flex-1">
+                  Routine name
+                  <input
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    placeholder="Routine name"
+                  />
+                </label>
+              </div>
+
+              {/* Simple emoji picker */}
+              {showEmojiPicker && (
+                <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+                  <div className="grid grid-cols-8 gap-2">
+                    {["💪", "🏋️", "🔥", "⚡", "🎯", "🚀", "💯", "⭐", "🏆", "👊", "💥", "🦾", "🎪", "🎨", "🎵", "🎮"].map(emoji => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => {
+                          setDraftEmoji(emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        className="w-10 h-10 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 text-2xl flex items-center justify-center transition-colors"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Draft exercise list */}
               <ul className="space-y-3">
@@ -504,8 +549,19 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                 + Add Exercise
               </button>
             </div>
-          )}
+          ) : null}
         </div>
+
+        {/* FAB for + New when in workout log mode */}
+        {onSwitchToQuickAdd && tab === "mine" && (
+          <button
+            onClick={handleNewRoutine}
+            className="fixed right-6 bottom-24 z-[9600] w-14 h-14 rounded-full bg-[#FACC15] text-black shadow-lg flex items-center justify-center hover:bg-[#EAB308] transition-colors"
+            aria-label="New routine"
+          >
+            <span className="text-3xl leading-none" style={{ marginTop: '-2px' }}>+</span>
+          </button>
+        )}
 
         {/* Fixed footer for new routine tab */}
         {tab === "new" && (

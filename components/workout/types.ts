@@ -26,4 +26,5 @@ export type Routine = {
   id: string;
   name: string;
   exercises: Exercise[];
+  emoji?: string; // Optional emoji for routine visual identification
 };
