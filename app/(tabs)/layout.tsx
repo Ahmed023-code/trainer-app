@@ -50,7 +50,7 @@ export default function TabsLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh pb-[calc(env(safe-area-inset-bottom)+112px)]">
       {children}
-      <nav className="fixed inset-x-0 bottom-4 flex justify-center pointer-events-none">
+      <nav className="fixed inset-x-0 bottom-4 z-[10500] flex justify-center pointer-events-none">
         <ul className="pointer-events-auto max-w-md w-[92%] h-16 px-2 flex items-center gap-1 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur">
           {tabs.map(t => {
             const isActive = active === t.key;
