@@ -254,35 +254,42 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
         )}
       </div>
 
-      {/* Food item context menu */}
+      {/* Food item context menu - rectangular box with pill buttons */}
       {openIdx !== null && typeof document !== "undefined" && createPortal(
         <>
           <button
             className="fixed inset-0 z-[9996]"
-            onClick={closeMenu}
+            onClick={(e) => {
+              e.stopPropagation();
+              closeMenu();
+            }}
             aria-label="Close menu"
           />
-          <div
-            className="fixed z-[9997] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-xl py-1 min-w-[140px]"
-            style={{ top: pos.top, left: pos.left }}
-          >
-            <button
-              onClick={() => {
-                if (onRequestEdit) {
-                  onRequestEdit(meal.name, openIdx, meal.items[openIdx]);
-                }
-                closeMenu();
-              }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              Edit Food
-            </button>
-            <button
-              onClick={() => onDeleteFood(openIdx)}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-            >
-              Delete Food
-            </button>
+          {/* Centered rectangular menu with pill-shaped buttons */}
+          <div className="fixed inset-0 z-[9997] flex items-center justify-center p-4">
+            <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onRequestEdit) {
+                    onRequestEdit(meal.name, openIdx, meal.items[openIdx]);
+                  }
+                  closeMenu();
+                }}
+                className="w-full px-4 py-2 rounded-full text-sm font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Edit Food
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteFood(openIdx);
+                }}
+                className="w-full px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+              >
+                Delete Food
+              </button>
+            </div>
           </div>
         </>,
         document.body

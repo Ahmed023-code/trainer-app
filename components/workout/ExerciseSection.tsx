@@ -42,6 +42,7 @@ const getSetTypeLabel = (type: string): string => {
 export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet, onUpdateExercise }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [setMenuOpen, setSetMenuOpen] = useState<number | null>(null);
 
   const handleDelete = () => {
     setShowConfirm(false);
@@ -208,6 +209,16 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
         >
           {exercise.sets && exercise.sets.length > 0 ? (
             <div className="space-y-2">
+              {/* Column Headers */}
+              <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-2 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
+                <div>Set</div>
+                <div>Type</div>
+                <div>Weight</div>
+                <div>Reps</div>
+                <div>RPE</div>
+                <div></div>
+              </div>
+
               {exercise.sets.map((set, idx) => {
                 const isQuickAdd = !exercise.source || exercise.source === "quick-add";
 
@@ -247,7 +258,6 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                       className="w-16 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
                       placeholder="lbs"
                     />
-                    <span className="text-xs text-neutral-600 dark:text-neutral-400 shrink-0">lbs</span>
 
                     <span className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">×</span>
 
@@ -309,22 +319,66 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                       className="w-14 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
                       placeholder="RPE"
                     />
-                    <span className="text-xs text-neutral-600 dark:text-neutral-400 shrink-0">RPE</span>
 
-                    {/* Delete set button */}
+                    {/* 3-dot menu for set options */}
                     {onUpdateExercise && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteSet(idx);
-                        }}
-                        className="ml-auto shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                        aria-label={`Delete set ${idx + 1}`}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="w-3 h-3">
-                          <path d="M2 4h12M5.5 4V2.5A1.5 1.5 0 0 1 7 1h2a1.5 1.5 0 0 1 1.5 1.5V4m2 0v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
+                      <div className="relative ml-auto">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSetMenuOpen(setMenuOpen === idx ? null : idx);
+                          }}
+                          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                          aria-label={`Options for set ${idx + 1}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="w-4 h-4">
+                            <circle cx="8" cy="3" r="1.5" fill="currentColor"/>
+                            <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                            <circle cx="8" cy="13" r="1.5" fill="currentColor"/>
+                          </svg>
+                        </button>
+
+                        {/* 3-dot menu popup */}
+                        {setMenuOpen === idx && typeof document !== "undefined" && createPortal(
+                          <>
+                            {/* Backdrop to close menu */}
+                            <button
+                              className="fixed inset-0 z-[9996]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSetMenuOpen(null);
+                              }}
+                              aria-label="Close menu"
+                            />
+                            {/* Rectangular menu with pill buttons */}
+                            <div className="fixed inset-0 z-[9997] flex items-center justify-center p-4">
+                              <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSetMenuOpen(null);
+                                    onClick(); // Opens the full exercise view
+                                  }}
+                                  className="w-full px-4 py-2 rounded-full text-sm font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                                >
+                                  Edit Set
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSetMenuOpen(null);
+                                    deleteSet(idx);
+                                  }}
+                                  className="w-full px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                                >
+                                  Delete Set
+                                </button>
+                              </div>
+                            </div>
+                          </>,
+                          document.body
+                        )}
+                      </div>
                     )}
                   </div>
                 );

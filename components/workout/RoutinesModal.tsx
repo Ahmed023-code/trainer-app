@@ -274,47 +274,55 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                       <span className="text-lg font-bold">⋮</span>
                     </button>
 
-                    {/* Bubble menu */}
+                    {/* Rectangular menu with pill buttons */}
                     {menuOpenId === r.id && (
                       <>
                         {/* Backdrop to close menu */}
                         <button
-                          className="fixed inset-0 z-10"
-                          onClick={() => setMenuOpenId(null)}
+                          className="fixed inset-0 z-[9998]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId(null);
+                          }}
                           aria-label="Close menu"
                         />
-                        {/* Menu bubble */}
-                        <div className="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-lg py-1 min-w-[120px]">
-                          <button
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                            onClick={() => {
-                              setEditingId(r.id);
-                              setDraftName(r.name);
-                              setDraftExercises(deepCopyExercises(r.exercises));
-                              setTab("new");
-                              setMenuOpenId(null);
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                            onClick={() => {
-                              logRoutine(r);
-                              setMenuOpenId(null);
-                            }}
-                          >
-                            Log
-                          </button>
-                          <button
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                            onClick={() => {
-                              setRoutines((prev) => prev.filter((x) => x.id !== r.id));
-                              setMenuOpenId(null);
-                            }}
-                          >
-                            Delete
-                          </button>
+                        {/* Centered rectangular menu with pill-shaped buttons */}
+                        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2">
+                            <button
+                              className="w-full px-4 py-2 rounded-full text-sm font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingId(r.id);
+                                setDraftName(r.name);
+                                setDraftExercises(deepCopyExercises(r.exercises));
+                                setTab("new");
+                                setMenuOpenId(null);
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="w-full px-4 py-2 rounded-full text-sm font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                logRoutine(r);
+                                setMenuOpenId(null);
+                              }}
+                            >
+                              Log
+                            </button>
+                            <button
+                              className="w-full px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRoutines((prev) => prev.filter((x) => x.id !== r.id));
+                                setMenuOpenId(null);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </>
                     )}
