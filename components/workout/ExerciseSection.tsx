@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Exercise, SetItem } from "@/components/workout/types";
 import ExerciseGif from "@/components/workout/ExerciseGif";
@@ -98,6 +98,17 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
     const dropSet = exercise.sets.filter(s => s.type === "Drop Set").length;
     return { warmup, working, dropSet };
   }, [exercise.sets]);
+
+  // Escape key handler for 3-dot menu
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && setMenuOpen !== null) {
+        setSetMenuOpen(null);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [setMenuOpen]);
 
   return (
     <>
@@ -210,12 +221,12 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
           {exercise.sets && exercise.sets.length > 0 ? (
             <div className="space-y-2">
               {/* Column Headers */}
-              <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-2 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
-                <div>Set</div>
-                <div>Type</div>
-                <div>Weight</div>
-                <div>Reps</div>
-                <div>RPE</div>
+              <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-1 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
+                <div className="text-center">Set</div>
+                <div className="text-center">Type</div>
+                <div className="text-center">Weight</div>
+                <div className="text-center">Reps</div>
+                <div className="text-center">RPE</div>
                 <div></div>
               </div>
 
@@ -225,7 +236,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
+                    className={`flex items-center gap-1 px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Set number */}
@@ -352,7 +363,10 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                             />
                             {/* Rectangular menu with pill buttons */}
                             <div className="fixed inset-0 z-[9997] flex items-center justify-center p-4">
-                              <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2">
+                              <div
+                                className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();

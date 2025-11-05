@@ -183,6 +183,17 @@ export default function DietPage() {
     writeDiet(dateISO, { meals });
   }, [meals, dateISO]);
 
+  // Escape key handler for edit food modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editFood) {
+        setEditFood(null);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [editFood]);
+
   // CHANGE: Memoize totals with dateISO to prevent stale data across date changes
   // totals for day
   const totals = useMemo(() => {
@@ -376,7 +387,7 @@ export default function DietPage() {
       {/* Edit Food Quantity Modal - unified with library quantity selection */}
       {editFood && (
         <>
-          {/* Backdrop with blur */}
+          {/* Backdrop with blur - click anywhere to close */}
           <button
             className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
             aria-label="Close"
@@ -384,7 +395,10 @@ export default function DietPage() {
           />
           {/* Centered modal */}
           <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
-            <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
+            <div
+              className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Food name at top */}
               <h3 className="font-semibold text-lg mb-3">{editFood.item.name}</h3>
 

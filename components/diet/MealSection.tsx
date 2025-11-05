@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { FoodItem, Meal } from "@/components/diet/types";
 
@@ -71,6 +71,17 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
   };
+
+  // Escape key handler for 3-dot menu
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openIdx !== null) {
+        closeMenu();
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [openIdx]);
 
   return (
     <section className="space-y-3 overflow-visible">
@@ -267,7 +278,10 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
           />
           {/* Centered rectangular menu with pill-shaped buttons */}
           <div className="fixed inset-0 z-[9997] flex items-center justify-center p-4">
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2">
+            <div
+              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 min-w-[160px] space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={(e) => {
                   e.stopPropagation();

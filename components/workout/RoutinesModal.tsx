@@ -254,7 +254,8 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
         {/* Body */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4 pb-24">
           {tab === "mine" ? (
-            <ul className="space-y-2">
+            <>
+              <ul className="space-y-2">
               {routines.map((r) => (
                 <li
                   key={r.id}
@@ -345,6 +346,18 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                 <li className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-8">No routines yet.</li>
               )}
             </ul>
+
+              {/* "+ New Routine" button at bottom - styled like "+ Log Workout" */}
+              <div className="flex items-center justify-center pt-4">
+                <button
+                  onClick={handleNewRoutine}
+                  className="px-8 py-3 rounded-full text-base font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
+                  style={{ borderColor: "var(--accent-workout)", color: "var(--accent-workout)", backgroundColor: "transparent" }}
+                >
+                  + New Routine
+                </button>
+              </div>
+            </>
           ) : tab === "new" ? (
             /* tab === "new" */
             <div className="space-y-4">

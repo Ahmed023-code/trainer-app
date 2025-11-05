@@ -245,18 +245,20 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
           </div>
         )}
 
-        {/* Header */}
+        {/* Header - Back button only shown when NOT in workout log mode */}
         <div className="sticky top-0 z-[9501] p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-          <button
-            className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
-            onClick={() => {
-              setShowCustomMuscles(false);
-              setCustomName("");
-              onClose();
-            }}
-          >
-            Back
-          </button>
+          {!onSwitchToRoutines && (
+            <button
+              className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
+              onClick={() => {
+                setShowCustomMuscles(false);
+                setCustomName("");
+                onClose();
+              }}
+            >
+              Back
+            </button>
+          )}
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}

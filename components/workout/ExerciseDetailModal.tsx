@@ -176,7 +176,7 @@ export default function ExerciseDetailModal({
           )}
 
           {/* Column headers */}
-          <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-2 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+          <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-1 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
             <div className="text-center">Set</div>
             <div className="text-center">Type</div>
             <div className="text-center">Weight</div>
@@ -191,7 +191,7 @@ export default function ExerciseDetailModal({
               return (
                 <div
                   key={i}
-                  className={`grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-2 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
+                  className={`grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-1 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
                 >
                   {/* Set number */}
                   <span className="text-sm font-semibold tabular-nums text-center shrink-0">
@@ -262,13 +262,13 @@ export default function ExerciseDetailModal({
                     placeholder="8"
                   />
 
-                  {/* Delete button */}
+                  {/* Delete button - matches main workout page style */}
                   <button
                     onClick={() => deleteSet(i)}
-                    className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                    className="tap-target w-9 h-9 shrink-0 flex items-center justify-center rounded-full border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shadow-sm"
                     aria-label="Delete set"
                   >
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="w-3 h-3">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5">
                       <path d="M2 4h12M5.5 4V2.5A1.5 1.5 0 0 1 7 1h2a1.5 1.5 0 0 1 1.5 1.5V4m2 0v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
