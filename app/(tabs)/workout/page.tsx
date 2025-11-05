@@ -305,7 +305,7 @@ export default function WorkoutPage() {
             className="px-8 py-3 rounded-full text-base font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
             style={{ borderColor: "var(--accent-workout)", color: "var(--accent-workout)", backgroundColor: "transparent" }}
           >
-            Log Workout
+            + Log Workout
           </button>
         </div>
       </section>

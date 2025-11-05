@@ -414,7 +414,7 @@ export default function DietPage() {
             className="px-8 py-3 rounded-full text-base font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
             style={{ borderColor: "var(--accent-diet)", color: "var(--accent-diet)", backgroundColor: "transparent" }}
           >
-            Log Meal
+            + Log Meal
           </button>
         </div>
       </section>

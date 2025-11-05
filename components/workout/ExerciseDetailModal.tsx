@@ -119,21 +119,6 @@ export default function ExerciseDetailModal({
       <div className="absolute inset-0 bg-white dark:bg-neutral-900 flex flex-col">
         {/* Header */}
         <div className="sticky top-0 z-10 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <button
-              className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              onClick={handleCancel}
-            >
-              Cancel
-            </button>
-            <button
-              className="px-4 py-2 rounded-full bg-[#FACC15] text-black font-medium hover:bg-[#EAB308] transition-colors"
-              onClick={handleSave}
-            >
-              Save
-            </button>
-          </div>
-
           {/* Exercise name and info */}
           <div>
             <h2 className="font-semibold text-lg">{localExercise.name}</h2>
@@ -190,44 +175,37 @@ export default function ExerciseDetailModal({
             </div>
           )}
 
-          {/* Column headers - unified layout optimized for narrow screens */}
-          <div className="grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 px-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            <div className="text-center">#</div>
+          {/* Column headers */}
+          <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-2 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+            <div className="text-center">Set</div>
             <div className="text-center">Type</div>
-            <div className="text-center">lbs</div>
+            <div className="text-center">Weight</div>
             <div className="text-center">Reps</div>
             <div className="text-center">RPE</div>
             <div></div>
           </div>
 
-          {/* Sets list - compact single-line rows */}
+          {/* Sets list - pill-shaped rows */}
           <div className="space-y-2">
             {localExercise.sets.map((s, i) => {
-              // Generate placeholder text for routine exercises showing target range
-              const repsPlaceholder = isRoutine
-                ? s.repsMin === s.repsMax
-                  ? `${s.repsMin}`
-                  : `${s.repsMin}–${s.repsMax}`
-                : "10";
-
               return (
                 <div
                   key={i}
-                  className={`grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 items-center rounded-full border px-1 py-1.5 ${getSetColor(s.type)}`}
+                  className={`grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-2 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
                 >
                   {/* Set number */}
-                  <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 text-center">
-                    {i + 1}
+                  <span className="text-sm font-semibold tabular-nums text-center shrink-0">
+                    #{i + 1}
                   </span>
 
-                  {/* Type select */}
+                  {/* Type select with dark background */}
                   <select
-                    className="text-[11px] rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1.5 min-w-0"
                     value={s.type}
                     onChange={(e) => updateSetField(i, "type", e.target.value)}
+                    className="text-xs font-medium px-2 py-1 rounded-full bg-neutral-800 dark:bg-neutral-700 text-white border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                   >
+                    <option value="Warmup">Warm-up</option>
                     <option value="Working">Working</option>
-                    <option value="Warmup">Warmup</option>
                     <option value="Drop Set">Drop Set</option>
                   </select>
 
@@ -236,32 +214,40 @@ export default function ExerciseDetailModal({
                     type="number"
                     step="0.5"
                     inputMode="decimal"
-                    className="text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-2 py-1.5 bg-white dark:bg-neutral-900 min-w-0"
                     value={s.weight === 0 ? "" : String(s.weight)}
                     onChange={(e) => updateSetField(i, "weight", e.target.value)}
+                    className="text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                     placeholder="0"
                   />
 
-                  {/* Unified Reps input */}
-                  {isQuickAdd ? (
-                    // Quick-add: direct reps entry
-                    <input
-                      inputMode="numeric"
-                      className="text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-2 py-1.5 bg-white dark:bg-neutral-900 min-w-0"
-                      value={String(s.repsMin)}
-                      onChange={(e) => updateSetField(i, "repsMin", e.target.value)}
-                      placeholder={repsPlaceholder}
-                    />
-                  ) : (
-                    // Routine: show repsPerformed with target range as placeholder
-                    <input
-                      inputMode="numeric"
-                      className="text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-2 py-1.5 bg-white dark:bg-neutral-900 min-w-0"
-                      value={s.repsPerformed !== undefined ? String(s.repsPerformed) : ""}
-                      onChange={(e) => updateSetField(i, "repsPerformed", e.target.value)}
-                      placeholder={repsPlaceholder}
-                    />
-                  )}
+                  {/* Reps input - show performed with faded range behind */}
+                  <div className="relative flex items-center justify-center">
+                    {isQuickAdd ? (
+                      // Quick-add: direct reps entry
+                      <input
+                        inputMode="numeric"
+                        value={String(s.repsMin)}
+                        onChange={(e) => updateSetField(i, "repsMin", e.target.value)}
+                        className="w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                        placeholder="10"
+                      />
+                    ) : (
+                      <>
+                        {/* Faded rep range behind */}
+                        <span className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400 dark:text-neutral-500 pointer-events-none">
+                          ({s.repsMin}–{s.repsMax})
+                        </span>
+                        {/* Actual reps performed in front */}
+                        <input
+                          inputMode="numeric"
+                          value={s.repsPerformed !== undefined ? String(s.repsPerformed) : ""}
+                          onChange={(e) => updateSetField(i, "repsPerformed", e.target.value)}
+                          className="relative w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                          placeholder=""
+                        />
+                      </>
+                    )}
+                  </div>
 
                   {/* RPE input */}
                   <input
@@ -270,20 +256,20 @@ export default function ExerciseDetailModal({
                     min="0"
                     max="10"
                     inputMode="decimal"
-                    className="text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-2 py-1.5 bg-white dark:bg-neutral-900 min-w-0"
                     value={s.rpe === 0 ? "" : String(s.rpe)}
                     onChange={(e) => updateSetField(i, "rpe", e.target.value)}
+                    className="text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
                     placeholder="8"
                   />
 
                   {/* Delete button */}
                   <button
                     onClick={() => deleteSet(i)}
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-red-600 dark:bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-700"
+                    className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                     aria-label="Delete set"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="w-3 h-3">
+                      <path d="M2 4h12M5.5 4V2.5A1.5 1.5 0 0 1 7 1h2a1.5 1.5 0 0 1 1.5 1.5V4m2 0v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
                 </div>
@@ -300,7 +286,7 @@ export default function ExerciseDetailModal({
           </button>
 
           {/* Exercise notes */}
-          <div className="space-y-2">
+          <div className="space-y-2 pb-24">
             <label className="block text-sm font-medium">Exercise Notes</label>
             <textarea
               className="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900 resize-none"
@@ -312,6 +298,24 @@ export default function ExerciseDetailModal({
                 setLocalExercise(next);
               }}
             />
+          </div>
+        </div>
+
+        {/* Bottom buttons - sticky */}
+        <div className="sticky bottom-0 z-10 p-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+          <div className="flex gap-3">
+            <button
+              onClick={handleCancel}
+              className="flex-1 px-4 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex-1 px-4 py-3 rounded-lg bg-[var(--accent-workout)] text-black font-medium hover:opacity-90 transition-opacity"
+            >
+              Save
+            </button>
           </div>
         </div>
       </div>
