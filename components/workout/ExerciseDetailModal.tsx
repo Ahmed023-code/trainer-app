@@ -176,7 +176,7 @@ export default function ExerciseDetailModal({
           )}
 
           {/* Column headers */}
-          <div className="grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+          <div className="grid grid-cols-[28px,82px,70px,1fr,40px,36px] gap-1 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
             <div className="text-center">Set</div>
             <div className="text-center">Type</div>
             <div className="text-center">lbs</div>
@@ -193,7 +193,7 @@ export default function ExerciseDetailModal({
               return (
                 <div
                   key={i}
-                  className={`grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
+                  className={`grid grid-cols-[28px,82px,70px,1fr,40px,36px] gap-1 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
                 >
                   {/* Set number */}
                   <span className="text-sm font-semibold tabular-nums text-center shrink-0">
@@ -223,7 +223,7 @@ export default function ExerciseDetailModal({
                   />
 
                   {/* Reps input - show performed with faded range behind */}
-                  <div className="relative flex items-center justify-center">
+                  <div className="relative flex items-center justify-center min-w-[5rem]">
                     {isQuickAdd ? (
                       // Quick-add: direct reps entry
                       <input
