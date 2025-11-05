@@ -263,7 +263,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
           {exercise.sets && exercise.sets.length > 0 ? (
             <div className="space-y-2">
               {/* Column Headers */}
-              <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-1 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
+              <div className="grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
                 <div className="text-center">Set</div>
                 <div className="text-center">Type</div>
                 <div className="text-center">Weight</div>
@@ -312,10 +312,13 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                       placeholder="lbs"
                     />
 
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">×</span>
-
-                    {/* Reps */}
-                    {isQuickAdd ? (
+                    {/* Reps - single input with range in background */}
+                    <div className="relative flex-1 min-w-0">
+                      {!isQuickAdd && set.repsMin > 0 && set.repsMax > 0 && (
+                        <span className="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm pointer-events-none tabular-nums">
+                          ({set.repsMin}–{set.repsMax})
+                        </span>
+                      )}
                       <input
                         type="number"
                         value={set.repsMin}
@@ -324,38 +327,10 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                           updateSetField(idx, "repsMin", e.target.value);
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-14 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                        className="relative w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
                         placeholder="reps"
                       />
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          value={set.repsMin}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateSetField(idx, "repsMin", e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-12 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                          placeholder="min"
-                        />
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400">-</span>
-                        <input
-                          type="number"
-                          value={set.repsMax}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateSetField(idx, "repsMax", e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-12 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                          placeholder="max"
-                        />
-                      </div>
-                    )}
-
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">@</span>
+                    </div>
 
                     {/* RPE */}
                     <input
@@ -369,7 +344,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                         updateSetField(idx, "rpe", e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-14 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                      className="w-10 text-sm font-medium tabular-nums px-1 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
                       placeholder="RPE"
                     />
 

@@ -176,7 +176,7 @@ export default function ExerciseDetailModal({
           )}
 
           {/* Column headers */}
-          <div className="grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-1 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+          <div className="grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
             <div className="text-center">Set</div>
             <div className="text-center">Type</div>
             <div className="text-center">Weight</div>
@@ -191,7 +191,7 @@ export default function ExerciseDetailModal({
               return (
                 <div
                   key={i}
-                  className={`grid grid-cols-[32px,90px,70px,1fr,60px,36px] gap-1 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
+                  className={`grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 items-center rounded-full border px-2 py-2.5 ${getSetColor(s.type)}`}
                 >
                   {/* Set number */}
                   <span className="text-sm font-semibold tabular-nums text-center shrink-0">
@@ -249,7 +249,7 @@ export default function ExerciseDetailModal({
                     )}
                   </div>
 
-                  {/* RPE input */}
+                  {/* RPE input - smaller for single digit with decimal */}
                   <input
                     type="number"
                     step="0.5"
@@ -258,7 +258,7 @@ export default function ExerciseDetailModal({
                     inputMode="decimal"
                     value={s.rpe === 0 ? "" : String(s.rpe)}
                     onChange={(e) => updateSetField(i, "rpe", e.target.value)}
-                    className="text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                    className="w-full text-sm font-medium tabular-nums px-1 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
                     placeholder="8"
                   />
 
