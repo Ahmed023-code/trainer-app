@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { Exercise, Routine, SetItem, SetType } from "@/components/workout/types";
 import ExerciseLibraryModal from "@/components/workout/ExerciseLibraryModal";
 import ExerciseGif from "@/components/workout/ExerciseGif";
