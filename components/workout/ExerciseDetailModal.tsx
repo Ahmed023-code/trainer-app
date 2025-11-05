@@ -163,7 +163,7 @@ export default function ExerciseDetailModal({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-0.5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-1 space-y-4">
           {/* Exercise GIF Display */}
           {(localExercise as any).gifUrl && (
             <div className="flex justify-center mb-4">
