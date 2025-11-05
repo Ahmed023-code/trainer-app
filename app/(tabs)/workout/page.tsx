@@ -284,7 +284,7 @@ export default function WorkoutPage() {
           <div
             key={`${ex.name}-${i}`}
             ref={(el) => { exerciseRefs.current[ex.name] = el; }}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm overflow-visible cursor-pointer hover:shadow-md transition-shadow"
+            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-0.5 shadow-sm overflow-visible cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setSelectedExerciseIndex(i)}
           >
             <ExerciseSection
