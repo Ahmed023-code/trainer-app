@@ -81,8 +81,10 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
     if (!isOpen) return;
     try {
       const raw = localStorage.getItem("workout-routines-v1");
+      console.log("[RoutinesModal] Loading routines:", raw);
       setRoutines(raw ? (JSON.parse(raw) as Routine[]) : []);
-    } catch {
+    } catch (e) {
+      console.error("[RoutinesModal] Error loading routines:", e);
       setRoutines([]);
     }
     setTab("mine");
@@ -94,16 +96,6 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
     setMenuOpenId(null);
     setShowEmojiPicker(false);
   }, [isOpen]);
-
-  // Persist routines while open
-  useEffect(() => {
-    if (!isOpen) return;
-    try {
-      localStorage.setItem("workout-routines-v1", JSON.stringify(routines));
-    } catch {
-      // ignore storage errors
-    }
-  }, [routines, isOpen]);
 
   if (!isOpen) return null;
 
@@ -128,11 +120,19 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
       ? routines.map((r) => (r.id === editingId ? base : r))
       : [base, ...routines];
 
-    // Persist synchronously before updating state
+    console.log("[RoutinesModal] Saving routine:", base);
+    console.log("[RoutinesModal] Updated routines array:", updatedRoutines);
+
+    // Persist synchronously
     try {
       localStorage.setItem("workout-routines-v1", JSON.stringify(updatedRoutines));
-    } catch {
-      // ignore storage errors
+      console.log("[RoutinesModal] Saved to localStorage successfully");
+
+      // Verify it was saved
+      const verify = localStorage.getItem("workout-routines-v1");
+      console.log("[RoutinesModal] Verification read:", verify);
+    } catch (e) {
+      console.error("[RoutinesModal] Error saving to localStorage:", e);
     }
 
     // Update state
@@ -144,13 +144,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
   };
 
   const logRoutine = (r: Routine) => {
-    // Ensure routine is persisted before logging
-    try {
-      localStorage.setItem("workout-routines-v1", JSON.stringify(routines));
-    } catch {
-      // ignore storage errors
-    }
-
+    console.log("[RoutinesModal] Logging routine:", r);
     onPickRoutine({ id: uid(), name: r.name, exercises: deepCopyExercises(r.exercises, r.id), emoji: r.emoji });
     onClose();
   };
