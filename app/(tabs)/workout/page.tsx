@@ -172,6 +172,34 @@ export default function WorkoutPage() {
     setExercises((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // Add a set to an exercise
+  const addSetToExercise = (exercise: Exercise) => {
+    const idx = exercises.findIndex(e => e.name === exercise.name);
+    if (idx === -1) return;
+
+    const isQuickAdd = !exercise.source || exercise.source === "quick-add";
+    const prev = exercise.sets[exercise.sets.length - 1];
+    let newSet: SetItem;
+
+    if (isQuickAdd) {
+      // Quick-add: single reps value (repsMin = repsMax)
+      newSet = prev
+        ? { ...prev, repsPerformed: undefined }
+        : { weight: 0, repsMin: 10, repsMax: 10, rpe: 8, type: "Working" };
+    } else {
+      // Routine: clone with rep range preserved, reset repsPerformed
+      newSet = prev
+        ? { ...prev, repsPerformed: undefined }
+        : { weight: 0, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" };
+    }
+
+    const updatedExercise = {
+      ...exercise,
+      sets: [...exercise.sets, newSet]
+    };
+    updateExercise(idx, updatedExercise);
+  };
+
   // Sets-by-muscle card data
   const setCounts = useMemo(() => {
     const base: Record<string, number> = Object.fromEntries(
@@ -257,11 +285,14 @@ export default function WorkoutPage() {
           <div
             key={`${ex.name}-${i}`}
             ref={(el) => { exerciseRefs.current[ex.name] = el; }}
+            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm overflow-visible cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setSelectedExerciseIndex(i)}
           >
             <ExerciseSection
               exercise={ex}
               onClick={() => setSelectedExerciseIndex(i)}
               onDelete={() => deleteExercise(i)}
+              onAddSet={addSetToExercise}
             />
           </div>
         ))}
