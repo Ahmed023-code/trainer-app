@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Exercise } from "@/components/workout/types";
+import ExerciseGif from "@/components/workout/ExerciseGif";
 
 type Props = {
   exercise: Exercise;
@@ -24,7 +25,18 @@ export default function ExerciseSection({ exercise, onClick, onDelete }: Props) 
           onClick={onClick}
           className="w-full text-left p-4 pr-12"
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* Circular GIF Preview */}
+            {(exercise as any).gifUrl && (
+              <div className="flex-shrink-0 w-[52px] h-[52px] rounded-full overflow-hidden border-2 border-neutral-200 dark:border-neutral-700 shadow-sm">
+                <ExerciseGif
+                  gifUrl={(exercise as any).gifUrl}
+                  alt={exercise.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             <div className="min-w-0 flex-1">
               <h3 className="font-medium truncate">{exercise.name}</h3>
               <div className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">

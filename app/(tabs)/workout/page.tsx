@@ -252,7 +252,7 @@ export default function WorkoutPage() {
 
 
       {/* Exercise list - compact summary cards */}
-      <section className="space-y-3 relative z-0 overflow-visible mt-4">
+      <section className="space-y-3 relative z-10 mt-4">
         {exercises.map((ex, i) => (
           <div
             key={`${ex.name}-${i}`}
@@ -281,7 +281,7 @@ export default function WorkoutPage() {
 
       {/* Workout-level notes */}
       {exercises.length > 0 && (
-        <section className="mt-6">
+        <section className="mt-6 relative z-0">
           <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
             <label className="block text-sm font-medium mb-2">Workout Notes</label>
             <textarea

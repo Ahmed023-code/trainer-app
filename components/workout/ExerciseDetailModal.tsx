@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Exercise, SetItem } from "@/components/workout/types";
+import ExerciseGif from "@/components/workout/ExerciseGif";
 
 type Props = {
   isOpen: boolean;
@@ -136,9 +137,16 @@ export default function ExerciseDetailModal({
           {/* Exercise name and info */}
           <div>
             <h2 className="font-semibold text-lg">{localExercise.name}</h2>
-            {Array.isArray((localExercise as any).bodyParts) && (localExercise as any).bodyParts.length > 0 && (
+            {/* Target Muscles */}
+            {Array.isArray((localExercise as any).targetMuscles) && (localExercise as any).targetMuscles.length > 0 && (
               <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Muscles: {(localExercise as any).bodyParts.join(", ")}
+                <span className="font-medium">Target:</span> {(localExercise as any).targetMuscles.map((m: string) => m.charAt(0).toUpperCase() + m.slice(1)).join(", ")}
+              </div>
+            )}
+            {/* Secondary Muscles */}
+            {Array.isArray((localExercise as any).secondaryMuscles) && (localExercise as any).secondaryMuscles.length > 0 && (
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                <span className="font-medium">Secondary:</span> {(localExercise as any).secondaryMuscles.map((m: string) => m.charAt(0).toUpperCase() + m.slice(1)).join(", ")}
               </div>
             )}
             <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -171,13 +179,24 @@ export default function ExerciseDetailModal({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Exercise GIF Display */}
+          {(localExercise as any).gifUrl && (
+            <div className="flex justify-center mb-4">
+              <ExerciseGif
+                gifUrl={(localExercise as any).gifUrl}
+                alt={localExercise.name}
+                className="w-[180px] h-[180px] rounded-lg"
+              />
+            </div>
+          )}
+
           {/* Column headers - unified layout optimized for narrow screens */}
           <div className="grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 px-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            <div>#</div>
-            <div>Type</div>
-            <div>lbs</div>
-            <div>Reps</div>
-            <div>RPE</div>
+            <div className="text-center">#</div>
+            <div className="text-center">Type</div>
+            <div className="text-center">lbs</div>
+            <div className="text-center">Reps</div>
+            <div className="text-center">RPE</div>
             <div></div>
           </div>
 

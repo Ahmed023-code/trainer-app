@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Exercise, Routine, SetItem, SetType } from "@/components/workout/types";
 import ExerciseLibraryModal from "@/components/workout/ExerciseLibraryModal";
+import ExerciseGif from "@/components/workout/ExerciseGif";
 
 // ---------- Utilities ----------
 const uid = () => Math.random().toString(36).slice(2);
@@ -23,6 +24,12 @@ const deepCopyExercises = (arr: Exercise[], routineId?: string): Exercise[] =>
     ...(e as any).notes !== undefined ? { notes: (e as any).notes } : {},
     source: "routine" as const, // Mark as routine exercise
     routineId, // Track which routine this came from
+    // Preserve visual and metadata fields
+    ...((e as any).gifUrl ? { gifUrl: (e as any).gifUrl } : {}),
+    ...((e as any).targetMuscles ? { targetMuscles: (e as any).targetMuscles } : {}),
+    ...((e as any).secondaryMuscles ? { secondaryMuscles: (e as any).secondaryMuscles } : {}),
+    ...((e as any).exerciseId ? { exerciseId: (e as any).exerciseId } : {}),
+    ...((e as any).bodyParts ? { bodyParts: (e as any).bodyParts } : {}),
   }));
 
 // Helper to get set color based on type
@@ -307,15 +314,27 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
               <ul className="space-y-3">
                 {draftExercises.map((ex, exIdx) => (
                   <li key={`${ex.name}-${exIdx}`} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3">
-                    <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* Circular GIF Preview */}
+                      {(ex as any).gifUrl && (
+                        <div className="flex-shrink-0 w-[52px] h-[52px] rounded-full overflow-hidden border-2 border-neutral-200 dark:border-neutral-700 shadow-sm">
+                          <ExerciseGif
+                            gifUrl={(ex as any).gifUrl}
+                            alt={ex.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+
                       <div className="min-w-0 flex-1">
                         <div className="font-medium truncate">{ex.name}</div>
                         <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                           {ex.sets.length} set{ex.sets.length === 1 ? "" : "s"}
                         </div>
                       </div>
+
                       <button
-                        className="px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                        className="px-3 py-1.5 rounded-full bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex-shrink-0"
                         onClick={() => removeExercise(exIdx)}
                       >
                         Remove
@@ -333,7 +352,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
 
                     {/* Column headers - centered */}
                     {ex.sets.length > 0 && (
-                      <div className="grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 px-1 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                      <div className="grid grid-cols-[24px,80px,60px,1fr,48px,36px] gap-1 px-1 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         <div className="text-center">#</div>
                         <div className="text-center">Type</div>
                         <div className="text-center">lbs</div>
@@ -348,7 +367,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                       {ex.sets.map((s, setIdx) => (
                         <div
                           key={setIdx}
-                          className={`grid grid-cols-[28px,80px,60px,1fr,48px,36px] gap-1 items-center rounded-full border px-1 py-1.5 ${getSetColor(s.type)}`}
+                          className={`grid grid-cols-[24px,80px,60px,1fr,48px,36px] gap-1 items-center rounded-full border px-1 py-1.5 ${getSetColor(s.type)}`}
                         >
                           {/* Set number */}
                           <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 text-center">
@@ -483,7 +502,16 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
             if (!exists) {
               setDraftExercises((prev) => [
                 ...prev,
-                { name: ex.name, sets: [defaultSet()], notes: "" as any },
+                {
+                  name: ex.name,
+                  sets: [defaultSet()],
+                  notes: "" as any,
+                  ...((ex as any).targetMuscles ? { targetMuscles: (ex as any).targetMuscles } : {}),
+                  ...((ex as any).secondaryMuscles ? { secondaryMuscles: (ex as any).secondaryMuscles } : {}),
+                  ...((ex as any).bodyParts ? { bodyParts: (ex as any).bodyParts } : {}),
+                  ...((ex as any).gifUrl ? { gifUrl: (ex as any).gifUrl } : {}),
+                  ...((ex as any).exerciseId ? { exerciseId: (ex as any).exerciseId } : {}),
+                } as any,
               ]);
             }
             setShowLibrary(false);
