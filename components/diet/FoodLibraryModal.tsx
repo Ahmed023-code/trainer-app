@@ -600,7 +600,7 @@ export default function FoodLibraryModal({
               <li key={`${f.description}-${i}`}>
                 <div
                   ref={setRowRef(i)}
-                  className="relative rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-3 shadow-sm"
+                  className="relative rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-4 py-3 shadow-sm"
                 >
                   <button
                     className="block text-left w-full"
@@ -620,18 +620,20 @@ export default function FoodLibraryModal({
                   </button>
                 </div>
 
-                {/* Portal quantity bubble + local backdrop */}
+                {/* Portal quantity bubble + local backdrop with blur */}
                 {isActive && typeof document !== "undefined" && createPortal(
                   <>
-                    {/* Backdrop that closes only the quantity bubble, not the whole search */}
+                    {/* Backdrop that closes only the quantity bubble, not the whole search - with blur */}
                     <button
-                      className="fixed inset-0 z-[100009]"
+                      className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
                       aria-label="Close quantity"
                       onClick={() => setActiveIdx(null)}
                     />
-                    {/* Centered half-page bubble */}
+                    {/* Centered modal with food name at top */}
                     <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
-                      <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-4">
+                      <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
+                        {/* Food name prominently at top */}
+                        <h3 className="font-semibold text-lg mb-3">{f.description || "Unnamed"}</h3>
                         {/* Segmented control */}
                         <div className="grid grid-cols-3 gap-1 text-sm mb-3">
                           {(["servings", "weight", "volume"] as const).map((m) => (

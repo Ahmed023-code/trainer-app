@@ -84,17 +84,8 @@ export default function DietPage() {
   // const [showFabMenu, setShowFabMenu] = useState(false);
   // const [showMealOptions, setShowMealOptions] = useState<null | { meal: string }>(null);
 
-  // Quick Add / Edit shared bubble state
-  const [showForm, setShowForm] = useState<null | { meal: string }>(null);
-  const [editTarget, setEditTarget] = useState<null | { meal: string; index: number }>(null);
-  const [form, setForm] = useState<{ name: string; calories: string; protein: string; carbs: string; fat: string; quantity: string }>({
-    name: "",
-    calories: "",
-    protein: "",
-    carbs: "",
-    fat: "",
-    quantity: "1",
-  });
+  // Unified edit food state - replaces old Quick Add bubble for editing
+  const [editFood, setEditFood] = useState<null | { mealIndex: number; foodIndex: number; item: FoodItem }>(null);
 
   // Search modal
   const [showLibraryFor, setShowLibraryFor] = useState<null | { meal: string }>(null);
@@ -213,70 +204,19 @@ export default function DietPage() {
     };
   }, [meals, dateISO]);
 
-  // helpers for quantity parsing in the inline form
-  const parseQty = (s: string) => {
-    const v = Number((s ?? "").toString());
-    return isFinite(v) ? v : 0;
-  };
-  const clampQty = (v: number) => Math.max(0, v);
-  const incQty = (step = 1) => {
-    setForm((f) => ({ ...f, quantity: String(clampQty(parseQty(f.quantity ?? "0") + step)) }));
-  };
-  const decQty = (step = 1) => {
-    setForm((f) => ({ ...f, quantity: String(clampQty(parseQty(f.quantity ?? "0") - step)) }));
-  };
-
-  // open Quick Add bubble
-  function openForm(mealName: string) {
-    setEditTarget(null);
-    setForm({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" });
-    setShowForm({ meal: mealName });
-  }
-
-  // open Edit bubble
-  function openEditForm(mealName: string, index: number, item: FoodItem) {
-    setEditTarget({ meal: mealName, index });
-    setForm({
-      name: item.name ?? "",
-      calories: String(item.calories ?? 0),
-      protein: String(item.protein ?? 0),
-      carbs: String(item.carbs ?? 0),
-      fat: String(item.fat ?? 0),
-      quantity: String(item.quantity ?? 1),
-    });
-    setShowForm({ meal: mealName });
-  }
-
-  // save Quick Add / Edit
-  function saveForm() {
-    if (!showForm) return;
-    const idxMeal = meals.findIndex((m) => m.name.toLowerCase() === showForm.meal.toLowerCase());
-    if (idxMeal === -1) return;
-
-    const name = form.name.trim() || "Unnamed";
-    const quantity = Number(form.quantity) || 1;
-    const cal = Number(form.calories) || 0;
-    const p = Number(form.protein) || 0;
-    const c = Number(form.carbs) || 0;
-    const f = Number(form.fat) || 0;
+  // Save edited food with updated quantity
+  function saveEditFood(updatedItem: FoodItem) {
+    if (!editFood) return;
 
     setMeals((prev) => {
       const next = [...prev];
-      const items = [...(next[idxMeal].items || [])];
-      const newItem: FoodItem = { name, quantity, calories: cal, protein: p, carbs: c, fat: f };
-
-      if (editTarget && editTarget.meal.toLowerCase() === showForm.meal.toLowerCase()) {
-        items[editTarget.index] = { ...items[editTarget.index], ...newItem };
-      } else {
-        items.push(newItem);
-      }
-
-      next[idxMeal] = { ...next[idxMeal], items };
+      const items = [...(next[editFood.mealIndex].items || [])];
+      items[editFood.foodIndex] = updatedItem;
+      next[editFood.mealIndex] = { ...next[editFood.mealIndex], items };
       return next;
     });
 
-    setShowForm(null);
-    setEditTarget(null);
+    setEditFood(null);
   }
 
   // add from library
@@ -391,7 +331,10 @@ export default function DietPage() {
                 next[originalIndex] = updated;
                 setMeals(next);
               }}
-              onRequestEdit={(mealName, index, item) => openEditForm(mealName, index, item)}
+              onRequestEdit={(mealName, index, item) => {
+                const originalIndex = meals.findIndex(m => m.name === meal.name);
+                setEditFood({ mealIndex: originalIndex, foodIndex: index, item });
+              }}
               onAddFood={(mealName) => {
                 setShowLibraryFor({ meal: mealName });
               }}
@@ -430,151 +373,101 @@ export default function DietPage() {
         </button>
       </div>
 
-      {/* Quick Add / Edit bubble */}
-      {showForm && (
+      {/* Edit Food Quantity Modal - unified with library quantity selection */}
+      {editFood && (
         <>
+          {/* Backdrop with blur */}
           <button
-            className="fixed inset-0 z-[9998]"
+            className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
             aria-label="Close"
-            onClick={() => {
-              setShowForm(null);
-              setEditTarget(null);
-            }}
+            onClick={() => setEditFood(null)}
           />
-          <div className="fixed right-6 bottom-24 z-[9999] w-[min(560px,calc(100vw-2rem))]">
-            <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold">
-                  {editTarget ? `Edit • ${showForm.meal}` : `Quick Add • ${showForm.meal}`}
+          {/* Centered modal */}
+          <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
+            <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
+              {/* Food name at top */}
+              <h3 className="font-semibold text-lg mb-3">{editFood.item.name}</h3>
+
+              {/* Servings */}
+              {editFood.item.unit && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-sm font-medium">Quantity</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="w-9 h-9 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-lg font-medium"
+                        onClick={() => {
+                          const newQty = Math.max(0, (editFood.item.quantity || 1) - 1);
+                          setEditFood({ ...editFood, item: { ...editFood.item, quantity: newQty } });
+                        }}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editFood.item.quantity || 1}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9.]/g, '');
+                          const newQty = parseFloat(val) || 0;
+                          setEditFood({ ...editFood, item: { ...editFood.item, quantity: newQty } });
+                        }}
+                        className="w-20 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 bg-white dark:bg-neutral-900 tabular-nums"
+                      />
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400 min-w-[60px]">
+                        {editFood.item.unit}
+                      </span>
+                      <button
+                        className="w-9 h-9 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-lg font-medium"
+                        onClick={() => {
+                          const newQty = (editFood.item.quantity || 1) + 1;
+                          setEditFood({ ...editFood, item: { ...editFood.item, quantity: newQty } });
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  className="px-5 py-1 rounded-full border border-neutral-300 dark:border-neutral-700"
-                  onClick={() => {
-                    setShowForm(null);
-                    setEditTarget(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
+              )}
 
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <label className="text-sm col-span-2">
-                  Name
-                  <input
-                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  />
-                </label>
-
-                <label className="text-sm">
-                  Calories
-                  <input
-                    inputMode="decimal"
-                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
-                    value={form.calories}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        calories: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
-                      }))
-                    }
-                  />
-                </label>
-                <label className="text-sm">
-                  Protein
-                  <input
-                    inputMode="decimal"
-                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
-                    value={form.protein}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        protein: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
-                      }))
-                    }
-                  />
-                </label>
-                <label className="text-sm">
-                  Carbs
-                  <input
-                    inputMode="decimal"
-                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
-                    value={form.carbs}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        carbs: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
-                      }))
-                    }
-                  />
-                </label>
-                <label className="text-sm">
-                  Fat
-                  <input
-                    inputMode="decimal"
-                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-5 py-2 bg-white dark:bg-neutral-900"
-                    value={form.fat}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        fat: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-
-              {/* Quantity control at end of form */}
-              <div className="pt-3">
-                <label className="block text-sm mb-1">Quantity</label>
-                <div className="flex items-center gap-2 justify-center">
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
-                    onClick={() => decQty(1)}
-                    aria-label="Decrease quantity"
-                  >
-                    –
-                  </button>
-
-                  <input
-                    inputMode="decimal"
-                    className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
-                    value={form.quantity ?? "1"}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        quantity: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
-                      }))
-                    }
-                    placeholder="1"
-                  />
-
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
-                    onClick={() => incQty(1)}
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
+              {/* Nutrition summary */}
+              <div className="mt-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                  Total Nutrition
+                </h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-neutral-600 dark:text-neutral-400">Calories:</span>{' '}
+                    <span className="font-semibold">{Math.round(editFood.item.calories * (editFood.item.quantity || 1))}</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-600 dark:text-neutral-400">Protein:</span>{' '}
+                    <span className="font-semibold">{Math.round(editFood.item.protein * (editFood.item.quantity || 1))}g</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-600 dark:text-neutral-400">Carbs:</span>{' '}
+                    <span className="font-semibold">{Math.round(editFood.item.carbs * (editFood.item.quantity || 1))}g</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-600 dark:text-neutral-400">Fat:</span>{' '}
+                    <span className="font-semibold">{Math.round(editFood.item.fat * (editFood.item.quantity || 1))}g</span>
+                  </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="mt-4 flex justify-end gap-2">
+              <div className="flex gap-3 mt-4">
                 <button
-                  className="px-5 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
-                  onClick={() => {
-                    setShowForm(null);
-                    setEditTarget(null);
-                  }}
+                  className="flex-1 px-4 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium"
+                  onClick={() => setEditFood(null)}
                 >
                   Cancel
                 </button>
-                <button className="px-6 py-2 rounded-full bg-accent-diet text-black" onClick={saveForm}>
+                <button
+                  className="flex-1 px-4 py-2.5 rounded-full bg-accent-diet text-black font-medium hover:opacity-90"
+                  onClick={() => saveEditFood(editFood.item)}
+                >
                   Save
                 </button>
               </div>
@@ -621,8 +514,8 @@ export default function DietPage() {
         }}
         onRequestEdit={(index, item) => {
           if (!showMealDetail) return;
-          const mealName = meals[showMealDetail.mealIndex].name;
-          openEditForm(mealName, index, item);
+          // Don't close modal, open edit in place
+          setEditFood({ mealIndex: showMealDetail.mealIndex, foodIndex: index, item });
         }}
         onAddFood={() => {
           if (!showMealDetail) return;
