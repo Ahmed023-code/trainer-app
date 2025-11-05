@@ -179,7 +179,7 @@ export default function ExerciseDetailModal({
           <div className="grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
             <div className="text-center">Set</div>
             <div className="text-center">Type</div>
-            <div className="text-center">Weight</div>
+            <div className="text-center">lbs</div>
             <div className="text-center">Reps</div>
             <div className="text-center">RPE</div>
             <div></div>
@@ -188,6 +188,8 @@ export default function ExerciseDetailModal({
           {/* Sets list - pill-shaped rows */}
           <div className="space-y-2">
             {localExercise.sets.map((s, i) => {
+              const isQuickAdd = !localExercise.source || localExercise.source === "quick-add";
+              const hasRepValue = (s as any).repsPerformed !== undefined && (s as any).repsPerformed !== null && (s as any).repsPerformed !== "";
               return (
                 <div
                   key={i}
@@ -226,24 +228,26 @@ export default function ExerciseDetailModal({
                       // Quick-add: direct reps entry
                       <input
                         inputMode="numeric"
-                        value={String(s.repsMin)}
+                        value={s.repsMin === 0 ? "" : String(s.repsMin)}
                         onChange={(e) => updateSetField(i, "repsMin", e.target.value)}
                         className="w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                        placeholder="10"
+                        placeholder="reps"
                       />
                     ) : (
                       <>
-                        {/* Faded rep range behind */}
-                        <span className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400 dark:text-neutral-500 pointer-events-none">
-                          ({s.repsMin}–{s.repsMax})
-                        </span>
+                        {/* Faded rep range behind - only show if user hasn't typed */}
+                        {!hasRepValue && s.repsMin > 0 && s.repsMax > 0 && (
+                          <span className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400 dark:text-neutral-500 pointer-events-none tabular-nums">
+                            ({s.repsMin}–{s.repsMax})
+                          </span>
+                        )}
                         {/* Actual reps performed in front */}
                         <input
                           inputMode="numeric"
-                          value={s.repsPerformed !== undefined ? String(s.repsPerformed) : ""}
+                          value={(s as any).repsPerformed !== undefined ? String((s as any).repsPerformed) : ""}
                           onChange={(e) => updateSetField(i, "repsPerformed", e.target.value)}
                           className="relative w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                          placeholder=""
+                          placeholder="reps"
                         />
                       </>
                     )}

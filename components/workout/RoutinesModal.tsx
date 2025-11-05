@@ -122,16 +122,37 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
       exercises: deepCopyExercises(draftExercises),
       emoji: draftEmoji || undefined,
     };
+
+    // Update state
+    let updatedRoutines: Routine[];
     setRoutines((prev) => {
-      if (editingId) return prev.map((r) => (r.id === editingId ? base : r));
-      return [base, ...prev];
+      if (editingId) {
+        updatedRoutines = prev.map((r) => (r.id === editingId ? base : r));
+      } else {
+        updatedRoutines = [base, ...prev];
+      }
+      // Persist synchronously
+      try {
+        localStorage.setItem("workout-routines-v1", JSON.stringify(updatedRoutines));
+      } catch {
+        // ignore storage errors
+      }
+      return updatedRoutines;
     });
+
     onSaveRoutine(base);
     setEditingId(null);
     setTab("mine");
   };
 
   const logRoutine = (r: Routine) => {
+    // Ensure routine is persisted before logging
+    try {
+      localStorage.setItem("workout-routines-v1", JSON.stringify(routines));
+    } catch {
+      // ignore storage errors
+    }
+
     onPickRoutine({ id: uid(), name: r.name, exercises: deepCopyExercises(r.exercises, r.id), emoji: r.emoji });
     onClose();
   };

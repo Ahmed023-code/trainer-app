@@ -266,7 +266,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
               <div className="grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
                 <div className="text-center">Set</div>
                 <div className="text-center">Type</div>
-                <div className="text-center">Weight</div>
+                <div className="text-center">lbs</div>
                 <div className="text-center">Reps</div>
                 <div className="text-center">RPE</div>
                 <div></div>
@@ -274,6 +274,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
 
               {exercise.sets.map((set, idx) => {
                 const isQuickAdd = !exercise.source || exercise.source === "quick-add";
+                const hasRepValue = set.repsMin > 0;
 
                 return (
                   <div
@@ -314,14 +315,14 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
 
                     {/* Reps - single input with range in background */}
                     <div className="relative flex-1 min-w-0">
-                      {!isQuickAdd && set.repsMin > 0 && set.repsMax > 0 && (
+                      {!isQuickAdd && !hasRepValue && set.repsMax > 0 && (
                         <span className="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm pointer-events-none tabular-nums">
                           ({set.repsMin}–{set.repsMax})
                         </span>
                       )}
                       <input
                         type="number"
-                        value={set.repsMin}
+                        value={set.repsMin === 0 ? "" : set.repsMin}
                         onChange={(e) => {
                           e.stopPropagation();
                           updateSetField(idx, "repsMin", e.target.value);

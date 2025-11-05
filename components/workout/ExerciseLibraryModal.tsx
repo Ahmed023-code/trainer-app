@@ -202,7 +202,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
   };
 
   return (
-    <div className="fixed inset-0 z-[9500]">
+    <div className="fixed inset-0 z-[10000]">
       {/* backdrop closes entire sheet */}
       <button
         className="absolute inset-0 bg-black/10 dark:bg-black/20 backdrop-blur-sm"
