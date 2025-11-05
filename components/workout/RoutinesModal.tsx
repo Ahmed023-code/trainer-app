@@ -123,22 +123,20 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
       emoji: draftEmoji || undefined,
     };
 
+    // Calculate new routines array
+    const updatedRoutines = editingId
+      ? routines.map((r) => (r.id === editingId ? base : r))
+      : [base, ...routines];
+
+    // Persist synchronously before updating state
+    try {
+      localStorage.setItem("workout-routines-v1", JSON.stringify(updatedRoutines));
+    } catch {
+      // ignore storage errors
+    }
+
     // Update state
-    let updatedRoutines: Routine[];
-    setRoutines((prev) => {
-      if (editingId) {
-        updatedRoutines = prev.map((r) => (r.id === editingId ? base : r));
-      } else {
-        updatedRoutines = [base, ...prev];
-      }
-      // Persist synchronously
-      try {
-        localStorage.setItem("workout-routines-v1", JSON.stringify(updatedRoutines));
-      } catch {
-        // ignore storage errors
-      }
-      return updatedRoutines;
-    });
+    setRoutines(updatedRoutines);
 
     onSaveRoutine(base);
     setEditingId(null);
@@ -577,7 +575,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                           <div className="flex items-center gap-0.5 min-w-0">
                             <input
                               inputMode="numeric"
-                              className="w-full text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-1.5 bg-white dark:bg-neutral-900 min-w-0"
+                              className="w-full text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-1.5 bg-white dark:bg-neutral-900 min-w-[2.5rem]"
                               value={String(s.repsMin)}
                               onChange={(e) => updateSetField(exIdx, setIdx, "repsMin", keepInt(e.target.value))}
                               placeholder="8"
@@ -585,7 +583,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                             <span className="text-xs text-neutral-400">-</span>
                             <input
                               inputMode="numeric"
-                              className="w-full text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-1.5 bg-white dark:bg-neutral-900 min-w-0"
+                              className="w-full text-sm text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-1 py-1.5 bg-white dark:bg-neutral-900 min-w-[2.5rem]"
                               value={String(s.repsMax)}
                               onChange={(e) => updateSetField(exIdx, setIdx, "repsMax", keepInt(e.target.value))}
                               placeholder="10"

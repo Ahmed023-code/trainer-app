@@ -231,14 +231,14 @@ export default function ExerciseDetailModal({
                         value={s.repsMin === 0 ? "" : String(s.repsMin)}
                         onChange={(e) => updateSetField(i, "repsMin", e.target.value)}
                         className="w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                        placeholder="reps"
+                        placeholder=""
                       />
                     ) : (
                       <>
-                        {/* Faded rep range behind - only show if user hasn't typed */}
-                        {!hasRepValue && s.repsMin > 0 && s.repsMax > 0 && (
+                        {/* Faded rep range behind - always show if range exists */}
+                        {s.repsMin > 0 && s.repsMax > 0 && (
                           <span className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400 dark:text-neutral-500 pointer-events-none tabular-nums">
-                            ({s.repsMin}–{s.repsMax})
+                            {s.repsMin}-{s.repsMax}
                           </span>
                         )}
                         {/* Actual reps performed in front */}
@@ -247,7 +247,7 @@ export default function ExerciseDetailModal({
                           value={(s as any).repsPerformed !== undefined ? String((s as any).repsPerformed) : ""}
                           onChange={(e) => updateSetField(i, "repsPerformed", e.target.value)}
                           className="relative w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                          placeholder="reps"
+                          placeholder=""
                         />
                       </>
                     )}

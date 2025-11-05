@@ -279,11 +279,11 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center gap-1 px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
+                    className={`grid grid-cols-[32px,90px,70px,1fr,40px,36px] gap-1 items-center px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Set number */}
-                    <span className="text-sm font-semibold tabular-nums w-6 shrink-0">#{idx + 1}</span>
+                    <span className="text-sm font-semibold tabular-nums text-center">#{idx + 1}</span>
 
                     {/* Set Type Select */}
                     <select
@@ -293,7 +293,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                         updateSetField(idx, "type", e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="text-xs font-medium px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                      className="text-xs font-medium px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                     >
                       <option value="Warmup">Warm-up</option>
                       <option value="Working">Working</option>
@@ -309,15 +309,15 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                         updateSetField(idx, "weight", e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-16 text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                      className="text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                       placeholder="lbs"
                     />
 
                     {/* Reps - single input with range in background */}
-                    <div className="relative flex-1 min-w-0">
-                      {!isQuickAdd && !hasRepValue && set.repsMax > 0 && (
+                    <div className="relative">
+                      {!isQuickAdd && set.repsMax > 0 && (
                         <span className="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm pointer-events-none tabular-nums">
-                          ({set.repsMin}–{set.repsMax})
+                          {set.repsMin}-{set.repsMax}
                         </span>
                       )}
                       <input
@@ -329,7 +329,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="relative w-full text-sm font-medium tabular-nums px-2 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                        placeholder="reps"
+                        placeholder=""
                       />
                     </div>
 
@@ -345,13 +345,13 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                         updateSetField(idx, "rpe", e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-10 text-sm font-medium tabular-nums px-1 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                      className="text-sm font-medium tabular-nums px-1 py-1 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                       placeholder="RPE"
                     />
 
                     {/* 3-dot menu for set options */}
                     {onUpdateExercise && (
-                      <div className="relative ml-auto">
+                      <div className="relative flex items-center justify-center">
                         <button
                           ref={setMenuBtnRef(idx)}
                           onClick={(e) => {
