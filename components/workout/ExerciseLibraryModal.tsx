@@ -9,6 +9,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onPick: (ex: Exercise) => void;
+  onSwitchToRoutines?: () => void;
 };
 
 type Row = {
@@ -58,7 +59,7 @@ const MUSCLES = [
   "Core",
 ] as const;
 
-export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props) {
+export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitchToRoutines }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<Row[]>([]);
   const [q, setQ] = useState("");
@@ -213,6 +214,37 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick }: Props)
         }}
       />
       <div className="absolute inset-0 bg-white dark:bg-neutral-900 flex flex-col">
+        {/* Tab Switcher - only show if onSwitchToRoutines is provided */}
+        {onSwitchToRoutines && (
+          <div className="sticky top-0 z-[9502] bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <h2 className="text-lg font-semibold">Log Workout</h2>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center"
+                aria-label="Close"
+              >
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" className="w-5 h-5">
+                  <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="flex gap-1 px-4 pb-3">
+              <button
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[var(--accent-workout)] text-black"
+              >
+                Quick Add
+              </button>
+              <button
+                onClick={onSwitchToRoutines}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Routines
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="sticky top-0 z-[9501] p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
           <button

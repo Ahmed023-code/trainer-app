@@ -86,10 +86,9 @@ export default function WorkoutPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workoutNotes, setWorkoutNotes] = useState<string>("");
 
-  // FAB + modals
-  const [showFabMenu, setShowFabMenu] = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [showRoutines, setShowRoutines] = useState(false);
+  // FAB + modals - unified workout log modal with tabs
+  const [showWorkoutLog, setShowWorkoutLog] = useState(false);
+  const [workoutLogTab, setWorkoutLogTab] = useState<"quick-add" | "routines">("quick-add");
   const [showHistory, setShowHistory] = useState(false);
   const [historyExerciseName, setHistoryExerciseName] = useState("");
 
@@ -301,7 +300,7 @@ export default function WorkoutPage() {
         {/* Log Workout button always visible */}
         <div className="flex items-center justify-center pt-4">
           <button
-            onClick={() => setShowFabMenu(true)}
+            onClick={() => setShowWorkoutLog(true)}
             className="px-8 py-3 rounded-full text-base font-medium border-2 bg-transparent transition-all hover:bg-opacity-5"
             style={{ borderColor: "var(--accent-workout)", color: "var(--accent-workout)", backgroundColor: "transparent" }}
           >
@@ -342,65 +341,37 @@ export default function WorkoutPage() {
         <button
           className="w-14 h-14 rounded-full bg-accent-workout text-black shadow-lg flex items-center justify-center"
           aria-label="Add"
-          onClick={() => setShowFabMenu((v) => !v)}
+          onClick={() => setShowWorkoutLog(true)}
         >
           <span className="text-4xl leading-none" style={{ marginTop: '-2px' }}>+</span>
         </button>
-
-        {showFabMenu && (
-          <>
-            <button
-              className="fixed inset-0 z-[9398]"
-              aria-label="Close"
-              onClick={() => setShowFabMenu(false)}
-            />
-            <div className="absolute right-0 bottom-20 z-[9399] rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-2 w-48">
-              <button
-                className="flex w-full items-center gap-2 text-left px-3 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                onClick={() => {
-                  setShowFabMenu(false);
-                  setShowLibrary(true);
-                }}
-              >
-                <img src="/icons/fi-sr-plus-small.svg" alt="" className="w-4 h-4 dark:invert" />
-                Quick Add
-              </button>
-              <button
-                className="mt-1 flex w-full items-center gap-2 text-left px-3 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                onClick={() => {
-                  setShowFabMenu(false);
-                  setShowRoutines(true);
-                }}
-              >
-                <img src="/icons/fi-sr-routines.svg" alt="" className="w-4 h-4 dark:invert" />
-                Routines
-              </button>
-            </div>
-          </>
-        )}
       </div>
 
-      {/* Exercise search */}
-      <ExerciseLibraryModal
-        isOpen={showLibrary}
-        onClose={() => setShowLibrary(false)}
-        onPick={(ex) => {
-          addExercise(ex);
-          setShowLibrary(false);
-        }}
-      />
+      {/* Unified Workout Log - render appropriate modal based on tab */}
+      {showWorkoutLog && workoutLogTab === "quick-add" && (
+        <ExerciseLibraryModal
+          isOpen={true}
+          onClose={() => setShowWorkoutLog(false)}
+          onPick={(ex) => {
+            addExercise(ex);
+            setShowWorkoutLog(false);
+          }}
+          onSwitchToRoutines={() => setWorkoutLogTab("routines")}
+        />
+      )}
 
-      {/* Routines */}
-      <RoutinesModal
-        isOpen={showRoutines}
-        onClose={() => setShowRoutines(false)}
-        onSaveRoutine={() => {}}
-        onPickRoutine={(r) => {
-          // Routine exercises are already marked with source="routine" by RoutinesModal
-          setExercises((prev) => [...prev, ...r.exercises]);
-          setShowRoutines(false);
-        }}
-      />
+      {showWorkoutLog && workoutLogTab === "routines" && (
+        <RoutinesModal
+          isOpen={true}
+          onClose={() => setShowWorkoutLog(false)}
+          onSaveRoutine={() => {}}
+          onPickRoutine={(r) => {
+            setExercises((prev) => [...prev, ...r.exercises]);
+            setShowWorkoutLog(false);
+          }}
+          onSwitchToQuickAdd={() => setWorkoutLogTab("quick-add")}
+        />
+      )}
 
       {/* Clock Modal */}
       <ClockModal isOpen={showClock} onClose={() => setShowClock(false)} />

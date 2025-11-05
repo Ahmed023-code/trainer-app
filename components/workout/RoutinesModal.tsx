@@ -52,10 +52,11 @@ type Props = {
   onClose: () => void;
   onSaveRoutine: (r: Routine) => void;
   onPickRoutine: (r: Routine) => void;
+  onSwitchToQuickAdd?: () => void;
 };
 
 // ---------- Main Modal ----------
-export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRoutine }: Props) {
+export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRoutine, onSwitchToQuickAdd }: Props) {
   const [tab, setTab] = useState<"mine" | "new">("mine");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -190,6 +191,37 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
         onClick={onClose}
       />
       <div className="absolute inset-0 bg-white dark:bg-neutral-900 flex flex-col">
+        {/* Tab Switcher - only show if onSwitchToQuickAdd is provided */}
+        {onSwitchToQuickAdd && (
+          <div className="sticky top-0 z-[9502] bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <h2 className="text-lg font-semibold">Log Workout</h2>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center"
+                aria-label="Close"
+              >
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" className="w-5 h-5">
+                  <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="flex gap-1 px-4 pb-3">
+              <button
+                onClick={onSwitchToQuickAdd}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Quick Add
+              </button>
+              <button
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[var(--accent-workout)] text-black"
+              >
+                Routines
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="sticky top-0 z-10 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
           <button className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700" onClick={onClose}>
