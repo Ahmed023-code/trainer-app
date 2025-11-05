@@ -263,7 +263,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
           {exercise.sets && exercise.sets.length > 0 ? (
             <div className="space-y-2">
               {/* Column Headers */}
-              <div className="grid grid-cols-[28px,82px,70px,1fr,40px,36px] gap-1 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
+              <div className="grid grid-cols-[24px,75px,70px,1fr,40px,36px] gap-1 px-4 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
                 <div className="text-center">Set</div>
                 <div className="text-center">Type</div>
                 <div className="text-center">lbs</div>
@@ -279,7 +279,7 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                 return (
                   <div
                     key={idx}
-                    className={`grid grid-cols-[28px,82px,70px,1fr,40px,36px] gap-1 items-center px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
+                    className={`grid grid-cols-[24px,75px,70px,1fr,40px,36px] gap-1 items-center px-4 py-2.5 rounded-full border ${getSetColor(set.type)}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Set number */}
@@ -314,8 +314,8 @@ export default function ExerciseSection({ exercise, onClick, onDelete, onAddSet,
                     />
 
                     {/* Reps - single input with range in background */}
-                    <div className="relative min-w-[5rem]">
-                      {!isQuickAdd && set.repsMax > 0 && (
+                    <div className="relative w-16">
+                      {!isQuickAdd && !hasRepValue && set.repsMax > 0 && (
                         <span className="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm pointer-events-none tabular-nums">
                           {set.repsMin}-{set.repsMax}
                         </span>
