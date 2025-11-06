@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Static export for Capacitor mobile app
-  output: 'export',
+  // Static export for Capacitor mobile app (disable for server mode)
+  // Use NEXT_BUILD_MODE=server to run as a web server instead of static export
+  output: process.env.NEXT_BUILD_MODE === 'server' ? undefined : 'export',
 
   // Image optimization must be disabled for static export
   images: {

@@ -206,7 +206,7 @@ This sets the target tab's last-selected date before navigation, ensuring the us
 # Install dependencies
 npm install
 
-# Run development server
+# Run development server (local only)
 npm run dev
 
 # Build for production
@@ -215,6 +215,78 @@ npm run build
 # Start production server
 npm start
 ```
+
+## Remote Access
+
+Access your app from any device on the same network (phone, tablet, other computers):
+
+### Quick Start
+
+1. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+2. **Get your local IP address:**
+   ```bash
+   npm run ip
+   ```
+
+3. **Access from other devices:**
+   - Open the URL shown (e.g., `http://192.168.1.100:3000`)
+   - Make sure both devices are on the same WiFi network
+
+### How It Works
+
+The app runs in **server mode** for web access and **export mode** for mobile builds:
+
+- **Web/Remote Access**: `npm run dev` or `npm start` runs a Next.js server on `0.0.0.0:3000`
+- **Mobile Build**: `npm run mobile:build` exports static files for Capacitor
+
+### Access Over the Internet
+
+For access from anywhere (not just local network), use one of these options:
+
+**Option 1: ngrok (Recommended)**
+```bash
+# Install ngrok
+npm install -g ngrok
+
+# Start your app
+npm run dev
+
+# In another terminal, create a tunnel
+ngrok http 3000
+```
+
+**Option 2: localtunnel**
+```bash
+# Install localtunnel
+npm install -g localtunnel
+
+# Start your app
+npm run dev
+
+# In another terminal, create a tunnel
+lt --port 3000
+```
+
+**Option 3: Deploy to Production**
+- Vercel: `vercel deploy`
+- Netlify: Connect your git repository
+- Railway: `railway up`
+
+### Troubleshooting
+
+**Can't connect from other devices?**
+- Verify both devices are on the same WiFi network
+- Check firewall settings (allow port 3000)
+- Try disabling VPN on either device
+- Run `npm run ip` to confirm the correct IP address
+
+**Mobile build not working?**
+- Mobile builds use `npm run mobile:build` (export mode)
+- Web server mode is separate and doesn't affect mobile builds
 
 ## Project Structure
 
