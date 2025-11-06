@@ -7,7 +7,7 @@ import MicronutrientsModal from './MicronutrientsModal';
 import BarcodeScanner from './BarcodeScanner';
 import { Barcode, Info } from 'lucide-react';
 
-// Props contract stays the same
+// Props contract updated to include unit and USDA metadata
 export default function FoodLibraryModal({
   isOpen,
   onClose,
@@ -18,10 +18,13 @@ export default function FoodLibraryModal({
   onPick: (item: {
     name: string;
     quantity: number;
+    unit?: string;
     calories: number;
     protein: number;
     fat: number;
     carbs: number;
+    fdcId?: number;
+    gramsPerUnit?: number;
   }) => void;
 }) {
   // ---------- helpers ----------

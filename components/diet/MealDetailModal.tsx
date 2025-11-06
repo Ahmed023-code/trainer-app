@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+import MealNutrientsModal from "./MealNutrientsModal";
+import { Info } from "lucide-react";
 import type { Meal, FoodItem } from "@/components/diet/types";
 
 type Props = {
@@ -29,6 +31,8 @@ export default function MealDetailModal({
   const [localMeal, setLocalMeal] = useState<Meal | null>(null);
   // Track if meal name is being edited
   const [isEditingName, setIsEditingName] = useState(false);
+  // Track if showing meal nutrients modal
+  const [showNutrients, setShowNutrients] = useState(false);
 
   // Initialize local state when modal opens or meal changes
   useEffect(() => {
@@ -185,6 +189,17 @@ export default function MealDetailModal({
 
           {/* Secondary actions */}
           <div className="flex gap-2 mt-3 flex-wrap">
+            {/* Details button - show nutrient breakdown */}
+            {localMeal.items.length > 0 && localMeal.items.some(item => item.fdcId) && (
+              <button
+                onClick={() => setShowNutrients(true)}
+                className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1"
+                aria-label="View all nutrients"
+              >
+                <Info className="w-4 h-4" />
+                Details
+              </button>
+            )}
             {onAddFood && (
               <button
                 onClick={onAddFood}
@@ -361,6 +376,13 @@ export default function MealDetailModal({
           </div>
         )}
       </div>
+
+      {/* Meal Nutrients Modal */}
+      <MealNutrientsModal
+        isOpen={showNutrients}
+        meal={localMeal}
+        onClose={() => setShowNutrients(false)}
+      />
     </div>
   );
 }

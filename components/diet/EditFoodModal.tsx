@@ -115,24 +115,15 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
     // Add portions from USDA data
     if (foodDetails.portions && foodDetails.portions.length > 0) {
       for (const p of foodDetails.portions) {
-        if (p.gramWeight && p.gramWeight > 0) {
-          let label = p.portionDescription || "serving";
-          const amount = p.amount || 1;
-          const modifier = p.modifier?.trim();
-
-          if (amount !== 1) {
-            label = `${amount} ${label}`;
-          }
-          if (modifier) {
-            label = `${label}, ${modifier}`;
-          }
+        if (p.gram_weight && p.gram_weight > 0) {
+          let label = p.portion_description || "serving";
 
           // Include gram weight in label for clarity
-          label = `${label} (${Math.round(p.gramWeight)}g)`;
+          label = `${label} (${Math.round(p.gram_weight)}g)`;
 
           portions.push({
             label,
-            grams: p.gramWeight
+            grams: p.gram_weight
           });
         }
       }
@@ -162,8 +153,8 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
 
     // Get from USDA data
     const getVal = (id: number) => {
-      const nut = foodDetails.nutrients.find(n => n.nutrientId === id);
-      return safeNum(nut?.value);
+      const nut = foodDetails.nutrients.find(n => n.id === id);
+      return safeNum(nut?.amount);
     };
 
     return {
@@ -251,8 +242,8 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
           {/* Food name prominently at top */}
           <h3 className="font-semibold text-lg mb-3">{foodItem.name}</h3>
 
-          {/* Only show mode toggle if we have USDA data */}
-          {foodItem.fdcId && foodDetails && (
+          {/* Show mode toggle if we have USDA fdcId (even while loading) */}
+          {foodItem.fdcId && (
             <>
               {/* Segmented control */}
               <div className="grid grid-cols-2 gap-1 text-sm mb-3">
