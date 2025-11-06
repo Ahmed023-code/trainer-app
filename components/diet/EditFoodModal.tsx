@@ -82,17 +82,24 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
     if (foodItem.unit === "g") {
       setMode("weight");
       setGrams(String(gramsTotal));
+      setServings("1");
     } else {
       setMode("servings");
       setServings(String(qty));
+      setGrams(String(gramsTotal));
 
       // Try to find matching portion index
-      if (foodDetails) {
-        const portions = buildPortions();
-        const matchIdx = portions.findIndex(p => p.label === foodItem.unit);
-        if (matchIdx >= 0) {
-          setSelPortionIdx(matchIdx);
-        }
+      const portions = buildPortions();
+      const matchIdx = portions.findIndex(p => {
+        // Match by exact label or by gram weight
+        return p.label === foodItem.unit ||
+               (p.grams === (foodItem.gramsPerUnit || 100));
+      });
+      if (matchIdx >= 0) {
+        setSelPortionIdx(matchIdx);
+      } else {
+        // Default to first portion if no match
+        setSelPortionIdx(0);
       }
     }
   }, [isOpen, foodItem, foodDetails]);
@@ -242,19 +249,18 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
           {/* Food name prominently at top */}
           <h3 className="font-semibold text-lg mb-3">{foodItem.name}</h3>
 
-          {/* Show mode toggle if we have USDA fdcId (even while loading) */}
-          {foodItem.fdcId && (
-            <>
-              {/* Segmented control */}
-              <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+          {/* Always show mode toggle and full interface */}
+          <>
+            {/* Segmented control */}
+            <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                 {(["servings", "weight"] as const).map((m) => (
                   <button
                     key={m}
                     className={
-                      "px-2 py-1 rounded-md border " +
+                      "px-4 py-2 rounded-full border transition-colors " +
                       (mode === m
                         ? "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700"
-                        : "border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800")
+                        : "border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800")
                     }
                     onClick={() => setMode(m)}
                   >
@@ -352,49 +358,7 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
                   </label>
                 </div>
               )}
-            </>
-          )}
-
-          {/* Simple quantity control if no USDA data */}
-          {(!foodItem.fdcId || !foodDetails) && (
-            <div className="space-y-2">
-              <label className="block text-sm">
-                {foodItem.unit ? `Quantity (${foodItem.unit})` : 'Quantity'}
-                <div className="mt-1 flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
-                    onClick={() => {
-                      const current = foodItem.quantity || 1;
-                      const newVal = current - 1;
-                      setServings(String(newVal < 0 ? 0 : newVal));
-                    }}
-                  >
-                    –
-                  </button>
-                  <input
-                    inputMode="decimal"
-                    className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
-                    value={servings}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
-                      setServings(val);
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
-                    onClick={() => {
-                      const current = safeNum(servings);
-                      setServings(String(current + 1));
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-              </label>
-            </div>
-          )}
+          </>
 
           {/* Live macro preview */}
           <div className="mt-3">

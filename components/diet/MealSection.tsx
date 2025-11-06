@@ -232,33 +232,60 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
                 >
                   {/* Left: Food name with quantity and macros */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm truncate mb-1">
-                      {item.name} <span className="text-xs text-neutral-500 dark:text-neutral-400 font-normal">({qty} {item.unit || 'serving'}{qty !== 1 ? 's' : ''})</span>
+                    <h3 className="font-medium text-sm truncate">
+                      {item.name}
                     </h3>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {qty} serving{qty !== 1 ? 's' : ''}{item.unit || item.gramsPerUnit ? `: ${item.unit || `${item.gramsPerUnit}g`}` : ''}
+                    </div>
                     {/* Macros on single line */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 mt-1">
                       <span
                         className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
                         style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
                       >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px]"
+                          style={{ backgroundColor: "#34D399", color: "#000" }}
+                        >
+                          C
+                        </span>
                         {displayCal}
                       </span>
                       <span
                         className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
                         style={{ color: "#F87171", backgroundColor: "#F871711F" }}
                       >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px]"
+                          style={{ backgroundColor: "#F87171", color: "#000" }}
+                        >
+                          P
+                        </span>
                         {displayP}g
                       </span>
                       <span
                         className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
                         style={{ color: "#FACC15", backgroundColor: "#FACC151F" }}
                       >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px]"
+                          style={{ backgroundColor: "#FACC15", color: "#000" }}
+                        >
+                          F
+                        </span>
                         {displayF}g
                       </span>
                       <span
                         className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
                         style={{ color: "#60A5FA", backgroundColor: "#60A5FA1F" }}
                       >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px]"
+                          style={{ backgroundColor: "#60A5FA", color: "#000" }}
+                        >
+                          C
+                        </span>
                         {displayC}g
                       </span>
                     </div>

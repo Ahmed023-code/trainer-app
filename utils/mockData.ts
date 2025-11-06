@@ -64,48 +64,50 @@ export function loadMockData() {
   const dietData: Record<string, any> = {};
 
   // Realistic meal templates with USDA units
+  // Format: quantity = number of servings (usually 1), gramsPerUnit = grams per serving
+  // Macros are for the full serving size
   const mealTemplates = [
     {
       name: "Breakfast",
       items: [
-        { name: "Oatmeal, Dry", quantity: 80, unit: "g", calories: 300, protein: 10, carbs: 54, fat: 6 },
-        { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", calories: 105, protein: 1, carbs: 27, fat: 0 },
-        { name: "Whey Protein Isolate", quantity: 30, unit: "g", calories: 120, protein: 24, carbs: 3, fat: 2 },
-        { name: "Almond Milk, Unsweetened", quantity: 240, unit: "ml", calories: 30, protein: 1, carbs: 1, fat: 2.5 },
+        { name: "Oatmeal, Dry", quantity: 1, unit: "40g", gramsPerUnit: 40, calories: 150, protein: 5, carbs: 27, fat: 3 },
+        { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", gramsPerUnit: 118, calories: 105, protein: 1, carbs: 27, fat: 0 },
+        { name: "Whey Protein Isolate", quantity: 1, unit: "30g scoop", gramsPerUnit: 30, calories: 120, protein: 24, carbs: 3, fat: 2 },
+        { name: "Almond Milk, Unsweetened", quantity: 1, unit: "240ml cup", gramsPerUnit: 240, calories: 30, protein: 1, carbs: 1, fat: 2.5 },
       ],
     },
     {
       name: "Lunch",
       items: [
-        { name: "Chicken Breast, Grilled", quantity: 170, unit: "g", calories: 280, protein: 53, carbs: 0, fat: 6 },
-        { name: "Brown Rice, Cooked", quantity: 195, unit: "g", calories: 215, protein: 5, carbs: 45, fat: 2 },
-        { name: "Broccoli, Steamed", quantity: 156, unit: "g", calories: 55, protein: 4, carbs: 11, fat: 1 },
-        { name: "Olive Oil", quantity: 1, unit: "tbsp (13.5g)", calories: 120, protein: 0, carbs: 0, fat: 14 },
+        { name: "Chicken Breast, Grilled", quantity: 1, unit: "170g", gramsPerUnit: 170, calories: 280, protein: 53, carbs: 0, fat: 6 },
+        { name: "Brown Rice, Cooked", quantity: 1, unit: "195g cup", gramsPerUnit: 195, calories: 215, protein: 5, carbs: 45, fat: 2 },
+        { name: "Broccoli, Steamed", quantity: 1, unit: "156g cup", gramsPerUnit: 156, calories: 55, protein: 4, carbs: 11, fat: 1 },
+        { name: "Olive Oil", quantity: 1, unit: "tbsp (13.5g)", gramsPerUnit: 13.5, calories: 120, protein: 0, carbs: 0, fat: 14 },
       ],
     },
     {
       name: "Snack",
       items: [
-        { name: "Greek Yogurt, Nonfat Plain", quantity: 170, unit: "g", calories: 100, protein: 17, carbs: 7, fat: 0 },
-        { name: "Blueberries, Fresh", quantity: 75, unit: "g", calories: 43, protein: 1, carbs: 11, fat: 0 },
-        { name: "Almonds, Raw", quantity: 28, unit: "g (23 almonds)", calories: 160, protein: 6, carbs: 6, fat: 14 },
+        { name: "Greek Yogurt, Nonfat Plain", quantity: 1, unit: "170g container", gramsPerUnit: 170, calories: 100, protein: 17, carbs: 7, fat: 0 },
+        { name: "Blueberries, Fresh", quantity: 1, unit: "75g (1/2 cup)", gramsPerUnit: 75, calories: 43, protein: 1, carbs: 11, fat: 0 },
+        { name: "Almonds, Raw", quantity: 1, unit: "28g (23 almonds)", gramsPerUnit: 28, calories: 160, protein: 6, carbs: 6, fat: 14 },
       ],
     },
     {
       name: "Dinner",
       items: [
-        { name: "Salmon, Atlantic, Cooked", quantity: 150, unit: "g", calories: 280, protein: 40, carbs: 0, fat: 13 },
-        { name: "Sweet Potato, Baked", quantity: 130, unit: "g (1 medium)", calories: 112, protein: 2, carbs: 26, fat: 0 },
-        { name: "Green Beans, Steamed", quantity: 125, unit: "g", calories: 44, protein: 2, carbs: 10, fat: 0 },
-        { name: "Avocado", quantity: 50, unit: "g (1/3 fruit)", calories: 80, protein: 1, carbs: 4, fat: 7 },
+        { name: "Salmon, Atlantic, Cooked", quantity: 1, unit: "150g fillet", gramsPerUnit: 150, calories: 280, protein: 40, carbs: 0, fat: 13 },
+        { name: "Sweet Potato, Baked", quantity: 1, unit: "medium (130g)", gramsPerUnit: 130, calories: 112, protein: 2, carbs: 26, fat: 0 },
+        { name: "Green Beans, Steamed", quantity: 1, unit: "125g cup", gramsPerUnit: 125, calories: 44, protein: 2, carbs: 10, fat: 0 },
+        { name: "Avocado", quantity: 1, unit: "50g (1/3 fruit)", gramsPerUnit: 50, calories: 80, protein: 1, carbs: 4, fat: 7 },
       ],
     },
     {
       name: "Post-Workout",
       items: [
-        { name: "Whey Protein Isolate", quantity: 30, unit: "g", calories: 120, protein: 24, carbs: 3, fat: 2 },
-        { name: "Rice Cakes, Plain", quantity: 18, unit: "g (2 cakes)", calories: 70, protein: 1, carbs: 15, fat: 0 },
-        { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", calories: 105, protein: 1, carbs: 27, fat: 0 },
+        { name: "Whey Protein Isolate", quantity: 1, unit: "30g scoop", gramsPerUnit: 30, calories: 120, protein: 24, carbs: 3, fat: 2 },
+        { name: "Rice Cakes, Plain", quantity: 2, unit: "cakes (18g)", gramsPerUnit: 9, calories: 35, protein: 0.5, carbs: 7.5, fat: 0 },
+        { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", gramsPerUnit: 118, calories: 105, protein: 1, carbs: 27, fat: 0 },
       ],
     },
   ];
@@ -113,49 +115,49 @@ export function loadMockData() {
   // Additional meal variations
   const breakfastVariations = [
     [
-      { name: "Eggs, Whole, Scrambled", quantity: 3, unit: "large eggs (150g)", calories: 270, protein: 18, carbs: 2, fat: 20 },
-      { name: "Whole Wheat Toast", quantity: 2, unit: "slices (56g)", calories: 140, protein: 8, carbs: 24, fat: 2 },
-      { name: "Avocado", quantity: 50, unit: "g (1/3 fruit)", calories: 80, protein: 1, carbs: 4, fat: 7 },
+      { name: "Eggs, Whole, Scrambled", quantity: 3, unit: "large egg", gramsPerUnit: 50, calories: 90, protein: 6, carbs: 1, fat: 7 },
+      { name: "Whole Wheat Toast", quantity: 2, unit: "slice (28g)", gramsPerUnit: 28, calories: 70, protein: 4, carbs: 12, fat: 1 },
+      { name: "Avocado", quantity: 1, unit: "50g (1/3 fruit)", gramsPerUnit: 50, calories: 80, protein: 1, carbs: 4, fat: 7 },
     ],
     [
-      { name: "Greek Yogurt, Nonfat Plain", quantity: 227, unit: "g (1 cup)", calories: 130, protein: 23, carbs: 9, fat: 0 },
-      { name: "Granola, Low Fat", quantity: 30, unit: "g", calories: 120, protein: 3, carbs: 24, fat: 2 },
-      { name: "Strawberries, Fresh", quantity: 150, unit: "g (1 cup)", calories: 48, protein: 1, carbs: 12, fat: 0 },
+      { name: "Greek Yogurt, Nonfat Plain", quantity: 1, unit: "227g cup", gramsPerUnit: 227, calories: 130, protein: 23, carbs: 9, fat: 0 },
+      { name: "Granola, Low Fat", quantity: 1, unit: "30g serving", gramsPerUnit: 30, calories: 120, protein: 3, carbs: 24, fat: 2 },
+      { name: "Strawberries, Fresh", quantity: 1, unit: "150g cup", gramsPerUnit: 150, calories: 48, protein: 1, carbs: 12, fat: 0 },
     ],
   ];
 
   const lunchVariations = [
     [
-      { name: "Turkey Breast, Deli Sliced", quantity: 112, unit: "g (4 oz)", calories: 120, protein: 24, carbs: 4, fat: 2 },
-      { name: "Whole Wheat Bread", quantity: 2, unit: "slices (56g)", calories: 140, protein: 8, carbs: 24, fat: 2 },
-      { name: "Apple, Medium", quantity: 1, unit: "fruit (182g)", calories: 95, protein: 0, carbs: 25, fat: 0 },
-      { name: "Baby Carrots", quantity: 85, unit: "g (10 carrots)", calories: 35, protein: 1, carbs: 8, fat: 0 },
+      { name: "Turkey Breast, Deli Sliced", quantity: 1, unit: "112g (4 oz)", gramsPerUnit: 112, calories: 120, protein: 24, carbs: 4, fat: 2 },
+      { name: "Whole Wheat Bread", quantity: 2, unit: "slice (28g)", gramsPerUnit: 28, calories: 70, protein: 4, carbs: 12, fat: 1 },
+      { name: "Apple, Medium", quantity: 1, unit: "fruit (182g)", gramsPerUnit: 182, calories: 95, protein: 0, carbs: 25, fat: 0 },
+      { name: "Baby Carrots", quantity: 1, unit: "85g (10 carrots)", gramsPerUnit: 85, calories: 35, protein: 1, carbs: 8, fat: 0 },
     ],
     [
-      { name: "Tuna, Canned in Water", quantity: 140, unit: "g (1 can)", calories: 150, protein: 35, carbs: 0, fat: 1 },
-      { name: "Mixed Greens Salad", quantity: 85, unit: "g (3 cups)", calories: 20, protein: 2, carbs: 4, fat: 0 },
-      { name: "Balsamic Vinaigrette", quantity: 2, unit: "tbsp (30ml)", calories: 90, protein: 0, carbs: 4, fat: 8 },
-      { name: "Whole Wheat Crackers", quantity: 28, unit: "g (10 crackers)", calories: 120, protein: 3, carbs: 20, fat: 3 },
+      { name: "Tuna, Canned in Water", quantity: 1, unit: "140g can", gramsPerUnit: 140, calories: 150, protein: 35, carbs: 0, fat: 1 },
+      { name: "Mixed Greens Salad", quantity: 1, unit: "85g (3 cups)", gramsPerUnit: 85, calories: 20, protein: 2, carbs: 4, fat: 0 },
+      { name: "Balsamic Vinaigrette", quantity: 2, unit: "tbsp (15ml)", gramsPerUnit: 15, calories: 45, protein: 0, carbs: 2, fat: 4 },
+      { name: "Whole Wheat Crackers", quantity: 1, unit: "28g (10 crackers)", gramsPerUnit: 28, calories: 120, protein: 3, carbs: 20, fat: 3 },
     ],
   ];
 
   const dinnerVariations = [
     [
-      { name: "Sirloin Steak, Grilled", quantity: 170, unit: "g (6 oz)", calories: 340, protein: 46, carbs: 0, fat: 16 },
-      { name: "Baked Potato with Skin", quantity: 173, unit: "g (1 medium)", calories: 161, protein: 4, carbs: 37, fat: 0 },
-      { name: "Asparagus, Grilled", quantity: 134, unit: "g (5 spears)", calories: 27, protein: 3, carbs: 5, fat: 0 },
-      { name: "Butter", quantity: 1, unit: "tbsp (14g)", calories: 100, protein: 0, carbs: 0, fat: 11 },
+      { name: "Sirloin Steak, Grilled", quantity: 1, unit: "170g (6 oz)", gramsPerUnit: 170, calories: 340, protein: 46, carbs: 0, fat: 16 },
+      { name: "Baked Potato with Skin", quantity: 1, unit: "medium (173g)", gramsPerUnit: 173, calories: 161, protein: 4, carbs: 37, fat: 0 },
+      { name: "Asparagus, Grilled", quantity: 1, unit: "134g (5 spears)", gramsPerUnit: 134, calories: 27, protein: 3, carbs: 5, fat: 0 },
+      { name: "Butter", quantity: 1, unit: "tbsp (14g)", gramsPerUnit: 14, calories: 100, protein: 0, carbs: 0, fat: 11 },
     ],
     [
-      { name: "Ground Turkey, 93% Lean", quantity: 112, unit: "g (4 oz)", calories: 170, protein: 22, carbs: 0, fat: 8 },
-      { name: "Whole Wheat Pasta, Cooked", quantity: 140, unit: "g (1 cup)", calories: 174, protein: 7, carbs: 37, fat: 1 },
-      { name: "Marinara Sauce, Low Sodium", quantity: 125, unit: "g (1/2 cup)", calories: 70, protein: 2, carbs: 12, fat: 2 },
-      { name: "Parmesan Cheese, Grated", quantity: 5, unit: "g (1 tbsp)", calories: 22, protein: 2, carbs: 0, fat: 1.5 },
+      { name: "Ground Turkey, 93% Lean", quantity: 1, unit: "112g (4 oz)", gramsPerUnit: 112, calories: 170, protein: 22, carbs: 0, fat: 8 },
+      { name: "Whole Wheat Pasta, Cooked", quantity: 1, unit: "140g cup", gramsPerUnit: 140, calories: 174, protein: 7, carbs: 37, fat: 1 },
+      { name: "Marinara Sauce, Low Sodium", quantity: 1, unit: "125g (1/2 cup)", gramsPerUnit: 125, calories: 70, protein: 2, carbs: 12, fat: 2 },
+      { name: "Parmesan Cheese, Grated", quantity: 1, unit: "5g tbsp", gramsPerUnit: 5, calories: 22, protein: 2, carbs: 0, fat: 1.5 },
     ],
     [
-      { name: "Cod Fillet, Baked", quantity: 140, unit: "g (5 oz)", calories: 140, protein: 30, carbs: 0, fat: 1 },
-      { name: "Quinoa, Cooked", quantity: 185, unit: "g (1 cup)", calories: 222, protein: 8, carbs: 39, fat: 4 },
-      { name: "Brussels Sprouts, Roasted", quantity: 156, unit: "g (1 cup)", calories: 56, protein: 4, carbs: 11, fat: 1 },
+      { name: "Cod Fillet, Baked", quantity: 1, unit: "140g (5 oz)", gramsPerUnit: 140, calories: 140, protein: 30, carbs: 0, fat: 1 },
+      { name: "Quinoa, Cooked", quantity: 1, unit: "185g cup", gramsPerUnit: 185, calories: 222, protein: 8, carbs: 39, fat: 4 },
+      { name: "Brussels Sprouts, Roasted", quantity: 1, unit: "156g cup", gramsPerUnit: 156, calories: 56, protein: 4, carbs: 11, fat: 1 },
     ],
   ];
 

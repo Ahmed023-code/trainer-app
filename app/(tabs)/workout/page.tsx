@@ -319,6 +319,7 @@ export default function WorkoutPage() {
               onDelete={() => deleteExercise(i)}
               onAddSet={addSetToExercise}
               onUpdateExercise={(updated) => updateExercise(i, updated)}
+              currentDate={dateISO}
             />
           </div>
         ))}

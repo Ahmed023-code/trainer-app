@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { Exercise, SetItem } from '@/components/workout/types'
 import ExerciseGif from '@/components/workout/ExerciseGif'
+import { getMostRecentExercise, getTodayISO } from '@/stores/storageV2'
 
 type Props = {
   exercise: Exercise
@@ -11,6 +12,7 @@ type Props = {
   onDelete: () => void
   onAddSet?: (exercise: Exercise) => void
   onUpdateExercise?: (exercise: Exercise) => void
+  currentDate?: string // Pass current date from parent to exclude it from history lookup
 }
 
 const getSetColor = (type: string): string => {
@@ -45,9 +47,16 @@ export default function ExerciseSection({
   onDelete,
   onAddSet,
   onUpdateExercise,
+  currentDate,
 }: Props) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+
+  // Get previous workout data for this exercise
+  const previousExercise = useMemo(() => {
+    const date = currentDate || getTodayISO()
+    return getMostRecentExercise(exercise.name, date)
+  }, [exercise.name, currentDate])
   const [setMenuOpen, setSetMenuOpen] = useState<number | null>(null)
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({
     top: 0,
@@ -391,7 +400,7 @@ export default function ExerciseSection({
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="text-sm font-medium tabular-nums px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
-                        placeholder="0"
+                        placeholder={previousExercise?.sets?.[i]?.weight ? String(previousExercise.sets[i].weight) : "0"}
                       />
 
                       {/* Reps input - show performed with faded range behind */}
@@ -407,12 +416,12 @@ export default function ExerciseSection({
                             }}
                             onClick={(e) => e.stopPropagation()}
                             className="w-full text-sm font-medium tabular-nums px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                            placeholder=""
+                            placeholder={previousExercise?.sets?.[i]?.repsMin ? String(previousExercise.sets[i].repsMin) : ""}
                           />
                         ) : (
                           <>
-                            {/* Faded rep range behind - hide when user types */}
-                            {!hasRepValue && s.repsMin > 0 && s.repsMax > 0 && (
+                            {/* Faded rep range behind - hide when user types or when previous data exists */}
+                            {!hasRepValue && s.repsMin > 0 && s.repsMax > 0 && !previousExercise?.sets?.[i] && (
                               <span className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400 dark:text-neutral-500 pointer-events-none tabular-nums">
                                 {s.repsMin}-{s.repsMax}
                               </span>
@@ -435,7 +444,7 @@ export default function ExerciseSection({
                               }}
                               onClick={(e) => e.stopPropagation()}
                               className="relative w-full text-sm font-medium tabular-nums px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                              placeholder=""
+                              placeholder={previousExercise?.sets?.[i] && (previousExercise.sets[i] as any).repsPerformed !== undefined ? String((previousExercise.sets[i] as any).repsPerformed) : (previousExercise?.sets?.[i]?.repsMin ? String(previousExercise.sets[i].repsMin) : "")}
                             />
                           </>
                         )}
@@ -455,7 +464,7 @@ export default function ExerciseSection({
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="w-full text-sm font-medium tabular-nums px-1 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 text-center focus:outline-none focus:ring-1 focus:ring-neutral-400"
-                        placeholder="8"
+                        placeholder={previousExercise?.sets?.[i]?.rpe ? String(previousExercise.sets[i].rpe) : "8"}
                       />
 
                       {/* 3-dot menu for set options */}

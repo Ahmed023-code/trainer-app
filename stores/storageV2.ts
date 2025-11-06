@@ -234,6 +234,24 @@ export const writeWorkout = (dateISO: string, partial: Partial<WorkoutDayState>)
   writeJSON(KEYS.WORKOUT_BY_DAY, byDay);
 };
 
+// Get the most recent logged workout for a specific exercise (excluding current date)
+export const getMostRecentExercise = (exerciseName: string, excludeDate: string): Exercise | null => {
+  const byDay = readJSON<WorkoutByDay>(KEYS.WORKOUT_BY_DAY, {});
+  const dates = Object.keys(byDay).filter(d => d !== excludeDate).sort().reverse();
+
+  for (const date of dates) {
+    const workout = byDay[date];
+    const exercise = workout?.exercises?.find(
+      ex => ex.name.toLowerCase() === exerciseName.toLowerCase()
+    );
+    if (exercise && exercise.sets && exercise.sets.length > 0) {
+      return exercise;
+    }
+  }
+
+  return null;
+};
+
 // Weight operations
 export const readWeight = (dateISO: string): number | null => {
   const byDay = readJSON<WeightByDay>(KEYS.WEIGHT_BY_DAY, {});

@@ -262,7 +262,7 @@ export default function MealDetailModal({
                       {item.name}
                     </h3>
                     <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      Quantity: {item.quantity || 1}{item.unit ? ` ${item.unit}` : ''}
+                      {item.quantity || 1} serving{(item.quantity || 1) !== 1 ? 's' : ''}{item.unit || item.gramsPerUnit ? `: ${item.unit || `${item.gramsPerUnit}g`}` : ''}
                     </div>
                   </div>
 
