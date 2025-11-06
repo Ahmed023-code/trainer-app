@@ -17,7 +17,8 @@
       "Bash(awk:*)",
       "Bash(tail:*)",
       "Bash(ipconfig getifaddr:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

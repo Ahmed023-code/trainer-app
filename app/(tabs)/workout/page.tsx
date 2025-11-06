@@ -10,6 +10,7 @@ import ExerciseHistoryModal from "@/components/workout/ExerciseHistoryModal";
 import ClockModal from "@/components/workout/ClockModal";
 import DaySelector from "@/components/ui/DaySelector";
 import { useDaySelector } from "@/hooks/useDaySelector";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import { readWorkout, writeWorkout, getTodayISO } from "@/stores/storageV2";
 
 const num = (v: any) => {
@@ -248,6 +249,18 @@ export default function WorkoutPage() {
       .sort((a, b) => b.value - a.value);
   }, [setCounts]);
 
+  // Drag and drop for exercises
+  const {
+    draggedIndex,
+    dragOverIndex,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragEnter,
+    handleDragLeave,
+    handleDrop,
+  } = useDragAndDrop(exercises, setExercises);
+
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
       {/* Header */}
@@ -284,7 +297,20 @@ export default function WorkoutPage() {
           <div
             key={`${ex.name}-${i}`}
             ref={(el) => { exerciseRefs.current[ex.name] = el; }}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-1 shadow-sm overflow-visible cursor-pointer hover:shadow-md transition-shadow"
+            draggable
+            onDragStart={handleDragStart(i)}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter(i)}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop(i)}
+            className={`rounded-xl border backdrop-blur p-1 shadow-sm overflow-visible cursor-move hover:shadow-md transition-all ${
+              draggedIndex === i
+                ? 'opacity-50 border-accent-workout'
+                : dragOverIndex === i
+                ? 'border-accent-workout border-2 scale-[1.02]'
+                : 'border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60'
+            }`}
             onClick={() => setSelectedExerciseIndex(i)}
           >
             <ExerciseSection

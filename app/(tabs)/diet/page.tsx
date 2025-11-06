@@ -5,10 +5,12 @@ import MacroRings from "@/components/diet/MacroRings";
 import MealSection from "@/components/diet/MealSection";
 import MealDetailModal from "@/components/diet/MealDetailModal";
 import FoodLibraryModal from "@/components/diet/FoodLibraryModal";
+import EditFoodModal from "@/components/diet/EditFoodModal";
 import SaveMealModal from "@/components/diet/SaveMealModal";
 import LoadMealModal from "@/components/diet/LoadMealModal";
 import DaySelector from "@/components/ui/DaySelector";
 import { useDaySelector } from "@/hooks/useDaySelector";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import { readDiet, writeDiet, getTodayISO } from "@/stores/storageV2";
 import type { Meal, FoodItem } from "@/components/diet/types";
 import type { MealTemplate } from "@/stores/mealTemplates";
@@ -103,6 +105,18 @@ export default function DietPage() {
   // Track if bubble was triggered from Log Meal button - no longer needed
   // const [bubbleSource, setBubbleSource] = useState<"fab" | "button">("fab");
   // const logMealButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Drag and drop for meals
+  const {
+    draggedIndex: draggedMealIndex,
+    dragOverIndex: dragOverMealIndex,
+    handleDragStart: handleMealDragStart,
+    handleDragEnd: handleMealDragEnd,
+    handleDragOver: handleMealDragOver,
+    handleDragEnter: handleMealDragEnter,
+    handleDragLeave: handleMealDragLeave,
+    handleDrop: handleMealDrop,
+  } = useDragAndDrop(meals, setMeals);
 
   // Load data for selected date and reload on visibility/focus/storage changes
   useEffect(() => {
@@ -325,41 +339,56 @@ export default function DietPage() {
 
       {/* Meals list in page-level bubbles */}
       <section key={contentKey} className="space-y-6 relative z-0 overflow-visible mt-4 transition-all duration-150">
-        {meals.filter(meal => meal.items.length > 0).map((meal, i) => (
-          <div
-            key={meal.name}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm overflow-visible cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => {
-              const originalIndex = meals.findIndex(m => m.name === meal.name);
-              setShowMealDetail({ mealIndex: originalIndex });
-            }}
-          >
-            <MealSection
-              meal={meal}
-              onChange={(updated) => {
-                const next = [...meals];
-                const originalIndex = meals.findIndex(m => m.name === meal.name);
-                next[originalIndex] = updated;
-                setMeals(next);
-              }}
-              onRequestEdit={(mealName, index, item) => {
-                const originalIndex = meals.findIndex(m => m.name === meal.name);
-                setEditFood({ mealIndex: originalIndex, foodIndex: index, item });
-              }}
-              onAddFood={(mealName) => {
-                setShowLibraryFor({ meal: mealName });
-              }}
-              onOpenDetail={() => {
-                const originalIndex = meals.findIndex(m => m.name === meal.name);
+        {meals.filter(meal => meal.items.length > 0).map((meal, i) => {
+          // Get the original index in the full meals array
+          const originalIndex = meals.findIndex(m => m.name === meal.name);
+          return (
+            <div
+              key={meal.name}
+              draggable
+              onDragStart={handleMealDragStart(originalIndex)}
+              onDragEnd={handleMealDragEnd}
+              onDragOver={handleMealDragOver}
+              onDragEnter={handleMealDragEnter(originalIndex)}
+              onDragLeave={handleMealDragLeave}
+              onDrop={handleMealDrop(originalIndex)}
+              className={`rounded-xl border backdrop-blur p-4 shadow-sm overflow-visible cursor-move hover:shadow-md transition-all ${
+                draggedMealIndex === originalIndex
+                  ? 'opacity-50 border-accent-diet'
+                  : dragOverMealIndex === originalIndex
+                  ? 'border-accent-diet border-2 scale-[1.02]'
+                  : 'border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60'
+              }`}
+              onClick={(e) => {
+                // Prevent opening detail during drag
+                if (draggedMealIndex !== null) return;
                 setShowMealDetail({ mealIndex: originalIndex });
               }}
-              onDelete={() => {
-                const next = meals.filter(m => m.name !== meal.name);
-                setMeals(next);
-              }}
-            />
-          </div>
-        ))}
+            >
+              <MealSection
+                meal={meal}
+                onChange={(updated) => {
+                  const next = [...meals];
+                  next[originalIndex] = updated;
+                  setMeals(next);
+                }}
+                onRequestEdit={(mealName, index, item) => {
+                  setEditFood({ mealIndex: originalIndex, foodIndex: index, item });
+                }}
+                onAddFood={(mealName) => {
+                  setShowLibraryFor({ meal: mealName });
+                }}
+                onOpenDetail={() => {
+                  setShowMealDetail({ mealIndex: originalIndex });
+                }}
+                onDelete={() => {
+                  const next = meals.filter(m => m.name !== meal.name);
+                  setMeals(next);
+                }}
+              />
+            </div>
+          );
+        })}
 
         {/* Log Meal button always visible */}
         <div className="flex items-center justify-center pt-4">
@@ -384,110 +413,14 @@ export default function DietPage() {
         </button>
       </div>
 
-      {/* Edit Food Quantity Modal - unified with library quantity selection */}
+      {/* Edit Food Modal - with full USDA features (servings/weight, portions, micronutrients) */}
       {editFood && (
-        <>
-          {/* Backdrop with blur - click anywhere to close */}
-          <button
-            className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
-            aria-label="Close"
-            onClick={() => setEditFood(null)}
-          />
-          {/* Centered modal */}
-          <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
-            <div
-              className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Food name at top */}
-              <h3 className="font-semibold text-lg mb-3">{editFood.item.name}</h3>
-
-              {/* Servings */}
-              {editFood.item.unit && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="text-sm font-medium">Quantity</label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="w-9 h-9 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-lg font-medium"
-                        onClick={() => {
-                          const newQty = Math.max(0, (editFood.item.quantity || 1) - 1);
-                          setEditFood({ ...editFood, item: { ...editFood.item, quantity: newQty } });
-                        }}
-                      >
-                        −
-                      </button>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={editFood.item.quantity || 1}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, '');
-                          const newQty = parseFloat(val) || 0;
-                          setEditFood({ ...editFood, item: { ...editFood.item, quantity: newQty } });
-                        }}
-                        className="w-20 text-center rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 bg-white dark:bg-neutral-900 tabular-nums"
-                      />
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400 min-w-[60px]">
-                        {editFood.item.unit}
-                      </span>
-                      <button
-                        className="w-9 h-9 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-lg font-medium"
-                        onClick={() => {
-                          const newQty = (editFood.item.quantity || 1) + 1;
-                          setEditFood({ ...editFood, item: { ...editFood.item, quantity: newQty } });
-                        }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Nutrition summary */}
-              <div className="mt-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                  Total Nutrition
-                </h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-neutral-600 dark:text-neutral-400">Calories:</span>{' '}
-                    <span className="font-semibold">{Math.round(editFood.item.calories * (editFood.item.quantity || 1))}</span>
-                  </div>
-                  <div>
-                    <span className="text-neutral-600 dark:text-neutral-400">Protein:</span>{' '}
-                    <span className="font-semibold">{Math.round(editFood.item.protein * (editFood.item.quantity || 1))}g</span>
-                  </div>
-                  <div>
-                    <span className="text-neutral-600 dark:text-neutral-400">Carbs:</span>{' '}
-                    <span className="font-semibold">{Math.round(editFood.item.carbs * (editFood.item.quantity || 1))}g</span>
-                  </div>
-                  <div>
-                    <span className="text-neutral-600 dark:text-neutral-400">Fat:</span>{' '}
-                    <span className="font-semibold">{Math.round(editFood.item.fat * (editFood.item.quantity || 1))}g</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 mt-4">
-                <button
-                  className="flex-1 px-4 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium"
-                  onClick={() => setEditFood(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="flex-1 px-4 py-2.5 rounded-full bg-accent-diet text-black font-medium hover:opacity-90"
-                  onClick={() => saveEditFood(editFood.item)}
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+        <EditFoodModal
+          isOpen={true}
+          foodItem={editFood.item}
+          onClose={() => setEditFood(null)}
+          onSave={(updatedItem) => saveEditFood(updatedItem)}
+        />
       )}
 
       {/* Food library search */}

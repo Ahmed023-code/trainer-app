@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { searchFoods, getFoodDetails, preloadEssentials, type USDAFood, type FoodDetails, type USDANutrient } from "@/lib/usda-db-v2";
+import MicronutrientsModal from './MicronutrientsModal';
+import BarcodeScanner from './BarcodeScanner';
+import { Barcode, Info } from 'lucide-react';
 
 // Props contract stays the same
 export default function FoodLibraryModal({
@@ -29,69 +33,110 @@ export default function FoodLibraryModal({
     return Number.isFinite(n) ? n : 0;
   };
 
-  // Expanded and more permissive household words detector
-  const hasHouseholdWords = (label: string) =>
-    /\b(cup|cups?|tbsp|tbsps?|tablespoon|tablespoons?|tsp|tsps?|teaspoon|teaspoons?|oz|oz\.|ounce|ounces|fl\s?oz|pint|pints|quart|quarts|ml|milliliter|milliliters|l|liter|liters|slice|slices|piece|pieces|egg|eggs|stick|sticks|can|cans|pkg|package|packages|bottle|bottles)\b/i.test(
-      label || ""
-    );
-
-  const isPureGramLabel = (label: string) => /^\s*\d+(\.\d+)?\s*g\s*$/i.test(label || "");
-
-  // robust macro reader: accepts multiple key aliases and optional nested macros object
-  const readMacro = (f: any, keys: string[]): number => {
-    for (const k of keys) {
-      const direct = f?.[k];
-      if (direct !== undefined && direct !== null && String(direct) !== "") {
-        return safeNum(direct);
-      }
-    }
-    if (f?.macros && typeof f.macros === "object") {
-      for (const k of keys) {
-        const nested = f.macros[k];
-        if (nested !== undefined && nested !== null && String(nested) !== "") {
-          return safeNum(nested);
-        }
-      }
-    }
-    return 0;
+  // Convert text to title case (first letter of each word capitalized)
+  const toTitleCase = (str: string): string => {
+    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
   };
 
   // ---------- data state ----------
-  const [loaded, setLoaded] = useState(false);
-  const [foods, setFoods] = useState<any[]>([]); // shape provided by /data/foods.json
-
-  // load once on first open
-  useEffect(() => {
-    if (!isOpen || loaded) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/data/foods.json", { cache: "force-cache" });
-        const json = await res.json();
-        const arr = Array.isArray(json) ? json : Array.isArray(json?.foods) ? json.foods : [];
-        if (!cancelled) {
-          setFoods(arr);
-          setLoaded(true);
-        }
-      } catch {
-        if (!cancelled) {
-          setFoods([]);
-          setLoaded(true);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, loaded]);
+  const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
+  const [loadedDetails, setLoadedDetails] = useState<Record<number, FoodDetails>>({});
+  const [loading, setLoading] = useState(false);
+  const [dbLoading, setDbLoading] = useState(false);
 
   // ---------- search state ----------
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 200);
+    const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 300);
     return () => clearTimeout(t);
   }, [query]);
+
+  // Search foods via database
+  useEffect(() => {
+    if (!isOpen || !debounced) {
+      setSearchResults([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      try {
+        // Show database loading on first search
+        if (!dbLoading && searchResults.length === 0) {
+          setDbLoading(true);
+        }
+
+        const result = await searchFoods(debounced, { limit: 50, includeCache: true });
+
+        if (!cancelled) {
+          setSearchResults(result.offlineResults);
+          setLoading(false);
+          setDbLoading(false);
+
+          // Preload nutrition data for first 10 results
+          const preloadFoods = result.offlineResults.slice(0, 10);
+          for (const food of preloadFoods) {
+            if (!loadedDetails[food.fdc_id]) {
+              loadFoodDetails(food.fdc_id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Search error:', err);
+        if (!cancelled) {
+          setSearchResults([]);
+          setLoading(false);
+          setDbLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, debounced]);
+
+  // Load full food details (nutrients + portions) when needed
+  const loadFoodDetails = async (fdcId: number, cacheReason: 'viewed' | 'logged' = 'viewed') => {
+    if (loadedDetails[fdcId]) return; // Already loaded
+
+    try {
+      const data = await getFoodDetails(fdcId, { cacheReason });
+      if (data) {
+        setLoadedDetails(prev => ({ ...prev, [fdcId]: data }));
+      }
+    } catch (err) {
+      console.error('Error loading food details:', err);
+    }
+  };
+
+  // Handle barcode scan
+  const handleBarcodeScan = async (barcode: string) => {
+    setShowBarcodeScanner(false);
+    setDbLoading(true);
+
+    try {
+      const { lookupByBarcode } = await import('@/lib/usda-db-v2');
+      const details = await lookupByBarcode(barcode);
+
+      if (details) {
+        // Add to loaded details and search results
+        setLoadedDetails(prev => ({ ...prev, [details.food.fdc_id]: details }));
+        setSearchResults(prev => [details.food as USDAFood, ...prev].slice(0, 50));
+        setQuery(details.food.description);
+      } else {
+        alert('No food found for this barcode');
+      }
+    } catch (err) {
+      console.error('Barcode lookup error:', err);
+      alert('Error looking up barcode');
+    } finally {
+      setDbLoading(false);
+    }
+  };
 
   // reset all on close
   useEffect(() => {
@@ -103,7 +148,6 @@ export default function FoodLibraryModal({
       setSelPortionIdx(0);
       setServings("1");
       setGrams("100");
-      setUnits("1");
       setShowQuickAdd(false);
       setQuickAddForm({
         name: "",
@@ -118,11 +162,10 @@ export default function FoodLibraryModal({
 
   // ---------- per-row quantity bubble state ----------
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
-  const [mode, setMode] = useState<"servings" | "weight" | "volume">("servings");
+  const [mode, setMode] = useState<"servings" | "weight">("servings");
   const [selPortionIdx, setSelPortionIdx] = useState(0);
   const [servings, setServings] = useState("1");
   const [grams, setGrams] = useState("100");
-  const [units, setUnits] = useState("1");
 
   // ---------- quick add state ----------
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -135,128 +178,84 @@ export default function FoodLibraryModal({
     quantity: "1",
   });
 
-  // build portions array for a food row with resilient fallbacks
-  const buildPortions = (f: any): { label: string; grams: number }[] => {
-    const list: { label: string; grams: number }[] = Array.isArray(f?.portions)
-      ? f.portions
-          .map((p: any) => ({
-            label: String(p?.label ?? "").trim(),
-            grams: safeNum(p?.grams),
-          }))
-          .filter((p: any) => p.grams > 0 && p.label)
-      : [];
+  // ---------- new modal states ----------
+  const [showMicronutrients, setShowMicronutrients] = useState(false);
+  const [selectedFoodForMicros, setSelectedFoodForMicros] = useState<{ name: string; nutrients: USDANutrient[]; servingGrams: number } | null>(null);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
-    if (list.length > 0) return list;
+  // Preload essential bundles on mount
+  useEffect(() => {
+    if (isOpen) {
+      preloadEssentials().catch(err => console.error('Error preloading:', err));
+    }
+  }, [isOpen]);
 
-    const g = safeNum(f?.servingGrams) || 100;
-    const label = String(f?.servingLabel || `${g} g`);
-    return [{ label, grams: g }];
-  };
-
-  // derive per-100g macros for a food row from its per-serving values (or explicit per100 if present)
-  const per100gFor = (f: any) => {
-    // Prefer explicit per100g record if present and non-zero
-    const per100 =
-      f?.per100g && typeof f.per100g === "object"
-        ? {
-            cal: safeNum(f.per100g.calories),
-            p:   safeNum(f.per100g.protein),
-            fat: safeNum(f.per100g.fat),
-            c:   safeNum(f.per100g.carbs),
-          }
-        : null;
-
-    // Expanded calorie key aliases
-    const baseFromServing = {
-      cal: readMacro(f, ["calories", "Calories", "kcal", "kcals", "cal", "energy", "Energy", "energyKcal", "energy_kcal"]),
-      p:   readMacro(f, ["protein", "prot", "protein_g"]),
-      fat: readMacro(f, ["fat", "fat_g"]),
-      c:   readMacro(f, ["carbs", "carbohydrate", "carbohydrates", "carb", "carbohydrate_g"]),
+  // Extract macros from nutrients array
+  const getMacrosFromNutrients = (nutrients: USDANutrient[]) => {
+    const getAmount = (names: string[]) => {
+      const nutrient = nutrients.find(n => names.some(name =>
+        n.name.toLowerCase().includes(name.toLowerCase())
+      ));
+      return nutrient ? safeNum(nutrient.amount) : 0;
     };
 
-    const atwaterCal = (p: number, fat: number, c: number) => 4 * p + 9 * fat + 4 * c;
-    const allZero = (o: any) => !o || (o.cal === 0 && o.p === 0 && o.fat === 0 && o.c === 0);
+    const protein = getAmount(['Protein']);
+    const fat = getAmount(['Total lipid', 'fat']);
+    const carbs = getAmount(['Carbohydrate, by difference', 'carbohydrate']);
+    let calories = getAmount(['Energy']);
 
-    if (!allZero(per100)) return per100 as { cal: number; p: number; fat: number; c: number };
-
-    // Derive per-100g from per-serving when needed
-    const sg = safeNum(f?.servingGrams) || 100;
-    const scale = sg > 0 ? 100 / sg : 1;
-
-    const derived = {
-      cal: baseFromServing.cal * scale,
-      p:   baseFromServing.p   * scale,
-      fat: baseFromServing.fat * scale,
-      c:   baseFromServing.c   * scale,
-    };
-
-    let fixed = { ...derived };
-    if (fixed.cal === 0 && (fixed.p > 0 || fixed.fat > 0 || fixed.c > 0)) {
-      fixed.cal = atwaterCal(fixed.p, fixed.fat, fixed.c);
+    // If calories is in kJ, look for kcal specifically
+    const kcalNutrient = nutrients.find(n =>
+      n.name.toLowerCase() === 'energy' && n.unit_name.toUpperCase() === 'KCAL'
+    );
+    if (kcalNutrient) {
+      calories = safeNum(kcalNutrient.amount);
     }
 
-    // Final fallback: if still zero, try reading alternative numeric container `perServing`
-    if (fixed.cal === 0 && fixed.p === 0 && fixed.fat === 0 && fixed.c === 0) {
-      const ps = f?.perServing && typeof f.perServing === "object" ? f.perServing : null;
-      if (ps) {
-        const tmp = {
-          cal: safeNum(ps.calories),
-          p:   safeNum(ps.protein),
-          fat: safeNum(ps.fat),
-          c:   safeNum(ps.carbs),
-        };
-        const sg2 = safeNum(f?.servingGrams) || 100;
-        const scale2 = sg2 > 0 ? 100 / sg2 : 1;
-        fixed = {
-          cal: tmp.cal * scale2,
-          p:   tmp.p   * scale2,
-          fat: tmp.fat * scale2,
-          c:   tmp.c   * scale2,
-        };
-        if (fixed.cal === 0 && (fixed.p > 0 || fixed.fat > 0 || fixed.c > 0)) {
-          fixed.cal = atwaterCal(fixed.p, fixed.fat, fixed.c);
-        }
-      }
+    // Fallback: calculate from macros (Atwater factors)
+    if (calories === 0 && (protein > 0 || fat > 0 || carbs > 0)) {
+      calories = Math.round(protein * 4 + fat * 9 + carbs * 4);
     }
 
-    return fixed;
+    return { calories, protein, fat, carbs };
   };
 
-  // filter results realtime
-  const results = useMemo(() => {
-    if (!debounced) return foods.slice(0, 50);
-    const q = debounced;
-    const starts = (s: string) => s.startsWith(q);
-    const includes = (s: string) => s.includes(q);
+  // Build portions array from food details
+  const buildPortions = (fdcId: number): { label: string; grams: number }[] => {
+    const details = loadedDetails[fdcId];
+    if (!details || !details.portions || details.portions.length === 0) {
+      return [{ label: '100 g', grams: 100 }];
+    }
 
-    const scored = foods.map((f) => {
-      const name = String(f?.description || "").toLowerCase();
-      const cat = String(f?.category || "").toLowerCase();
-      let score = 0;
-      if (starts(name)) score += 3;
-      if (name.split(/\s+/).some((w) => starts(w))) score += 2;
-      if (includes(name)) score += 1;
-      if (includes(cat)) score += 1;
-      return { f, score, name };
-    });
+    return details.portions.map(p => ({
+      label: p.portion_description || `${p.gram_weight} g`,
+      grams: p.gram_weight
+    }));
+  };
 
-    return scored
-      .filter((x) => x.score >= 1)
-      .sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
-      .slice(0, 100)
-      .map((x) => x.f);
-  }, [foods, debounced]);
+  // Get per-100g macros for a food
+  const per100gFor = (fdcId: number) => {
+    const details = loadedDetails[fdcId];
+    if (!details || !details.nutrients) {
+      return { calories: 0, protein: 0, fat: 0, carbs: 0 };
+    }
+
+    return getMacrosFromNutrients(details.nutrients);
+  };
 
   // ---------- chips UI ----------
-  const ChipRow = ({ f }: { f: any }) => {
-    const primary = buildPortions(f)[0];
-    const base = per100gFor(f);
-    const atwaterCal = (p: number, fat: number, c: number) => 4 * p + 9 * fat + 4 * c;
-    const g = safeNum(primary?.grams || 100);
-    const cal = Math.round((safeNum(base.cal) || atwaterCal(safeNum(base.p), safeNum(base.fat), safeNum(base.c))) * (g / 100));
-    const p   = Math.round(safeNum(base.p)   * (g / 100));
-    const fat = Math.round(safeNum(base.fat) * (g / 100));
-    const c   = Math.round(safeNum(base.c)   * (g / 100));
+  const ChipRow = ({ fdcId }: { fdcId: number }) => {
+    const details = loadedDetails[fdcId];
+    if (!details) return <div className="text-xs text-neutral-400">Loading nutrition...</div>;
+
+    const base = per100gFor(fdcId);
+    const portions = buildPortions(fdcId);
+    const g = safeNum(portions[0]?.grams || 100);
+
+    const cal = Math.round(base.calories * (g / 100));
+    const p = Math.round(base.protein * (g / 100));
+    const fat = Math.round(base.fat * (g / 100));
+    const c = Math.round(base.carbs * (g / 100));
 
     return (
       <div className="mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto tabular-nums">
@@ -317,10 +316,9 @@ export default function FoodLibraryModal({
   };
 
   // compute live preview for quantity bubble
-  const computePreview = (f: any) => {
-    const base = per100gFor(f);
-    const portions = buildPortions(f);
-    const atwaterCal = (p: number, fat: number, c: number) => 4 * p + 9 * fat + 4 * c;
+  const computePreview = (fdcId: number) => {
+    const base = per100gFor(fdcId);
+    const portions = buildPortions(fdcId);
 
     if (mode === "servings") {
       const idx = Math.min(Math.max(selPortionIdx, 0), portions.length - 1);
@@ -329,10 +327,10 @@ export default function FoodLibraryModal({
       const gramsTotal = gramsEach * s;
       return {
         gramsTotal,
-        cal: Math.round((safeNum(base.cal) || atwaterCal(safeNum(base.p), safeNum(base.fat), safeNum(base.c))) * (gramsTotal / 100)),
-        p:   Math.round(safeNum(base.p)   * (gramsTotal / 100)),
-        fat: Math.round(safeNum(base.fat) * (gramsTotal / 100)),
-        c:   Math.round(safeNum(base.c)   * (gramsTotal / 100)),
+        cal: Math.round(base.calories * (gramsTotal / 100)),
+        p: Math.round(base.protein * (gramsTotal / 100)),
+        fat: Math.round(base.fat * (gramsTotal / 100)),
+        c: Math.round(base.carbs * (gramsTotal / 100)),
       };
     }
 
@@ -340,35 +338,14 @@ export default function FoodLibraryModal({
       const g = safeNum(grams);
       return {
         gramsTotal: g,
-        cal: Math.round((safeNum(base.cal) || atwaterCal(safeNum(base.p), safeNum(base.fat), safeNum(base.c))) * (g / 100)),
-        p:   Math.round(safeNum(base.p)   * (g / 100)),
-        fat: Math.round(safeNum(base.fat) * (g / 100)),
-        c:   Math.round(safeNum(base.c)   * (g / 100)),
+        cal: Math.round(base.calories * (g / 100)),
+        p: Math.round(base.protein * (g / 100)),
+        fat: Math.round(base.fat * (g / 100)),
+        c: Math.round(base.carbs * (g / 100)),
       };
     }
 
-    // volume — use original portions index and ensure a household portion is selected
-    const hasVol = portions.some((p) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label));
-    let idx = selPortionIdx;
-    if (
-      !hasVol ||
-      !(!isPureGramLabel(portions[idx]?.label) && hasHouseholdWords(portions[idx]?.label))
-    ) {
-      const firstVolIdx = portions.findIndex(
-        (p) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label)
-      );
-      idx = firstVolIdx >= 0 ? firstVolIdx : 0;
-    }
-    const gramsEach = safeNum(portions[idx]?.grams || portions[0]?.grams || 100);
-    const u = safeNum(units);
-    const gramsTotal = gramsEach * u;
-    return {
-      gramsTotal,
-      cal: Math.round((safeNum(base.cal) || (4*safeNum(base.p) + 9*safeNum(base.fat) + 4*safeNum(base.c))) * (gramsTotal / 100)),
-      p:   Math.round(safeNum(base.p)   * (gramsTotal / 100)),
-      fat: Math.round(safeNum(base.fat) * (gramsTotal / 100)),
-      c:   Math.round(safeNum(base.c)   * (gramsTotal / 100)),
-    };
+    return { gramsTotal: 100, cal: 0, p: 0, fat: 0, c: 0 };
   };
 
   // row ref map for anchoring (ensures bubble sits within each row)
@@ -425,7 +402,7 @@ export default function FoodLibraryModal({
     <>
       {/* Full-screen sheet */}
       <div className="fixed inset-0 z-[100002] bg-white dark:bg-neutral-900">
-        {/* Sticky header with Back + search + Quick Add */}
+        {/* Sticky header with Back + search + Barcode + Quick Add */}
         <div className="sticky top-0 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
           <button
             className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
@@ -436,9 +413,16 @@ export default function FoodLibraryModal({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search foods"
+            placeholder="Search 155K+ foods..."
             className="flex-1 rounded-full border px-3 py-2 bg-white dark:bg-neutral-900"
           />
+          <button
+            className="p-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            onClick={() => setShowBarcodeScanner(true)}
+            title="Scan Barcode"
+          >
+            <Barcode className="w-5 h-5" />
+          </button>
           <button
             className="px-3 py-2 rounded-full border-2 bg-transparent transition-all hover:bg-opacity-5 whitespace-nowrap"
             style={{ borderColor: "var(--accent-diet)", color: "var(--accent-diet)" }}
@@ -587,41 +571,71 @@ export default function FoodLibraryModal({
 
         {/* Results */}
         <ul className="p-3 space-y-2 overflow-y-auto max-h-[calc(100vh-80px)] relative">
-          {results.map((f, i) => {
-            const portions = buildPortions(f);
-            const householdPortions = portions.filter(
-              (p) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label)
-            );
-            const primaryLabel = portions[0]?.label || f?.servingLabel || "100 g";
-            const hasVolume = householdPortions.length > 0;
+          {dbLoading && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              <div className="font-semibold mb-2">Loading nutrition database...</div>
+              <div className="text-xs">First load may take a moment (2.1 GB)</div>
+            </li>
+          )}
+
+          {!dbLoading && loading && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              Searching...
+            </li>
+          )}
+
+          {!dbLoading && !loading && debounced && searchResults.length === 0 && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              No matches. Try a different search.
+            </li>
+          )}
+
+          {!dbLoading && !loading && !debounced && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              Search for foods by name or use the barcode scanner
+            </li>
+          )}
+
+          {searchResults.map((food, i) => {
             const isActive = activeIdx === i;
+            const hasDetails = !!loadedDetails[food.fdc_id];
 
             return (
-              <li key={`${f.description}-${i}`}>
+              <li key={`${food.fdc_id}-${i}`}>
                 <div
                   ref={setRowRef(i)}
                   className="relative rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-4 py-3 shadow-sm"
                 >
                   <button
                     className="block text-left w-full"
-                    onClick={() => {
-                      // open bubble for this row, reset controls
+                    onClick={async () => {
+                      // Load details if not already loaded
+                      if (!hasDetails) {
+                        await loadFoodDetails(food.fdc_id);
+                      }
+
+                      // Open bubble for this row, reset controls to default serving
+                      const portions = buildPortions(food.fdc_id);
                       setActiveIdx(i);
                       setMode("servings");
                       setSelPortionIdx(0);
                       setServings("1");
                       setGrams(String(portions[0]?.grams || 100));
-                      setUnits("1");
                     }}
                   >
-                    <div className="font-semibold leading-tight break-words">{f.description || "Unnamed"}</div>
-                    <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{primaryLabel}</div>
-                    <ChipRow f={f} />
+                    <div className="font-semibold leading-tight break-words">{toTitleCase(food.description)}</div>
+                    {food.brand_name && (
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">{toTitleCase(food.brand_name)}</div>
+                    )}
+                    {!food.brand_name && food.data_type !== 'branded_food' && (
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">Generic</div>
+                    )}
+                    {hasDetails && <ChipRow fdcId={food.fdc_id} />}
                   </button>
                 </div>
 
                 {/* Portal quantity bubble + local backdrop with blur */}
-                {isActive && typeof document !== "undefined" && createPortal(
+                {isActive && hasDetails && typeof document !== "undefined" && createPortal(
                   <>
                     {/* Backdrop that closes only the quantity bubble, not the whole search - with blur */}
                     <button
@@ -633,10 +647,16 @@ export default function FoodLibraryModal({
                     <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
                       <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
                         {/* Food name prominently at top */}
-                        <h3 className="font-semibold text-lg mb-3">{f.description || "Unnamed"}</h3>
+                        <h3 className="font-semibold text-lg mb-3">{toTitleCase(food.description)}</h3>
+                        {food.brand_name && (
+                          <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                            {toTitleCase(food.brand_name)}
+                          </div>
+                        )}
+
                         {/* Segmented control */}
-                        <div className="grid grid-cols-3 gap-1 text-sm mb-3">
-                          {(["servings", "weight", "volume"] as const).map((m) => (
+                        <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+                          {(["servings", "weight"] as const).map((m) => (
                             <button
                               key={m}
                               className={
@@ -645,24 +665,9 @@ export default function FoodLibraryModal({
                                   ? "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700"
                                   : "border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800")
                               }
-                              onClick={() => {
-                                setMode(m);
-                                if (m === "volume") {
-                                  const parts = buildPortions(results[i]);
-                                  const firstVolIdx = parts.findIndex(
-                                    (p) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label)
-                                  );
-                                  if (firstVolIdx >= 0) setSelPortionIdx(firstVolIdx);
-                                } else if (m === "servings") {
-                                  setSelPortionIdx(0);
-                                }
-                              }}
-                              disabled={
-                                m === "volume" &&
-                                !buildPortions(results[i]).some((p) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label))
-                              }
+                              onClick={() => setMode(m)}
                             >
-                              {m === "servings" ? "Servings" : m === "weight" ? "Weight (g)" : "Volume"}
+                              {m === "servings" ? "Servings" : "Weight (g)"}
                             </button>
                           ))}
                         </div>
@@ -677,7 +682,7 @@ export default function FoodLibraryModal({
                                 value={selPortionIdx}
                                 onChange={(e) => setSelPortionIdx(Number(e.target.value))}
                               >
-                                {buildPortions(results[i]).map((p, idx) => (
+                                {buildPortions(food.fdc_id).map((p, idx) => (
                                   <option key={idx} value={idx}>
                                     {p.label} ({p.grams} g)
                                   </option>
@@ -757,72 +762,9 @@ export default function FoodLibraryModal({
                           </div>
                         )}
 
-                        {mode === "volume" && (
-                          <div className="space-y-2">
-                            <label className="block text-sm">
-                              Unit
-                              <select
-                                className="mt-1 w-full rounded-full border px-2 py-2 bg-white dark:bg-neutral-900"
-                                value={(function () {
-                                  const parts = buildPortions(results[i]);
-                                  const volIdxs = parts
-                                    .map((p, idx) => ({ p, idx }))
-                                    .filter(({ p }) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label))
-                                    .map(({ idx }) => idx);
-                                  if (volIdxs.length === 0) return 0;
-                                  return volIdxs.includes(selPortionIdx) ? selPortionIdx : volIdxs[0];
-                                })()}
-                                onChange={(e) => setSelPortionIdx(Number(e.target.value))}
-                              >
-                                {buildPortions(results[i])
-                                  .map((p, idx) => ({ p, idx }))
-                                  .filter(({ p }) => !isPureGramLabel(p.label) && hasHouseholdWords(p.label))
-                                  .map(({ p, idx }) => (
-                                    <option key={idx} value={idx}>
-                                      {p.label} ({p.grams} g)
-                                    </option>
-                                  ))}
-                              </select>
-                            </label>
-
-                            <label className="block text-sm">
-                              Units
-                              <div className="mt-1 flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
-                                  onClick={() =>
-                                    setUnits((u) => {
-                                      const v = safeNum(u) - 1;
-                                      return String(v < 0 ? 0 : v);
-                                    })
-                                  }
-                                >
-                                  –
-                                </button>
-                                <input
-                                  inputMode="decimal"
-                                  className="w-16 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
-                                  value={units}
-                                  onChange={(e) =>
-                                    setUnits(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
-                                  }
-                                />
-                                <button
-                                  type="button"
-                                  className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
-                                  onClick={() => setUnits((u) => String(safeNum(u) + 1))}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </label>
-                          </div>
-                        )}
-
                         {/* Live macro preview + actions */}
                         {(() => {
-                          const pv = computePreview(results[i]);
+                          const pv = computePreview(food.fdc_id);
                           return (
                             <>
                               <div className="mt-3">
@@ -881,30 +823,68 @@ export default function FoodLibraryModal({
                                 </div>
                               </div>
 
-                              <div className="mt-3 flex justify-end gap-2">
+                              <div className="mt-3 flex justify-between gap-2">
                                 <button
-                                  className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
-                                  onClick={() => setActiveIdx(null)}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  className="px-3 py-2 rounded-full bg-[#34D399] text-black"
+                                  className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1"
                                   onClick={() => {
-                                    onPick({
-                                      name: results[i]?.description || "Unnamed",
-                                      quantity: 1,
-                                      calories: pv.cal,
-                                      protein: pv.p,
-                                      fat: pv.fat,
-                                      carbs: pv.c,
-                                    });
-                                    setActiveIdx(null);
-                                    onClose();
+                                    const details = loadedDetails[food.fdc_id];
+                                    const pv = computePreview(food.fdc_id);
+                                    if (details) {
+                                      setSelectedFoodForMicros({
+                                        name: toTitleCase(food.description),
+                                        nutrients: details.nutrients,
+                                        servingGrams: pv.gramsTotal
+                                      });
+                                      setShowMicronutrients(true);
+                                    }
                                   }}
+                                  title="View All Nutrients"
                                 >
-                                  Add
+                                  <Info className="w-4 h-4" />
+                                  Details
                                 </button>
+                                <div className="flex gap-2">
+                                  <button
+                                    className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
+                                    onClick={() => setActiveIdx(null)}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    className="px-3 py-2 rounded-full bg-[#34D399] text-black"
+                                    onClick={() => {
+                                      // Cache as logged when user adds food
+                                      loadFoodDetails(food.fdc_id, 'logged');
+
+                                      // Determine unit based on mode
+                                      const portions = buildPortions(food.fdc_id);
+                                      let unit = "g";
+                                      let gramsPerUnit = pv.gramsTotal;
+
+                                      if (mode === "servings" && portions.length > 0) {
+                                        const selectedPortion = portions[selPortionIdx];
+                                        unit = selectedPortion.label;
+                                        gramsPerUnit = selectedPortion.grams;
+                                      }
+
+                                      onPick({
+                                        name: food.description,
+                                        quantity: 1,
+                                        unit,
+                                        calories: pv.cal,
+                                        protein: pv.p,
+                                        fat: pv.fat,
+                                        carbs: pv.c,
+                                        fdcId: food.fdc_id,
+                                        gramsPerUnit,
+                                      });
+                                      setActiveIdx(null);
+                                      onClose();
+                                    }}
+                                  >
+                                    Add
+                                  </button>
+                                </div>
                               </div>
                             </>
                           );
@@ -917,15 +897,29 @@ export default function FoodLibraryModal({
               </li>
             );
           })}
-
-          {/* Empty state */}
-          {loaded && results.length === 0 && (
-            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
-              No matches. Try a different search.
-            </li>
-          )}
         </ul>
       </div>
+
+      {/* Micronutrients Modal */}
+      {selectedFoodForMicros && (
+        <MicronutrientsModal
+          isOpen={showMicronutrients}
+          onClose={() => {
+            setShowMicronutrients(false);
+            setSelectedFoodForMicros(null);
+          }}
+          foodName={selectedFoodForMicros.name}
+          nutrients={selectedFoodForMicros.nutrients}
+          servingGrams={selectedFoodForMicros.servingGrams}
+        />
+      )}
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        isOpen={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onScan={handleBarcodeScan}
+      />
     </>
   );
 }

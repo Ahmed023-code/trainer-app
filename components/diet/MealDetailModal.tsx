@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import type { Meal, FoodItem } from "@/components/diet/types";
 
 type Props = {
@@ -35,6 +36,28 @@ export default function MealDetailModal({
       setLocalMeal(JSON.parse(JSON.stringify(meal))); // Deep copy
     }
   }, [isOpen, meal]);
+
+  // Drag and drop for food items
+  const {
+    draggedIndex: draggedFoodIndex,
+    dragOverIndex: dragOverFoodIndex,
+    handleDragStart: handleFoodDragStart,
+    handleDragEnd: handleFoodDragEnd,
+    handleDragOver: handleFoodDragOver,
+    handleDragEnter: handleFoodDragEnter,
+    handleDragLeave: handleFoodDragLeave,
+    handleDrop: handleFoodDrop,
+  } = useDragAndDrop(
+    localMeal?.items || [],
+    (newItems) => {
+      if (localMeal) {
+        const updatedMeal = { ...localMeal, items: newItems };
+        setLocalMeal(updatedMeal);
+        // Immediately persist the reorder
+        onChange(updatedMeal);
+      }
+    }
+  );
 
   if (!isOpen || !localMeal) return null;
 
@@ -202,7 +225,20 @@ export default function MealDetailModal({
             localMeal.items.map((item, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
+                draggable
+                onDragStart={handleFoodDragStart(i)}
+                onDragEnd={handleFoodDragEnd}
+                onDragOver={handleFoodDragOver}
+                onDragEnter={handleFoodDragEnter(i)}
+                onDragLeave={handleFoodDragLeave}
+                onDrop={handleFoodDrop(i)}
+                className={`rounded-xl border p-4 cursor-move transition-all ${
+                  draggedFoodIndex === i
+                    ? 'opacity-50 border-accent-diet'
+                    : dragOverFoodIndex === i
+                    ? 'border-accent-diet border-2 scale-[1.02]'
+                    : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900'
+                }`}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   {/* Food name and quantity with unit */}
@@ -219,14 +255,20 @@ export default function MealDetailModal({
                   <div className="flex gap-2 shrink-0">
                     {onRequestEdit && (
                       <button
-                        onClick={() => onRequestEdit(i, item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRequestEdit(i, item);
+                        }}
                         className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                       >
                         Edit
                       </button>
                     )}
                     <button
-                      onClick={() => deleteFood(i)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteFood(i);
+                      }}
                       className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
                     >
                       Delete

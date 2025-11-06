@@ -8,6 +8,10 @@ export type FoodItem = {
   protein: number;
   carbs: number;
   fat: number;
+  // Optional USDA metadata for re-editing with full database features
+  fdcId?: number;
+  // Store the grams value for the current quantity (for recalculating portions)
+  gramsPerUnit?: number;
 };
 
 export type Meal = {
