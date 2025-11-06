@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { Trash2 } from "lucide-react";
 import type { Exercise, Routine, SetItem, SetType } from "@/components/workout/types";
 import ExerciseLibraryModal from "@/components/workout/ExerciseLibraryModal";
 import ExerciseGif from "@/components/workout/ExerciseGif";
@@ -522,7 +523,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
 
                     {/* Column headers - centered */}
                     {ex.sets.length > 0 && (
-                      <div className="grid grid-cols-[minmax(24px,30px),minmax(80px,90px),minmax(50px,70px),minmax(100px,1fr),minmax(40px,50px),minmax(36px,50px)] gap-1 px-1 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                      <div className="grid grid-cols-[28px,85px,55px,1fr,45px,40px] gap-0.5 px-0.5 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         <div className="text-center">#</div>
                         <div className="text-center">Type</div>
                         <div className="text-center">lbs</div>
@@ -533,20 +534,20 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                     )}
 
                     {/* Set rows - with color coding based on type */}
-                    <div className="mt-2 space-y-2">
+                    <div className="mt-2 space-y-1.5">
                       {ex.sets.map((s, setIdx) => (
                         <div
                           key={setIdx}
-                          className={`grid grid-cols-[minmax(24px,30px),minmax(80px,90px),minmax(50px,70px),minmax(100px,1fr),minmax(40px,50px),minmax(36px,50px)] gap-1 items-center rounded-full border px-1 py-1 ${getSetColor(s.type)}`}
+                          className={`grid grid-cols-[28px,85px,55px,1fr,45px,40px] gap-0.5 items-center rounded-full border px-0.5 py-1 ${getSetColor(s.type)}`}
                         >
                           {/* Set number */}
-                          <span className="text-sm font-semibold tabular-nums text-center shrink-0">
-                            #{setIdx + 1}
+                          <span className="text-xs font-semibold tabular-nums text-center shrink-0">
+                            {setIdx + 1}
                           </span>
 
                           {/* Type select */}
                           <select
-                            className="text-xs font-medium px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
+                            className="text-[10px] font-medium px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                             value={s.type}
                             onChange={(e) => updateSetField(exIdx, setIdx, "type", e.target.value as SetType)}
                           >
@@ -560,25 +561,25 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                             type="number"
                             step="0.5"
                             inputMode="decimal"
-                            className="text-sm font-medium tabular-nums text-center px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
+                            className="text-sm font-medium tabular-nums text-center px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                             value={s.weight === 0 ? "" : String(s.weight)}
                             onChange={(e) => updateSetField(exIdx, setIdx, "weight", Number(e.target.value) || 0)}
                             placeholder="0"
                           />
 
                           {/* Reps range input (combined min-max) */}
-                          <div className="flex items-center gap-1 min-w-0">
+                          <div className="flex items-center gap-0.5 min-w-0 overflow-hidden">
                             <input
                               inputMode="numeric"
-                              className="w-full text-sm font-medium tabular-nums text-center px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-[2.5rem]"
+                              className="w-full text-sm font-medium tabular-nums text-center px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-[30px]"
                               value={String(s.repsMin)}
                               onChange={(e) => updateSetField(exIdx, setIdx, "repsMin", keepInt(e.target.value))}
                               placeholder="8"
                             />
-                            <span className="text-xs text-neutral-400 shrink-0">-</span>
+                            <span className="text-[10px] text-neutral-400 shrink-0">-</span>
                             <input
                               inputMode="numeric"
-                              className="w-full text-sm font-medium tabular-nums text-center px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-[2.5rem]"
+                              className="w-full text-sm font-medium tabular-nums text-center px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-[30px]"
                               value={String(s.repsMax)}
                               onChange={(e) => updateSetField(exIdx, setIdx, "repsMax", keepInt(e.target.value))}
                               placeholder="10"
@@ -592,7 +593,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                             min="0"
                             max="10"
                             inputMode="decimal"
-                            className="text-sm font-medium tabular-nums text-center px-2 py-2 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
+                            className="text-sm font-medium tabular-nums text-center px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-0"
                             value={s.rpe === 0 ? "" : String(s.rpe)}
                             onChange={(e) =>
                               updateSetField(
@@ -608,12 +609,10 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                           {/* Delete button */}
                           <button
                             onClick={() => removeSetFromExercise(exIdx, setIdx)}
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-red-600 dark:bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-700"
+                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
                             aria-label="Delete set"
                           >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                           </button>
                         </div>
                       ))}
