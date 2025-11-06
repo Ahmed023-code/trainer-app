@@ -216,6 +216,39 @@ npm run build
 npm start
 ```
 
+## Mobile App Installation
+
+**Want to use the app on your phone without internet?** Build it as a native mobile app!
+
+### Quick Start
+
+```bash
+# Automated setup (recommended)
+npm run mobile:setup
+
+# Or manually:
+npm run build              # Build the web app
+npx cap add ios            # Add iOS platform (macOS only)
+npx cap add android        # Add Android platform
+npm run mobile:ios         # Open in Xcode
+npm run mobile:android     # Open in Android Studio
+```
+
+### What You Get
+
+✅ **Native mobile app** installed on your phone
+✅ **Runs completely offline** (no internet needed)
+✅ **All data stored locally** on your device
+✅ **Works anywhere** you have your phone
+
+### Full Installation Guide
+
+See [MOBILE_INSTALLATION.md](MOBILE_INSTALLATION.md) for detailed step-by-step instructions for:
+- iOS installation (requires macOS + Xcode)
+- Android installation (works on any platform)
+- Building release versions for App Store/Google Play
+- Troubleshooting common issues
+
 ## Remote Access
 
 Access your app from any device on the same network (phone, tablet, other computers):
