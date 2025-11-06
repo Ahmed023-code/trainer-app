@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Camera } from 'lucide-react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 
 interface BarcodeScannerProps {
   isOpen: boolean;
@@ -16,21 +17,27 @@ export default function BarcodeScanner({
 }: BarcodeScannerProps) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string>('');
+  const [scanning, setScanning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      // Stop camera when modal closes
+      // Stop camera and barcode reader when modal closes
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
+      setScanning(false);
       return;
     }
 
-    // Request camera permission
-    const startCamera = async () => {
+    // Request camera permission and start scanning
+    const startScanning = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' } // Use back camera on mobile
@@ -41,6 +48,34 @@ export default function BarcodeScanner({
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+
+          // Initialize barcode reader
+          codeReaderRef.current = new BrowserMultiFormatReader();
+          setScanning(true);
+
+          // Start continuous barcode detection
+          codeReaderRef.current.decodeFromVideoElement(
+            videoRef.current,
+            (result, error) => {
+              if (result) {
+                const barcode = result.getText();
+                console.log('Barcode detected:', barcode);
+
+                // Stop scanning and trigger callback
+                if (codeReaderRef.current) {
+                  codeReaderRef.current.reset();
+                }
+                setScanning(false);
+                onScan(barcode);
+                onClose();
+              }
+
+              // Ignore errors during continuous scanning (expected when no barcode is visible)
+              if (error && error.name !== 'NotFoundException') {
+                console.error('Barcode scan error:', error);
+              }
+            }
+          );
         }
       } catch (err) {
         console.error('Camera error:', err);
@@ -49,15 +84,19 @@ export default function BarcodeScanner({
       }
     };
 
-    startCamera();
+    startScanning();
 
     return () => {
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
+      setScanning(false);
     };
-  }, [isOpen]);
+  }, [isOpen, onScan, onClose]);
 
   const handleManualEntry = () => {
     const barcode = prompt('Enter barcode manually:');
@@ -138,6 +177,13 @@ export default function BarcodeScanner({
 
                   {/* Scanning line animation */}
                   <div className="absolute top-0 left-0 right-0 h-1 bg-green-400 animate-pulse"></div>
+
+                  {/* Scanning status */}
+                  {scanning && (
+                    <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                      Scanning...
+                    </div>
+                  )}
                 </div>
               </div>
             </>

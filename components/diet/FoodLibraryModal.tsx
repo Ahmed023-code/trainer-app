@@ -131,7 +131,18 @@ export default function FoodLibraryModal({
         setSearchResults(prev => [details.food as USDAFood, ...prev].slice(0, 50));
         setQuery(details.food.description);
       } else {
-        alert('No food found for this barcode');
+        // Barcode not found - show QuickAdd form with barcode pre-filled
+        setQuery('');
+        setSearchResults([]);
+        setShowQuickAdd(true);
+        setQuickAddForm({
+          name: `Product (UPC: ${barcode})`,
+          calories: '',
+          protein: '',
+          carbs: '',
+          fat: '',
+          quantity: '1',
+        });
       }
     } catch (err) {
       console.error('Barcode lookup error:', err);

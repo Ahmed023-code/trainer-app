@@ -32,6 +32,8 @@
     "@capacitor/core": "^7.4.4",
     "@capacitor/ios": "^7.4.4",
     "@tanstack/react-query": "5.56.2",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "better-sqlite3": "^12.4.1",
     "clsx": "2.1.1",
     "idb-keyval": "^6.2.2",
