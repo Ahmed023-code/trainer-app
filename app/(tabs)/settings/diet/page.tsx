@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSettingsStore, cmToFeetInches, feetInchesToCm } from "@/stores/settingsStore";
 import { updateDietGoals, getTodayISO } from "@/stores/storageV2";
@@ -169,7 +169,7 @@ function calculateMacros(
   return { protein_g, carbs_g, fat_g };
 }
 
-export default function DietSettingsPage() {
+function DietSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnDate = searchParams.get("returnDate");
@@ -809,5 +809,20 @@ export default function DietSettingsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function DietSettingsPage() {
+  return (
+    <Suspense fallback={
+      <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] pt-4">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">←</div>
+          <h1 className="text-xl font-semibold">Diet Settings</h1>
+        </div>
+      </main>
+    }>
+      <DietSettingsContent />
+    </Suspense>
   );
 }

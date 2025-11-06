@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkoutGoalsStore } from "@/stores/workoutGoalsStore";
 import type { WorkoutSplit, WorkoutFocus } from "@/stores/workoutGoalsStore";
 
-export default function WorkoutSettingsPage() {
+function WorkoutSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnDate = searchParams.get("returnDate");
@@ -191,5 +191,20 @@ export default function WorkoutSettingsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function WorkoutSettingsPage() {
+  return (
+    <Suspense fallback={
+      <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] pt-4">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">←</div>
+          <h1 className="text-xl font-semibold">Workout Settings</h1>
+        </div>
+      </main>
+    }>
+      <WorkoutSettingsContent />
+    </Suspense>
   );
 }
