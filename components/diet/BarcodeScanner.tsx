@@ -110,11 +110,11 @@ export default function BarcodeScanner({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black flex items-center justify-center z-50"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-900 md:rounded-2xl shadow-2xl w-full h-full md:max-w-md md:max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -132,7 +132,7 @@ export default function BarcodeScanner({
         </div>
 
         {/* Camera View */}
-        <div className="flex-1 bg-black relative">
+        <div className="flex-1 bg-black relative min-h-[400px] md:min-h-[500px]">
           {hasPermission === null && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-white text-center">
