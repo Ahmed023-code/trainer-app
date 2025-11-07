@@ -43,6 +43,15 @@ const NUTRIENT_TARGETS: Record<number, number> = {
   1175: 15,   // Vitamin E (mg)
 };
 
+// Nutrient colors matching MacroRings
+const NUTRIENT_COLORS: Record<number, string> = {
+  1008: '#34D399', // Calories - green
+  1003: '#F87171', // Protein - red/pink
+  1005: '#60A5FA', // Carbs - blue
+  1004: '#FACC15', // Fat - yellow
+  1079: '#60A5FA', // Fiber - blue (same as carbs)
+};
+
 // Time period tabs
 type TimePeriod = "today" | "week" | "month" | "3months" | "year";
 
@@ -133,7 +142,7 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
       // Override macro targets with user goals
       const calorieNutrient = totals.get(1008);
       if (calorieNutrient) {
-        totals.set(1008, { ...calorieNutrient, target: goals.cal });
+        totals.set(1008, { ...calorieNutrient, name: 'Calories', target: goals.cal });
       }
       const proteinNutrient = totals.get(1003);
       if (proteinNutrient) {
@@ -145,7 +154,23 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
       }
       const carbsNutrient = totals.get(1005);
       if (carbsNutrient) {
-        totals.set(1005, { ...carbsNutrient, target: goals.c });
+        totals.set(1005, { ...carbsNutrient, name: 'Total Carbohydrates', target: goals.c });
+      }
+
+      // Add Net Carbs (Total Carbs - Fiber)
+      const totalCarbs = totals.get(1005);
+      const fiber = totals.get(1079);
+      if (totalCarbs && fiber) {
+        const netCarbsAmount = Math.max(0, totalCarbs.amount - fiber.amount);
+        // Use a synthetic ID for Net Carbs
+        totals.set(9999, {
+          id: 9999,
+          name: 'Net Carbs',
+          amount: netCarbsAmount,
+          unit: 'g',
+          target: undefined, // No target for net carbs
+          category: 'Macronutrients'
+        });
       }
 
       if (!cancelled) {
@@ -213,10 +238,30 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
       }
     });
 
-    // Sort nutrients within each category by name
+    // Custom sort order for macronutrients with targets
+    const macroSortOrder: Record<number, number> = {
+      1008: 1, // Calories
+      1003: 2, // Protein
+      1005: 3, // Total Carbs
+      9999: 4, // Net Carbs
+      1079: 5, // Fiber
+      1004: 6, // Fat
+    };
+
+    // Sort nutrients within each category
     const sortCategories = (obj: Record<string, NutrientData[]>) => {
       Object.keys(obj).forEach(category => {
-        obj[category].sort((a, b) => a.name.localeCompare(b.name));
+        if (category === 'Macronutrients') {
+          // Custom sort for macros
+          obj[category].sort((a, b) => {
+            const orderA = macroSortOrder[a.id] || 999;
+            const orderB = macroSortOrder[b.id] || 999;
+            return orderA - orderB;
+          });
+        } else {
+          // Alphabetical sort for other categories
+          obj[category].sort((a, b) => a.name.localeCompare(b.name));
+        }
       });
     };
 
@@ -344,8 +389,11 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
                         {hasTarget && (
                           <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-gradient-to-r from-yellow-400 via-green-400 to-green-500 transition-all duration-300"
-                              style={{ width: `${percentage}%` }}
+                              className="h-full transition-all duration-300"
+                              style={{
+                                width: `${percentage}%`,
+                                backgroundColor: NUTRIENT_COLORS[nutrient.id] || '#9CA3AF'
+                              }}
                             />
                           </div>
                         )}
