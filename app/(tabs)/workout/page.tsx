@@ -110,7 +110,7 @@ export default function WorkoutPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/data/exercises.json");
+        const res = await fetch("/data/exercisedb-exercises.json");
         const json = await res.json();
         const arr: any[] = Array.isArray(json)
           ? json
@@ -121,19 +121,11 @@ export default function WorkoutPage() {
         for (const r of arr) {
           const name = String(r?.name || "").toLowerCase().trim();
           if (!name) continue;
-          const bodyParts: string[] = Array.isArray(r?.bodyParts)
-            ? r.bodyParts
-            : r?.bodyPart
-            ? [r.bodyPart]
+          // Use targetMuscles from the exercise data
+          const targetMuscles: string[] = Array.isArray(r?.targetMuscles)
+            ? r.targetMuscles
             : [];
-          const groups = Array.from(
-            new Set(
-              bodyParts
-                .map((bp: any) => mapBodyPartToGroup(String(bp)))
-                .filter(Boolean) as string[]
-            )
-          );
-          if (groups.length) idx[name] = groups;
+          if (targetMuscles.length) idx[name] = targetMuscles;
         }
         setLibIndex(idx);
       } catch {
@@ -203,29 +195,15 @@ export default function WorkoutPage() {
 
   // Sets-by-muscle card data
   const setCounts = useMemo(() => {
-    const base: Record<string, number> = Object.fromEntries(
-      MUSCLE_ORDER.map((k) => [k, 0])
-    ) as Record<string, number>;
+    const base: Record<string, number> = {};
 
     for (const ex of exercises) {
       const nameKey = ex.name.toLowerCase().trim();
 
-      const overrideParts: string[] = Array.isArray((ex as any).bodyParts)
-        ? (ex as any).bodyParts
-        : [];
+      // Get target muscles from library index
+      const targetMuscles = libIndex[nameKey] || [];
 
-      const groups =
-        overrideParts.length
-          ? Array.from(
-              new Set(
-                overrideParts
-                  .map((bp: any) => mapBodyPartToGroup(String(bp)))
-                  .filter(Boolean) as string[]
-              )
-            )
-          : (libIndex[nameKey] || []);
-
-      if (!groups.length) continue;
+      if (!targetMuscles.length) continue;
 
       const count = ex.sets.reduce((n, s: any) => {
         const t = String(s?.type || "Working");
@@ -233,13 +211,12 @@ export default function WorkoutPage() {
       }, 0);
 
       // Only count the primary (first) target muscle
-      if (count > 0 && groups.length > 0) {
-        const primaryMuscle = groups[0];
+      if (count > 0) {
+        const primaryMuscle = targetMuscles[0];
         base[primaryMuscle] = (base[primaryMuscle] ?? 0) + count;
       }
     }
 
-    for (const k of MUSCLE_ORDER) base[k] = Math.round(base[k] ?? 0);
     return base;
   }, [exercises, libIndex]);
 
