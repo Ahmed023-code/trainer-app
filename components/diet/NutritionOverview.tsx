@@ -231,7 +231,8 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
 
     nutrientTotals.forEach((nutrient) => {
       const category = nutrient.category;
-      const targetList = nutrient.target !== undefined ? withTargets : withoutTargets;
+      // Special case: Net Carbohydrates (id: 9999) should appear in main section even without target
+      const targetList = (nutrient.target !== undefined || nutrient.id === 9999) ? withTargets : withoutTargets;
 
       if (targetList[category]) {
         targetList[category].push(nutrient);
