@@ -50,10 +50,12 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
   const [nutrientTotals, setNutrientTotals] = useState<Map<number, NutrientData>>(new Map());
   const [loading, setLoading] = useState(false);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
+  const [showAllNutrients, setShowAllNutrients] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setNutrientTotals(new Map());
+      setShowAllNutrients(false);
       return;
     }
 
@@ -184,9 +186,17 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
     return 'Other';
   };
 
-  // Organize nutrients by category
-  const organizedNutrients = useMemo(() => {
-    const result: Record<string, NutrientData[]> = {
+  // Organize nutrients by category, separating those with and without targets
+  const { nutrientsWithTargets, nutrientsWithoutTargets } = useMemo(() => {
+    const withTargets: Record<string, NutrientData[]> = {
+      'Macronutrients': [],
+      'Fats': [],
+      'Vitamins': [],
+      'Minerals': [],
+      'Other': []
+    };
+
+    const withoutTargets: Record<string, NutrientData[]> = {
       'Macronutrients': [],
       'Fats': [],
       'Vitamins': [],
@@ -196,24 +206,39 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
 
     nutrientTotals.forEach((nutrient) => {
       const category = nutrient.category;
-      if (result[category]) {
-        result[category].push(nutrient);
+      const targetList = nutrient.target !== undefined ? withTargets : withoutTargets;
+
+      if (targetList[category]) {
+        targetList[category].push(nutrient);
       }
     });
 
     // Sort nutrients within each category by name
-    Object.keys(result).forEach(category => {
-      result[category].sort((a, b) => a.name.localeCompare(b.name));
-    });
+    const sortCategories = (obj: Record<string, NutrientData[]>) => {
+      Object.keys(obj).forEach(category => {
+        obj[category].sort((a, b) => a.name.localeCompare(b.name));
+      });
+    };
+
+    sortCategories(withTargets);
+    sortCategories(withoutTargets);
 
     // Remove empty categories
-    Object.keys(result).forEach(key => {
-      if (result[key].length === 0) {
-        delete result[key];
-      }
-    });
+    const removeEmpty = (obj: Record<string, NutrientData[]>) => {
+      Object.keys(obj).forEach(key => {
+        if (obj[key].length === 0) {
+          delete obj[key];
+        }
+      });
+    };
 
-    return result;
+    removeEmpty(withTargets);
+    removeEmpty(withoutTargets);
+
+    return {
+      nutrientsWithTargets: withTargets,
+      nutrientsWithoutTargets: withoutTargets
+    };
   }, [nutrientTotals]);
 
   if (!isOpen) return null;
@@ -273,7 +298,8 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
 
         {!loading && nutrientTotals.size > 0 && (
           <div className="space-y-8">
-            {Object.entries(organizedNutrients).map(([category, nutrients]) => (
+            {/* Nutrients with targets (progress bars) */}
+            {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => (
               <div key={category}>
                 <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
                   {category}
@@ -329,6 +355,53 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
                 </div>
               </div>
             ))}
+
+            {/* Show More Button */}
+            {Object.keys(nutrientsWithoutTargets).length > 0 && (
+              <div className="pt-4">
+                <button
+                  onClick={() => setShowAllNutrients(!showAllNutrients)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium text-neutral-700 dark:text-neutral-300"
+                >
+                  {showAllNutrients ? "Hide Detailed Nutrients" : "Show All Nutrients"}
+                </button>
+              </div>
+            )}
+
+            {/* Detailed nutrients (without targets) */}
+            {showAllNutrients && (
+              <div className="space-y-8 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Detailed micronutrient breakdown
+                </p>
+                {Object.entries(nutrientsWithoutTargets).map(([category, nutrients]) => (
+                  <div key={category}>
+                    <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
+                      {category}
+                    </h2>
+                    <div className="space-y-3">
+                      {nutrients.map((nutrient) => (
+                        <div key={nutrient.id} className="flex items-center justify-between py-2">
+                          <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            {nutrient.name}
+                          </span>
+                          <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                            {nutrient.amount < 0.01 && nutrient.amount > 0
+                              ? "< 0.01"
+                              : nutrient.amount < 1
+                              ? nutrient.amount.toFixed(2)
+                              : Math.round(nutrient.amount)}{" "}
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                              {nutrient.unit}
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
