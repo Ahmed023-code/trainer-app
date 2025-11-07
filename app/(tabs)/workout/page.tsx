@@ -232,9 +232,10 @@ export default function WorkoutPage() {
         return n + (t === "Working" || t === "Drop Set" ? 1 : 0);
       }, 0);
 
-      if (count > 0) {
-        const share = count / groups.length;
-        for (const g of groups) base[g] = (base[g] ?? 0) + share;
+      // Only count the primary (first) target muscle
+      if (count > 0 && groups.length > 0) {
+        const primaryMuscle = groups[0];
+        base[primaryMuscle] = (base[primaryMuscle] ?? 0) + count;
       }
     }
 
