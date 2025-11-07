@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import type { Exercise, SetItem } from "@/components/workout/types";
 import { getOfflineDB, type ExerciseDBExercise } from "@/utils/offlineDb";
 import ExerciseGif from "@/components/workout/ExerciseGif";
@@ -65,6 +65,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
   const [q, setQ] = useState("");
   const [qDeb, setQDeb] = useState("");
   const [category, setCategory] = useState<"strength" | "cardio" | "mobility">("strength");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // custom-exercise muscle selection
   const [showCustomMuscles, setShowCustomMuscles] = useState(false);
@@ -78,6 +79,16 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
     const t = setTimeout(() => setQDeb(norm(q)), 200);
     return () => clearTimeout(t);
   }, [q]);
+
+  // Auto-focus search input when modal opens
+  useEffect(() => {
+    if (isOpen && !showCustomMuscles && searchInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen, showCustomMuscles]);
 
   // load once per open
   useEffect(() => {
@@ -140,7 +151,9 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
     const query = qDeb;
     if (!query) return list.slice(0, 50);
 
-    const aliasTerms = new Set<string>((bodyAliases[query] || []).map(norm).filter(Boolean));
+    // Check for alias match first (lowercase for alias map)
+    const lowerQuery = query.toLowerCase();
+    const aliasTerms = new Set<string>((bodyAliases[lowerQuery] || []).map(norm).filter(Boolean));
 
     const scoreOf = (r: Row) => {
       const name = norm(r.name);
@@ -148,23 +161,30 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
       const body = norm(bodyArr.join(" "));
       const equip = norm(r.equipment || "");
       const muscles = norm((r.targetMuscles || []).join(" "));
+      const secondary = norm((r.secondaryMuscles || []).join(" "));
 
       let s = 0;
-      if (name === query) s += 5;
-      if (name.startsWith(query)) s += 3;
-      if (name.split(" ").some((w) => w.startsWith(query))) s += 2;
-      if (name.includes(query)) s += 1;
+      // Exact name match gets highest score
+      if (name === query) s += 10;
+      // Name starts with query
+      if (name.startsWith(query)) s += 5;
+      // Any word in name starts with query
+      const words = name.split(" ");
+      if (words.some((w) => w.startsWith(query))) s += 3;
+      // Name contains query as substring
+      if (name.includes(query)) s += 2;
 
-      // body/equipment/muscles
-      if (body.includes(query)) s += 1;
-      if (equip.includes(query)) s += 1;
-      if (muscles.includes(query)) s += 1;
+      // Body parts, equipment, and muscles matching
+      if (body.includes(query)) s += 2;
+      if (equip.includes(query)) s += 2;
+      if (muscles.includes(query)) s += 2;
+      if (secondary.includes(query)) s += 1;
 
-      // alias boost for legs → quads/glutes/hamstrings, etc.
+      // Alias boost for common terms (legs → quads/glutes/hamstrings, etc.)
       if (aliasTerms.size > 0) {
-        const bodyTokens = new Set([...body.split(" "), ...muscles.split(" ")]);
+        const bodyTokens = new Set([...body.split(" "), ...muscles.split(" "), ...secondary.split(" ")]);
         for (const t of aliasTerms) {
-          if (bodyTokens.has(t)) s += 2;
+          if (bodyTokens.has(t)) s += 3;
         }
       }
 
@@ -186,14 +206,51 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
     setShowCustomMuscles(true);
   };
 
-  const confirmCustom = () => {
+  const confirmCustom = async () => {
     const picked = MUSCLES.filter((m) => selectedMuscles[m]);
+
+    // Generate a unique ID for the custom exercise
+    const customExerciseId = `custom-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    // Save to IndexedDB for future searches
+    try {
+      const db = await getOfflineDB();
+      const customExercise: ExerciseDBExercise = {
+        exerciseId: customExerciseId,
+        name: customName,
+        gifUrl: '', // No GIF for custom exercises
+        targetMuscles: picked.map(m => m.toLowerCase()),
+        bodyParts: picked.map(m => m.toLowerCase()),
+        equipments: [],
+        secondaryMuscles: [],
+        instructions: [],
+      };
+      await db.saveCustomExercise(customExercise);
+
+      // Reload exercises to include the new custom exercise
+      const allExercises = await db.getAllExercises();
+      const exerciseDBRows: Row[] = allExercises.map((ex: ExerciseDBExercise) => ({
+        exerciseId: ex.exerciseId,
+        name: toTitleCase(ex.name),
+        bodyParts: ex.bodyParts,
+        equipment: ex.equipments?.[0] ? toTitleCase(ex.equipments[0]) : undefined,
+        category: "strength",
+        targetMuscles: ex.targetMuscles,
+        secondaryMuscles: ex.secondaryMuscles,
+        gifUrl: ex.gifUrl,
+      }));
+      setData(exerciseDBRows);
+    } catch (error) {
+      console.error('Failed to save custom exercise:', error);
+    }
+
     const ex: Exercise = {
       name: customName,
       sets: [defaultSetTemplate()],
       notes: "",
+      exerciseId: customExerciseId,
       // Store muscles for grouping on the page. The page reads (ex as any).bodyParts.
-      ...(picked.length ? { bodyParts: picked as any } : {}),
+      ...(picked.length ? { bodyParts: picked as any, targetMuscles: picked.map(m => m.toLowerCase()) } : {}),
     } as any;
     onPick(ex);
     setShowCustomMuscles(false);
@@ -260,6 +317,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
             </button>
           )}
           <input
+            ref={searchInputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search exercises or body parts (e.g., chest, quads, barbell)"

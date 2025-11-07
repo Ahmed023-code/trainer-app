@@ -190,7 +190,7 @@ export default function MealDetailModal({
           {/* Secondary actions */}
           <div className="flex gap-2 mt-3 flex-wrap">
             {/* Details button - show nutrient breakdown */}
-            {localMeal.items.length > 0 && localMeal.items.some(item => item.fdcId) && (
+            {localMeal.items.length > 0 && (
               <button
                 onClick={() => setShowNutrients(true)}
                 className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1"

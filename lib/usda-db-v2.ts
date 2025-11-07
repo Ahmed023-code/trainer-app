@@ -118,10 +118,69 @@ export async function ensureEssentialBundles(): Promise<void> {
 }
 
 /**
+ * Calculate relevance score for search results
+ * Higher score = more relevant
+ */
+function calculateRelevanceScore(description: string, query: string): number {
+  let score = 0;
+
+  // Exact match (highest priority)
+  if (description === query) {
+    score += 10000;
+  }
+
+  // Starts with query followed by comma, space, or dash (e.g., "apple, " matches "apple")
+  if (description.startsWith(query + ' ') ||
+      description.startsWith(query + ',') ||
+      description.startsWith(query + '-') ||
+      description.startsWith(query + '(')) {
+    score += 5000;
+  }
+
+  // Exact word match at start (e.g., "apple" for query "apple")
+  const words = description.split(/[\s,\-()]+/);
+  if (words[0] === query) {
+    score += 4000;
+  }
+
+  // Starts with query (e.g., "apple pie" for query "apple")
+  if (description.startsWith(query)) {
+    score += 3000;
+  }
+
+  // Query appears as a whole word anywhere (with word boundaries)
+  // Escape special regex characters in query
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const wordBoundaryRegex = new RegExp(`\\b${escapedQuery}\\b`, 'i');
+  if (wordBoundaryRegex.test(description)) {
+    score += 2000;
+  }
+
+  // Query appears anywhere in description
+  if (description.includes(query)) {
+    score += 1000;
+  }
+
+  // Bonus: Shorter descriptions are more relevant
+  // Inverse length bonus - shorter = better (max 100 points)
+  const lengthPenalty = Math.min(description.length / 2, 100);
+  score -= lengthPenalty;
+
+  // Bonus: Penalize generic/long descriptions
+  const commaCount = (description.match(/,/g) || []).length;
+  score -= commaCount * 10; // Each comma slightly reduces score
+
+  return score;
+}
+
+/**
  * Search in loaded offline databases
  */
 async function searchOffline(query: string, limit: number = 50): Promise<USDAFood[]> {
   const results: USDAFood[] = [];
+
+  // Fetch more results than needed for better ranking (4x limit)
+  const fetchLimit = Math.max(limit * 4, 200);
 
   // Search in loaded bundles
   for (const [bundleName, db] of databases.entries()) {
@@ -135,9 +194,9 @@ async function searchOffline(query: string, limit: number = 50): Promise<USDAFoo
           bf.upc
         FROM food f
         LEFT JOIN branded_food bf ON f.fdc_id = bf.fdc_id
-        WHERE f.description LIKE ?
+        WHERE LOWER(f.description) LIKE LOWER(?)
         LIMIT ?
-      `, [`%${query}%`, limit - results.length]);
+      `, [`%${query}%`, fetchLimit - results.length]);
 
       if (bundleResults.length > 0) {
         const [{ columns, values }] = bundleResults;
@@ -150,7 +209,7 @@ async function searchOffline(query: string, limit: number = 50): Promise<USDAFoo
         });
       }
 
-      if (results.length >= limit) break;
+      if (results.length >= fetchLimit) break;
     } catch (error) {
       console.error(`[USDA DB] Error searching ${bundleName}:`, error);
     }
@@ -218,19 +277,31 @@ export async function searchFoods(
       }
     });
 
-    // Sort by relevance (exact match first)
+    // Sort by relevance with scoring system
     const lowerQuery = query.toLowerCase();
     merged.sort((a, b) => {
       const aDesc = a.description.toLowerCase();
       const bDesc = b.description.toLowerCase();
 
-      const aExact = aDesc.startsWith(lowerQuery);
-      const bExact = bDesc.startsWith(lowerQuery);
+      // Calculate relevance scores
+      const scoreA = calculateRelevanceScore(aDesc, lowerQuery);
+      const scoreB = calculateRelevanceScore(bDesc, lowerQuery);
 
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
+      // Higher score comes first
+      if (scoreA !== scoreB) return scoreB - scoreA;
+
+      // If scores are equal, sort alphabetically
       return aDesc.localeCompare(bDesc);
     });
+
+    // Debug: Log top 5 results with scores
+    if (merged.length > 0) {
+      console.log('[USDA DB] Top 5 results for "' + query + '":');
+      merged.slice(0, 5).forEach((food, idx) => {
+        const score = calculateRelevanceScore(food.description.toLowerCase(), lowerQuery);
+        console.log(`  ${idx + 1}. [${score}] ${food.description}`);
+      });
+    }
 
     return {
       offlineResults: merged.slice(0, limit),
@@ -259,6 +330,13 @@ export async function getFoodDetails(
     const cached = await getCachedFood(fdcId);
     if (cached) {
       console.log(`[USDA DB] Found ${fdcId} in cache`);
+      // Map cached nutrient structure to USDANutrient structure
+      const nutrients: USDANutrient[] = cached.nutrients.map(n => ({
+        id: n.nutrient_id,
+        name: n.name,
+        unit_name: n.unit_name,
+        amount: n.amount
+      }));
       return {
         food: {
           fdc_id: cached.fdc_id,
@@ -268,7 +346,7 @@ export async function getFoodDetails(
           upc: cached.upc,
           ingredients: cached.ingredients
         },
-        nutrients: cached.nutrients,
+        nutrients: nutrients,
         portions: cached.portions
       };
     }
@@ -319,6 +397,7 @@ export async function getFoodDetails(
         const nutrients: USDANutrient[] = [];
         if (nutrientResults.length > 0) {
           const [{ columns: nutrientCols, values: nutrientVals }] = nutrientResults;
+          console.log(`[USDA DB] Found ${nutrientVals.length} nutrients for food ${fdcId}`);
           nutrientVals.forEach(row => {
             const nutrient: any = {};
             nutrientCols.forEach((col, i) => {
@@ -326,6 +405,9 @@ export async function getFoodDetails(
             });
             nutrients.push(nutrient as USDANutrient);
           });
+          console.log(`[USDA DB] Sample nutrients:`, nutrients.slice(0, 5));
+        } else {
+          console.warn(`[USDA DB] No nutrients found for food ${fdcId}`);
         }
 
         // Get portions

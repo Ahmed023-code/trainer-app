@@ -132,7 +132,7 @@ export default function BarcodeScanner({
         </div>
 
         {/* Camera View */}
-        <div className="flex-1 bg-black relative min-h-[400px] md:min-h-[500px]">
+        <div className="flex-1 bg-black relative overflow-hidden">
           {hasPermission === null && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-white text-center">
@@ -163,7 +163,8 @@ export default function BarcodeScanner({
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full h-full object-cover"
+                muted
+                className="absolute inset-0 w-full h-full object-cover"
               />
 
               {/* Scanning Frame Overlay */}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { searchFoods, getFoodDetails, preloadEssentials, type USDAFood, type FoodDetails, type USDANutrient } from "@/lib/usda-db-v2";
+import { cacheFood, type CachedFood } from "@/lib/food-cache";
 import MicronutrientsModal from './MicronutrientsModal';
 import BarcodeScanner from './BarcodeScanner';
 import { Barcode, Info } from 'lucide-react';
@@ -50,10 +51,22 @@ export default function FoodLibraryModal({
   // ---------- search state ----------
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 300);
     return () => clearTimeout(t);
   }, [query]);
+
+  // Auto-focus search input when modal opens
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
 
   // Search foods via database
   useEffect(() => {
@@ -381,13 +394,42 @@ export default function FoodLibraryModal({
     setQuickAddForm((f) => ({ ...f, quantity: String(clampQty(parseQty(f.quantity ?? "0") - step)) }));
   };
 
-  const handleQuickAddSave = () => {
+  const handleQuickAddSave = async () => {
     const name = quickAddForm.name.trim() || "Unnamed";
     const quantity = Number(quickAddForm.quantity) || 1;
     const cal = Number(quickAddForm.calories) || 0;
     const p = Number(quickAddForm.protein) || 0;
     const c = Number(quickAddForm.carbs) || 0;
     const f = Number(quickAddForm.fat) || 0;
+
+    // Generate unique FDC ID for custom food (negative to avoid conflicts)
+    const customFdcId = -Date.now();
+
+    // Save custom food to cache for future searches
+    try {
+      const customFood: CachedFood = {
+        fdc_id: customFdcId,
+        description: name,
+        data_type: 'custom',
+        brand_name: 'Custom Food',
+        nutrients: [
+          { nutrient_id: 1008, name: 'Energy', amount: cal, unit_name: 'kcal' },
+          { nutrient_id: 1003, name: 'Protein', amount: p, unit_name: 'g' },
+          { nutrient_id: 1004, name: 'Total lipid (fat)', amount: f, unit_name: 'g' },
+          { nutrient_id: 1005, name: 'Carbohydrate, by difference', amount: c, unit_name: 'g' },
+        ],
+        portions: [
+          { id: 1, portion_description: 'serving', gram_weight: 100 }
+        ],
+        cached_at: Date.now(),
+        cached_reason: 'logged',
+        expires_at: null, // Never expires
+      };
+      await cacheFood(customFood);
+      console.log('Custom food saved to cache:', name);
+    } catch (error) {
+      console.error('Failed to save custom food:', error);
+    }
 
     onPick({
       name,
@@ -396,6 +438,7 @@ export default function FoodLibraryModal({
       protein: p,
       fat: f,
       carbs: c,
+      fdcId: customFdcId,
     });
 
     setShowQuickAdd(false);
@@ -425,6 +468,7 @@ export default function FoodLibraryModal({
             Back
           </button>
           <input
+            ref={searchInputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search 155K+ foods..."

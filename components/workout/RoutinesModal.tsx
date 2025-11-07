@@ -572,7 +572,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                             <input
                               inputMode="numeric"
                               className="w-full text-sm font-medium tabular-nums text-center px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-[30px]"
-                              value={String(s.repsMin)}
+                              value={s.repsMin === 0 ? "" : String(s.repsMin)}
                               onChange={(e) => updateSetField(exIdx, setIdx, "repsMin", keepInt(e.target.value))}
                               placeholder="8"
                             />
@@ -580,7 +580,7 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                             <input
                               inputMode="numeric"
                               className="w-full text-sm font-medium tabular-nums text-center px-1 py-1.5 rounded-full bg-white/70 dark:bg-black/30 border-0 focus:outline-none focus:ring-1 focus:ring-neutral-400 min-w-[30px]"
-                              value={String(s.repsMax)}
+                              value={s.repsMax === 0 ? "" : String(s.repsMax)}
                               onChange={(e) => updateSetField(exIdx, setIdx, "repsMax", keepInt(e.target.value))}
                               placeholder="10"
                             />
@@ -609,10 +609,10 @@ export default function RoutinesModal({ isOpen, onClose, onSaveRoutine, onPickRo
                           {/* Delete button */}
                           <button
                             onClick={() => removeSetFromExercise(exIdx, setIdx)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-red-600 dark:bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-700 transition-colors shrink-0"
                             aria-label="Delete set"
                           >
-                            <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ))}

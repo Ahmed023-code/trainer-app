@@ -126,7 +126,7 @@ export default function ExerciseDetailModal({
       {/* Modal content */}
       <div className="absolute inset-0 bg-white dark:bg-neutral-900 flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 z-10 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
+        <div className="sticky top-0 z-10 p-4 px-5 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
           {/* Exercise name and info */}
           <div>
             <h2 className="font-semibold text-lg">{localExercise.name}</h2>
@@ -180,7 +180,7 @@ export default function ExerciseDetailModal({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-1 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Exercise GIF Display */}
           {(localExercise as any).gifUrl && (
             <div className="flex justify-center mb-4">

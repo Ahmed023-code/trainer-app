@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { readDiet, readWorkout, readWeight, writeWeight, listMedia, addMedia, removeMedia, getMediaBlob } from "@/stores/storageV2";
 import MacroRings from "@/components/diet/MacroRings";
+import NutritionOverview from "@/components/diet/NutritionOverview";
 import type { MediaItem } from "@/stores/storageV2";
 
 // Load exercises data
@@ -55,6 +56,22 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
   // Diet/workout data
   const [dietSummary, setDietSummary] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0, goals: { cal: 2400, p: 180, c: 240, f: 70 } });
   const [workoutSummary, setWorkoutSummary] = useState({ exerciseCount: 0, setCount: 0, exerciseNames: [] as string[] });
+
+  // Diet menu and nutrition overview
+  const [showDietMenu, setShowDietMenu] = useState(false);
+  const [showNutritionOverview, setShowNutritionOverview] = useState(false);
+
+  // Close diet menu on scroll
+  useEffect(() => {
+    if (!showDietMenu) return;
+
+    const handleScroll = () => {
+      setShowDietMenu(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [showDietMenu]);
 
   // Load data for selected date
   useEffect(() => {
@@ -264,7 +281,7 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
     <>
       <div className="space-y-4">
         {/* Weight card */}
-        <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-3 shadow-sm">
+        <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 px-5 shadow-sm">
           <label className="block text-sm font-medium mb-2">Weight</label>
           <div className="flex gap-2 items-center">
             <input
@@ -280,7 +297,7 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
                 }
               }}
               placeholder="0.0"
-              className="flex-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 bg-white dark:bg-neutral-900 text-sm"
+              className="flex-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-4 py-2 bg-white dark:bg-neutral-900 text-sm"
             />
             {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
               <button
@@ -313,7 +330,7 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
         </div>
 
         {/* Diet summary */}
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-medium">Diet Summary</h2>
             <button
@@ -330,10 +347,39 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
                 protein={{ label: "P", color: "#F87171", current: Math.round(dietSummary.protein), target: dietSummary.goals.p }}
                 fat={{ label: "F", color: "var(--accent-diet-fat)", current: Math.round(dietSummary.fat), target: dietSummary.goals.f }}
                 carbs={{ label: "C", color: "#60A5FA", current: Math.round(dietSummary.carbs), target: dietSummary.goals.c }}
-                onMenuClick={() => router.push(`/settings/diet?returnDate=${dateISO}`)}
+                onMenuClick={() => setShowDietMenu(!showDietMenu)}
               />
             </div>
           </div>
+
+          {/* Menu popup */}
+          {showDietMenu && (
+            <>
+              <button
+                className="fixed inset-0 z-[99998]"
+                aria-label="Close"
+                onClick={() => setShowDietMenu(false)}
+              />
+              <div className="absolute right-4 top-[calc(100%-1rem)] z-[99999] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 w-48 space-y-2">
+                <button
+                  onClick={() => {
+                    setShowNutritionOverview(true);
+                    setShowDietMenu(false);
+                  }}
+                  className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  Diet Details
+                </button>
+                <a
+                  href={`/settings/diet?returnDate=${dateISO}`}
+                  className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                  onClick={() => setShowDietMenu(false)}
+                >
+                  Diet Settings
+                </a>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Workout summary */}
@@ -425,6 +471,14 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
           )}
         </div>
       )}
+
+      {/* Nutrition overview page */}
+      <NutritionOverview
+        isOpen={showNutritionOverview}
+        meals={readDiet(dateISO).meals}
+        goals={dietSummary.goals}
+        onClose={() => setShowNutritionOverview(false)}
+      />
     </>
   );
 }

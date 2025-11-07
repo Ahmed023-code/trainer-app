@@ -126,6 +126,15 @@ class OfflineDB {
     });
   }
 
+  async saveCustomExercise(exercise: ExerciseDBExercise): Promise<void> {
+    const store = this.getStore(EXERCISES_STORE, 'readwrite');
+    return new Promise((resolve, reject) => {
+      const request = store.put(exercise);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   // ========== Body Parts ==========
   async saveBodyParts(bodyParts: { name: string }[]): Promise<void> {
     const store = this.getStore(BODYPARTS_STORE, 'readwrite');

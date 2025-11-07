@@ -8,6 +8,7 @@ import FoodLibraryModal from "@/components/diet/FoodLibraryModal";
 import EditFoodModal from "@/components/diet/EditFoodModal";
 import SaveMealModal from "@/components/diet/SaveMealModal";
 import LoadMealModal from "@/components/diet/LoadMealModal";
+import NutritionOverview from "@/components/diet/NutritionOverview";
 import DaySelector from "@/components/ui/DaySelector";
 import { useDaySelector } from "@/hooks/useDaySelector";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
@@ -101,6 +102,21 @@ export default function DietPage() {
 
   // Diet settings menu (three-dot menu next to rings)
   const [showDietMenu, setShowDietMenu] = useState(false);
+
+  // Nutrition overview page
+  const [showNutritionOverview, setShowNutritionOverview] = useState(false);
+
+  // Close diet menu on scroll
+  useEffect(() => {
+    if (!showDietMenu) return;
+
+    const handleScroll = () => {
+      setShowDietMenu(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [showDietMenu]);
 
   // Track if bubble was triggered from Log Meal button - no longer needed
   // const [bubbleSource, setBubbleSource] = useState<"fab" | "button">("fab");
@@ -320,11 +336,20 @@ export default function DietPage() {
         {showDietMenu && (
           <>
             <button
-              className="fixed inset-0 z-[9498]"
+              className="fixed inset-0 z-[99998]"
               aria-label="Close"
               onClick={() => setShowDietMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-2 z-[9499] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 shadow-xl backdrop-blur p-3 w-48">
+            <div className="absolute right-0 top-full mt-2 z-[99999] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 w-48 space-y-2">
+              <button
+                onClick={() => {
+                  setShowNutritionOverview(true);
+                  setShowDietMenu(false);
+                }}
+                className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Diet Details
+              </button>
               <a
                 href={`/settings/diet?returnDate=${dateISO}`}
                 className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
@@ -503,6 +528,14 @@ export default function DietPage() {
           setMeals(next);
           setShowLoadTemplate(false);
         }}
+      />
+
+      {/* Nutrition overview page */}
+      <NutritionOverview
+        isOpen={showNutritionOverview}
+        meals={meals}
+        goals={goals}
+        onClose={() => setShowNutritionOverview(false)}
       />
     </main>
   );
