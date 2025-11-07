@@ -8,6 +8,7 @@ import ExerciseLibraryModal from "@/components/workout/ExerciseLibraryModal";
 import RoutinesModal from "@/components/workout/RoutinesModal";
 import ExerciseHistoryModal from "@/components/workout/ExerciseHistoryModal";
 import ClockModal from "@/components/workout/ClockModal";
+import BodyPartPills from "@/components/workout/BodyPartPills";
 import DaySelector from "@/components/ui/DaySelector";
 import { useDaySelector } from "@/hooks/useDaySelector";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
@@ -277,6 +278,9 @@ export default function WorkoutPage() {
           accentColor="var(--accent-workout)"
           fullWidthLayout={true}
         />
+
+        {/* Body Part Pills showing muscles trained today */}
+        <BodyPartPills setCounts={setCounts} />
 
         {/* Settings button below Today button, right-aligned */}
         <div className="flex justify-end">
