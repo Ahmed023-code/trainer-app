@@ -74,6 +74,18 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
     (async () => {
       const totals = new Map<number, NutrientData>();
 
+      // First, calculate simple macro totals (to match MacroRings display)
+      let simpleMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+      for (const meal of meals) {
+        for (const item of meal.items) {
+          const quantity = item.quantity || 1;
+          simpleMacros.calories += (item.calories || 0) * quantity;
+          simpleMacros.protein += (item.protein || 0) * quantity;
+          simpleMacros.carbs += (item.carbs || 0) * quantity;
+          simpleMacros.fat += (item.fat || 0) * quantity;
+        }
+      }
+
       // Load nutrient data for each food item
       for (const meal of meals) {
         for (const item of meal.items) {
@@ -88,8 +100,11 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
               const gramsPerUnit = item.gramsPerUnit || 100;
               const totalGrams = quantity * gramsPerUnit;
 
-              // Aggregate nutrients
+              // Aggregate nutrients (but skip main macros - we'll use simple totals for those)
               for (const nutrient of details.nutrients) {
+                // Skip main macros - we'll set them from simple totals
+                if ([1008, 1003, 1004, 1005].includes(nutrient.id)) continue;
+
                 const scaledAmount = (nutrient.amount / 100) * totalGrams;
 
                 const existing = totals.get(nutrient.id);
@@ -113,49 +128,44 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
               console.error(`Error loading nutrients for ${item.name}:`, err);
             }
           } else {
-            // Custom food - add basic macros
-            const addNutrient = (id: number, amount: number, unit: string, name: string) => {
-              if (amount <= 0) return;
-              const existing = totals.get(id);
-              if (existing) {
-                totals.set(id, { ...existing, amount: existing.amount + (amount * quantity) });
-              } else {
-                totals.set(id, {
-                  id,
-                  name,
-                  amount: amount * quantity,
-                  unit,
-                  target: NUTRIENT_TARGETS[id],
-                  category: categorizeNutrient(name)
-                });
-              }
-            };
-
-            addNutrient(1008, item.calories, 'kcal', 'Energy');
-            addNutrient(1003, item.protein, 'g', 'Protein');
-            addNutrient(1004, item.fat, 'g', 'Total Fat');
-            addNutrient(1005, item.carbs, 'g', 'Carbohydrates');
+            // Custom food - nutrients already counted in simpleMacros
           }
         }
       }
 
-      // Override macro targets with user goals
-      const calorieNutrient = totals.get(1008);
-      if (calorieNutrient) {
-        totals.set(1008, { ...calorieNutrient, name: 'Calories', target: goals.cal });
-      }
-      const proteinNutrient = totals.get(1003);
-      if (proteinNutrient) {
-        totals.set(1003, { ...proteinNutrient, target: goals.p });
-      }
-      const fatNutrient = totals.get(1004);
-      if (fatNutrient) {
-        totals.set(1004, { ...fatNutrient, target: goals.f });
-      }
-      const carbsNutrient = totals.get(1005);
-      if (carbsNutrient) {
-        totals.set(1005, { ...carbsNutrient, name: 'Total Carbohydrates', target: goals.c });
-      }
+      // Set main macros from simple totals (to match MacroRings)
+      totals.set(1008, {
+        id: 1008,
+        name: 'Calories',
+        amount: simpleMacros.calories,
+        unit: 'kcal',
+        target: goals.cal,
+        category: 'Macronutrients'
+      });
+      totals.set(1003, {
+        id: 1003,
+        name: 'Protein',
+        amount: simpleMacros.protein,
+        unit: 'g',
+        target: goals.p,
+        category: 'Macronutrients'
+      });
+      totals.set(1004, {
+        id: 1004,
+        name: 'Total Fat',
+        amount: simpleMacros.fat,
+        unit: 'g',
+        target: goals.f,
+        category: 'Macronutrients'
+      });
+      totals.set(1005, {
+        id: 1005,
+        name: 'Total Carbohydrates',
+        amount: simpleMacros.carbs,
+        unit: 'g',
+        target: goals.c,
+        category: 'Macronutrients'
+      });
 
       // Add Net Carbs (Total Carbs - Fiber)
       const totalCarbs = totals.get(1005);
@@ -244,8 +254,8 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
       1008: 1, // Calories
       1003: 2, // Protein
       1005: 3, // Total Carbs
-      9999: 4, // Net Carbs
-      1079: 5, // Fiber
+      1079: 4, // Fiber
+      9999: 5, // Net Carbs
       1004: 6, // Fat
     };
 
