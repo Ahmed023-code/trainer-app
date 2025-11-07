@@ -165,7 +165,7 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
         // Use a synthetic ID for Net Carbs
         totals.set(9999, {
           id: 9999,
-          name: 'Net Carbs',
+          name: 'Net Carbohydrates',
           amount: netCarbsAmount,
           unit: 'g',
           target: undefined, // No target for net carbs
@@ -392,7 +392,7 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
                               className="h-full transition-all duration-300"
                               style={{
                                 width: `${percentage}%`,
-                                backgroundColor: NUTRIENT_COLORS[nutrient.id] || '#9CA3AF'
+                                backgroundColor: NUTRIENT_COLORS[nutrient.id] || '#1f00ff'
                               }}
                             />
                           </div>
@@ -409,7 +409,7 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
               <div className="pt-4">
                 <button
                   onClick={() => setShowAllNutrients(!showAllNutrients)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium text-neutral-700 dark:text-neutral-300"
+                  className="w-full px-4 py-3 rounded-full border-2 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium text-neutral-700 dark:text-neutral-300"
                 >
                   {showAllNutrients ? "Hide Detailed Nutrients" : "Show All Nutrients"}
                 </button>
