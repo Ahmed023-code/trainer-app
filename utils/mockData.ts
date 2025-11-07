@@ -1,11 +1,11 @@
 /**
- * Mock Data Generator for Testing - 1.5 Years
+ * Mock Data Generator for Testing - 2 Years
  *
- * Generates 1.5 years (547 days) of sample data for:
- * - Weight logs with realistic fluctuations
- * - Diet logs with USDA food units and quantities
- * - Workout logs with progressive overload and repsPerformed
- * - Workout routines with proper exercise source tracking
+ * Generates 2 years (730 days) of comprehensive sample data for:
+ * - Weight logs with realistic fluctuations and plateaus
+ * - Diet logs with varied meals and proper USDA food units
+ * - Workout logs with progressive overload and deload weeks
+ * - Workout routines with diverse exercise selection
  * - Meal templates for quick meal logging
  */
 
@@ -26,242 +26,359 @@ const randomFloat = (min: number, max: number): number => {
   return Math.random() * (max - min) + min;
 };
 
+// Helper to pick random item from array
+const pickRandom = <T>(arr: T[]): T => {
+  return arr[Math.floor(Math.random() * arr.length)];
+};
+
 export function loadMockData() {
-  console.log('Loading comprehensive mock data for 1.5 years...');
+  console.log('Loading comprehensive mock data for 2 years...');
 
   // 1. Create mock profile
   const mockProfile = {
-    displayName: "Demo User",
-    createdAt: new Date(Date.now() - 547 * 24 * 60 * 60 * 1000).toISOString(),
+    displayName: "Alex Training",
+    createdAt: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString(),
     isMockData: true,
   };
   localStorage.setItem("profile-v1", JSON.stringify(mockProfile));
 
-  // 2. Create mock weight logs (1.5 years = 547 days with realistic fluctuations)
+  // 2. Create mock weight logs (2 years = 730 days with realistic patterns)
   const weightData: Record<string, number> = {};
-  let baseWeight = 205; // Starting weight 1.5 years ago
-  const targetWeight = 175; // Current target weight
-  const totalDays = 547;
-  const weightLossPerDay = (baseWeight - targetWeight) / totalDays;
+  let baseWeight = 210; // Starting weight 2 years ago
+  const targetWeight = 180; // Current weight after 2 years
+  const totalDays = 730;
 
-  for (let i = totalDays - 1; i >= 0; i--) {
-    const dateISO = getDateISO(i);
+  // Simulate weight loss phases with plateaus
+  const phases = [
+    { days: 180, lossPerDay: 0.10 }, // Initial phase: rapid loss
+    { days: 90, lossPerDay: 0.02 },  // Plateau 1
+    { days: 180, lossPerDay: 0.08 }, // Phase 2: steady loss
+    { days: 60, lossPerDay: 0.01 },  // Plateau 2
+    { days: 150, lossPerDay: 0.05 }, // Phase 3: moderate loss
+    { days: 70, lossPerDay: 0.01 },  // Maintenance/slight plateau
+  ];
 
-    // Skip some days randomly (85% logged, 15% missed)
-    if (Math.random() < 0.15) continue;
+  let currentDay = totalDays - 1;
+  for (const phase of phases) {
+    for (let j = 0; j < phase.days && currentDay >= 0; j++, currentDay--) {
+      const dateISO = getDateISO(currentDay);
 
-    // Gradual downward trend with realistic daily fluctuation
-    baseWeight -= weightLossPerDay;
-    const dailyVariation = randomFloat(-1.8, 1.8); // ±1.8 lbs daily variation
-    const weeklyPattern = Math.sin((i % 7) / 7 * Math.PI * 2) * 0.8; // Weekly water weight pattern
-    const monthlyPattern = Math.sin((i % 30) / 30 * Math.PI * 2) * 0.5; // Monthly hormonal pattern
+      // Skip some days randomly (88% logged, 12% missed)
+      if (Math.random() < 0.12) continue;
 
-    weightData[dateISO] = Math.round((baseWeight + dailyVariation + weeklyPattern + monthlyPattern) * 10) / 10;
+      // Apply weight change for this phase
+      baseWeight -= phase.lossPerDay;
+
+      // Add realistic daily fluctuations
+      const dailyVariation = randomFloat(-2.0, 2.0);
+      const weeklyPattern = Math.sin((currentDay % 7) / 7 * Math.PI * 2) * 1.0;
+      const monthlyPattern = Math.sin((currentDay % 30) / 30 * Math.PI * 2) * 0.7;
+
+      weightData[dateISO] = Math.round((baseWeight + dailyVariation + weeklyPattern + monthlyPattern) * 10) / 10;
+    }
   }
   localStorage.setItem("progress-weight-by-day-v1", JSON.stringify(weightData));
 
-  // 3. Create mock diet logs with proper units (1.5 years, ~75% logged)
+  // 3. Create comprehensive diet logs with varied meals
   const dietData: Record<string, any> = {};
 
-  // Realistic meal templates with USDA units
-  // Format: quantity = number of servings (usually 1), gramsPerUnit = grams per serving
-  // Macros are for the full serving size
-  const mealTemplates = [
+  // Breakfast options with proper USDA units
+  const breakfastOptions = [
     {
-      name: "Breakfast",
+      name: "Oatmeal Power Bowl",
       items: [
-        { name: "Oatmeal, Dry", quantity: 1, unit: "40g", gramsPerUnit: 40, calories: 150, protein: 5, carbs: 27, fat: 3 },
+        { name: "Oatmeal, Rolled Oats, Dry", quantity: 1, unit: "50g", gramsPerUnit: 50, calories: 190, protein: 7, carbs: 32, fat: 4 },
         { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", gramsPerUnit: 118, calories: 105, protein: 1, carbs: 27, fat: 0 },
         { name: "Whey Protein Isolate", quantity: 1, unit: "30g scoop", gramsPerUnit: 30, calories: 120, protein: 24, carbs: 3, fat: 2 },
-        { name: "Almond Milk, Unsweetened", quantity: 1, unit: "240ml cup", gramsPerUnit: 240, calories: 30, protein: 1, carbs: 1, fat: 2.5 },
+        { name: "Almond Butter", quantity: 1, unit: "tbsp (16g)", gramsPerUnit: 16, calories: 98, protein: 3, carbs: 3, fat: 9 },
+        { name: "Blueberries, Fresh", quantity: 1, unit: "75g", gramsPerUnit: 75, calories: 43, protein: 1, carbs: 11, fat: 0 },
       ],
     },
     {
-      name: "Lunch",
+      name: "Egg White Scramble",
       items: [
-        { name: "Chicken Breast, Grilled", quantity: 1, unit: "170g", gramsPerUnit: 170, calories: 280, protein: 53, carbs: 0, fat: 6 },
-        { name: "Brown Rice, Cooked", quantity: 1, unit: "195g cup", gramsPerUnit: 195, calories: 215, protein: 5, carbs: 45, fat: 2 },
-        { name: "Broccoli, Steamed", quantity: 1, unit: "156g cup", gramsPerUnit: 156, calories: 55, protein: 4, carbs: 11, fat: 1 },
-        { name: "Olive Oil", quantity: 1, unit: "tbsp (13.5g)", gramsPerUnit: 13.5, calories: 120, protein: 0, carbs: 0, fat: 14 },
+        { name: "Egg Whites, Liquid", quantity: 1, unit: "120ml (½ cup)", gramsPerUnit: 120, calories: 63, protein: 13, carbs: 1, fat: 0 },
+        { name: "Whole Eggs", quantity: 2, unit: "large egg", gramsPerUnit: 50, calories: 72, protein: 6, carbs: 1, fat: 5 },
+        { name: "Spinach, Fresh", quantity: 1, unit: "30g cup", gramsPerUnit: 30, calories: 7, protein: 1, carbs: 1, fat: 0 },
+        { name: "Whole Wheat Toast", quantity: 2, unit: "slice (32g)", gramsPerUnit: 32, calories: 80, protein: 4, carbs: 13, fat: 1 },
+        { name: "Avocado", quantity: 1, unit: "50g (¼ fruit)", gramsPerUnit: 50, calories: 80, protein: 1, carbs: 4, fat: 7 },
       ],
     },
     {
-      name: "Snack",
+      name: "Greek Yogurt Parfait",
+      items: [
+        { name: "Greek Yogurt, Nonfat Plain", quantity: 1, unit: "227g cup", gramsPerUnit: 227, calories: 130, protein: 23, carbs: 9, fat: 0 },
+        { name: "Granola, Low Sugar", quantity: 1, unit: "40g serving", gramsPerUnit: 40, calories: 140, protein: 4, carbs: 25, fat: 3 },
+        { name: "Strawberries, Fresh", quantity: 1, unit: "150g cup", gramsPerUnit: 150, calories: 48, protein: 1, carbs: 12, fat: 0 },
+        { name: "Honey", quantity: 1, unit: "tsp (7g)", gramsPerUnit: 7, calories: 21, protein: 0, carbs: 6, fat: 0 },
+        { name: "Almonds, Sliced", quantity: 1, unit: "14g (2 tbsp)", gramsPerUnit: 14, calories: 80, protein: 3, carbs: 3, fat: 7 },
+      ],
+    },
+    {
+      name: "Protein Pancakes",
+      items: [
+        { name: "Protein Pancake Mix", quantity: 1, unit: "50g serving", gramsPerUnit: 50, calories: 180, protein: 15, carbs: 24, fat: 3 },
+        { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", gramsPerUnit: 118, calories: 105, protein: 1, carbs: 27, fat: 0 },
+        { name: "Maple Syrup, Sugar Free", quantity: 1, unit: "30ml (2 tbsp)", gramsPerUnit: 30, calories: 30, protein: 0, carbs: 8, fat: 0 },
+        { name: "Turkey Bacon", quantity: 2, unit: "strips (28g)", gramsPerUnit: 14, calories: 60, protein: 6, carbs: 1, fat: 4 },
+      ],
+    },
+  ];
+
+  // Lunch options
+  const lunchOptions = [
+    {
+      name: "Chicken & Rice Bowl",
+      items: [
+        { name: "Chicken Breast, Grilled", quantity: 1, unit: "180g", gramsPerUnit: 180, calories: 297, protein: 56, carbs: 0, fat: 6 },
+        { name: "Brown Rice, Cooked", quantity: 1, unit: "195g cup", gramsPerUnit: 195, calories: 218, protein: 5, carbs: 46, fat: 2 },
+        { name: "Broccoli, Steamed", quantity: 1, unit: "156g cup", gramsPerUnit: 156, calories: 55, protein: 4, carbs: 11, fat: 1 },
+        { name: "Olive Oil", quantity: 1, unit: "tbsp (13.5g)", gramsPerUnit: 13.5, calories: 119, protein: 0, carbs: 0, fat: 14 },
+        { name: "Soy Sauce, Low Sodium", quantity: 1, unit: "tbsp (15ml)", gramsPerUnit: 15, calories: 10, protein: 1, carbs: 1, fat: 0 },
+      ],
+    },
+    {
+      name: "Turkey Sandwich",
+      items: [
+        { name: "Turkey Breast, Deli", quantity: 1, unit: "112g (4 oz)", gramsPerUnit: 112, calories: 120, protein: 24, carbs: 4, fat: 2 },
+        { name: "Whole Wheat Bread", quantity: 2, unit: "slice (32g)", gramsPerUnit: 32, calories: 80, protein: 4, carbs: 13, fat: 1 },
+        { name: "Lettuce, Romaine", quantity: 1, unit: "30g", gramsPerUnit: 30, calories: 5, protein: 0, carbs: 1, fat: 0 },
+        { name: "Tomato, Medium", quantity: 3, unit: "slices (60g)", gramsPerUnit: 20, calories: 11, protein: 1, carbs: 2, fat: 0 },
+        { name: "Mustard, Yellow", quantity: 1, unit: "tsp (5g)", gramsPerUnit: 5, calories: 3, protein: 0, carbs: 0, fat: 0 },
+        { name: "Apple, Medium", quantity: 1, unit: "fruit (182g)", gramsPerUnit: 182, calories: 95, protein: 0, carbs: 25, fat: 0 },
+      ],
+    },
+    {
+      name: "Tuna Salad Bowl",
+      items: [
+        { name: "Tuna, Canned in Water", quantity: 1, unit: "142g can", gramsPerUnit: 142, calories: 191, protein: 42, carbs: 0, fat: 1 },
+        { name: "Mixed Greens", quantity: 1, unit: "85g (3 cups)", gramsPerUnit: 85, calories: 20, protein: 2, carbs: 4, fat: 0 },
+        { name: "Cherry Tomatoes", quantity: 1, unit: "149g cup", gramsPerUnit: 149, calories: 27, protein: 1, carbs: 6, fat: 0 },
+        { name: "Cucumber, Sliced", quantity: 1, unit: "100g", gramsPerUnit: 100, calories: 15, protein: 1, carbs: 4, fat: 0 },
+        { name: "Balsamic Vinaigrette", quantity: 2, unit: "tbsp (30ml)", gramsPerUnit: 15, calories: 45, protein: 0, carbs: 2, fat: 4 },
+        { name: "Whole Wheat Crackers", quantity: 1, unit: "30g (12 crackers)", gramsPerUnit: 30, calories: 130, protein: 3, carbs: 22, fat: 3 },
+      ],
+    },
+    {
+      name: "Beef Burrito Bowl",
+      items: [
+        { name: "Ground Beef, 90% Lean", quantity: 1, unit: "113g (4 oz)", gramsPerUnit: 113, calories: 200, protein: 23, carbs: 0, fat: 11 },
+        { name: "Brown Rice, Cooked", quantity: 1, unit: "195g cup", gramsPerUnit: 195, calories: 218, protein: 5, carbs: 46, fat: 2 },
+        { name: "Black Beans, Canned", quantity: 1, unit: "86g (½ cup)", gramsPerUnit: 86, calories: 114, protein: 8, carbs: 20, fat: 0 },
+        { name: "Salsa, Red", quantity: 1, unit: "60g (¼ cup)", gramsPerUnit: 60, calories: 18, protein: 1, carbs: 4, fat: 0 },
+        { name: "Lettuce, Shredded", quantity: 1, unit: "30g", gramsPerUnit: 30, calories: 5, protein: 0, carbs: 1, fat: 0 },
+        { name: "Greek Yogurt, Plain", quantity: 1, unit: "60g (sour cream sub)", gramsPerUnit: 60, calories: 35, protein: 6, carbs: 2, fat: 0 },
+      ],
+    },
+  ];
+
+  // Dinner options
+  const dinnerOptions = [
+    {
+      name: "Grilled Salmon Dinner",
+      items: [
+        { name: "Salmon, Atlantic, Cooked", quantity: 1, unit: "170g fillet", gramsPerUnit: 170, calories: 350, protein: 45, carbs: 0, fat: 18 },
+        { name: "Sweet Potato, Baked", quantity: 1, unit: "medium (150g)", gramsPerUnit: 150, calories: 130, protein: 2, carbs: 30, fat: 0 },
+        { name: "Asparagus, Grilled", quantity: 1, unit: "134g (6 spears)", gramsPerUnit: 134, calories: 27, protein: 3, carbs: 5, fat: 0 },
+        { name: "Butter", quantity: 1, unit: "tsp (5g)", gramsPerUnit: 5, calories: 34, protein: 0, carbs: 0, fat: 4 },
+        { name: "Lemon Juice", quantity: 1, unit: "15ml (1 tbsp)", gramsPerUnit: 15, calories: 4, protein: 0, carbs: 1, fat: 0 },
+      ],
+    },
+    {
+      name: "Steak & Potatoes",
+      items: [
+        { name: "Sirloin Steak, Grilled", quantity: 1, unit: "180g (6 oz)", gramsPerUnit: 180, calories: 360, protein: 49, carbs: 0, fat: 17 },
+        { name: "Baked Potato with Skin", quantity: 1, unit: "medium (173g)", gramsPerUnit: 173, calories: 161, protein: 4, carbs: 37, fat: 0 },
+        { name: "Green Beans, Steamed", quantity: 1, unit: "125g cup", gramsPerUnit: 125, calories: 44, protein: 2, carbs: 10, fat: 0 },
+        { name: "Sour Cream, Light", quantity: 1, unit: "30g (2 tbsp)", gramsPerUnit: 30, calories: 40, protein: 1, carbs: 2, fat: 3 },
+        { name: "Chives, Fresh", quantity: 1, unit: "3g (1 tbsp)", gramsPerUnit: 3, calories: 1, protein: 0, carbs: 0, fat: 0 },
+      ],
+    },
+    {
+      name: "Chicken Pasta",
+      items: [
+        { name: "Chicken Breast, Grilled", quantity: 1, unit: "140g", gramsPerUnit: 140, calories: 231, protein: 44, carbs: 0, fat: 5 },
+        { name: "Whole Wheat Pasta, Cooked", quantity: 1, unit: "140g cup", gramsPerUnit: 140, calories: 174, protein: 7, carbs: 37, fat: 1 },
+        { name: "Marinara Sauce", quantity: 1, unit: "125g (½ cup)", gramsPerUnit: 125, calories: 70, protein: 2, carbs: 12, fat: 2 },
+        { name: "Parmesan Cheese, Grated", quantity: 1, unit: "10g (2 tbsp)", gramsPerUnit: 10, calories: 43, protein: 4, carbs: 0, fat: 3 },
+        { name: "Mixed Vegetables, Steamed", quantity: 1, unit: "91g (½ cup)", gramsPerUnit: 91, calories: 59, protein: 3, carbs: 12, fat: 0 },
+      ],
+    },
+    {
+      name: "Cod & Quinoa",
+      items: [
+        { name: "Cod Fillet, Baked", quantity: 1, unit: "150g", gramsPerUnit: 150, calories: 150, protein: 32, carbs: 0, fat: 1 },
+        { name: "Quinoa, Cooked", quantity: 1, unit: "185g cup", gramsPerUnit: 185, calories: 222, protein: 8, carbs: 39, fat: 4 },
+        { name: "Brussels Sprouts, Roasted", quantity: 1, unit: "156g cup", gramsPerUnit: 156, calories: 56, protein: 4, carbs: 11, fat: 1 },
+        { name: "Olive Oil", quantity: 1, unit: "tbsp (13.5g)", gramsPerUnit: 13.5, calories: 119, protein: 0, carbs: 0, fat: 14 },
+      ],
+    },
+    {
+      name: "Turkey Meatballs",
+      items: [
+        { name: "Ground Turkey, 93% Lean", quantity: 1, unit: "140g (5 oz)", gramsPerUnit: 140, calories: 213, protein: 28, carbs: 0, fat: 10 },
+        { name: "Zucchini Noodles", quantity: 1, unit: "200g", gramsPerUnit: 200, calories: 34, protein: 2, carbs: 6, fat: 1 },
+        { name: "Marinara Sauce", quantity: 1, unit: "125g (½ cup)", gramsPerUnit: 125, calories: 70, protein: 2, carbs: 12, fat: 2 },
+        { name: "Mozzarella, Part Skim", quantity: 1, unit: "28g (1 oz)", gramsPerUnit: 28, calories: 72, protein: 7, carbs: 1, fat: 5 },
+        { name: "Garlic Bread", quantity: 1, unit: "slice (40g)", gramsPerUnit: 40, calories: 120, protein: 3, carbs: 16, fat: 4 },
+      ],
+    },
+  ];
+
+  // Snack options
+  const snackOptions = [
+    {
+      name: "Protein Snack",
       items: [
         { name: "Greek Yogurt, Nonfat Plain", quantity: 1, unit: "170g container", gramsPerUnit: 170, calories: 100, protein: 17, carbs: 7, fat: 0 },
-        { name: "Blueberries, Fresh", quantity: 1, unit: "75g (1/2 cup)", gramsPerUnit: 75, calories: 43, protein: 1, carbs: 11, fat: 0 },
-        { name: "Almonds, Raw", quantity: 1, unit: "28g (23 almonds)", gramsPerUnit: 28, calories: 160, protein: 6, carbs: 6, fat: 14 },
+        { name: "Almonds, Raw", quantity: 1, unit: "28g (23 almonds)", gramsPerUnit: 28, calories: 164, protein: 6, carbs: 6, fat: 14 },
       ],
     },
     {
-      name: "Dinner",
+      name: "Fruit & Nuts",
       items: [
-        { name: "Salmon, Atlantic, Cooked", quantity: 1, unit: "150g fillet", gramsPerUnit: 150, calories: 280, protein: 40, carbs: 0, fat: 13 },
-        { name: "Sweet Potato, Baked", quantity: 1, unit: "medium (130g)", gramsPerUnit: 130, calories: 112, protein: 2, carbs: 26, fat: 0 },
-        { name: "Green Beans, Steamed", quantity: 1, unit: "125g cup", gramsPerUnit: 125, calories: 44, protein: 2, carbs: 10, fat: 0 },
-        { name: "Avocado", quantity: 1, unit: "50g (1/3 fruit)", gramsPerUnit: 50, calories: 80, protein: 1, carbs: 4, fat: 7 },
+        { name: "Apple, Medium", quantity: 1, unit: "fruit (182g)", gramsPerUnit: 182, calories: 95, protein: 0, carbs: 25, fat: 0 },
+        { name: "Peanut Butter, Natural", quantity: 1, unit: "tbsp (16g)", gramsPerUnit: 16, calories: 96, protein: 4, carbs: 3, fat: 8 },
       ],
     },
     {
-      name: "Post-Workout",
+      name: "Protein Bar",
+      items: [
+        { name: "Protein Bar", quantity: 1, unit: "bar (60g)", gramsPerUnit: 60, calories: 200, protein: 20, carbs: 24, fat: 6 },
+      ],
+    },
+    {
+      name: "Cottage Cheese Bowl",
+      items: [
+        { name: "Cottage Cheese, Low Fat", quantity: 1, unit: "113g (½ cup)", gramsPerUnit: 113, calories: 81, protein: 14, carbs: 3, fat: 1 },
+        { name: "Pineapple, Fresh", quantity: 1, unit: "80g (½ cup)", gramsPerUnit: 80, calories: 41, protein: 0, carbs: 11, fat: 0 },
+      ],
+    },
+    {
+      name: "Protein Shake",
       items: [
         { name: "Whey Protein Isolate", quantity: 1, unit: "30g scoop", gramsPerUnit: 30, calories: 120, protein: 24, carbs: 3, fat: 2 },
-        { name: "Rice Cakes, Plain", quantity: 2, unit: "cakes (18g)", gramsPerUnit: 9, calories: 35, protein: 0.5, carbs: 7.5, fat: 0 },
+        { name: "Almond Milk, Unsweetened", quantity: 1, unit: "240ml cup", gramsPerUnit: 240, calories: 30, protein: 1, carbs: 1, fat: 2.5 },
         { name: "Banana, Medium", quantity: 1, unit: "fruit (118g)", gramsPerUnit: 118, calories: 105, protein: 1, carbs: 27, fat: 0 },
       ],
     },
   ];
 
-  // Additional meal variations
-  const breakfastVariations = [
-    [
-      { name: "Eggs, Whole, Scrambled", quantity: 3, unit: "large egg", gramsPerUnit: 50, calories: 90, protein: 6, carbs: 1, fat: 7 },
-      { name: "Whole Wheat Toast", quantity: 2, unit: "slice (28g)", gramsPerUnit: 28, calories: 70, protein: 4, carbs: 12, fat: 1 },
-      { name: "Avocado", quantity: 1, unit: "50g (1/3 fruit)", gramsPerUnit: 50, calories: 80, protein: 1, carbs: 4, fat: 7 },
-    ],
-    [
-      { name: "Greek Yogurt, Nonfat Plain", quantity: 1, unit: "227g cup", gramsPerUnit: 227, calories: 130, protein: 23, carbs: 9, fat: 0 },
-      { name: "Granola, Low Fat", quantity: 1, unit: "30g serving", gramsPerUnit: 30, calories: 120, protein: 3, carbs: 24, fat: 2 },
-      { name: "Strawberries, Fresh", quantity: 1, unit: "150g cup", gramsPerUnit: 150, calories: 48, protein: 1, carbs: 12, fat: 0 },
-    ],
-  ];
-
-  const lunchVariations = [
-    [
-      { name: "Turkey Breast, Deli Sliced", quantity: 1, unit: "112g (4 oz)", gramsPerUnit: 112, calories: 120, protein: 24, carbs: 4, fat: 2 },
-      { name: "Whole Wheat Bread", quantity: 2, unit: "slice (28g)", gramsPerUnit: 28, calories: 70, protein: 4, carbs: 12, fat: 1 },
-      { name: "Apple, Medium", quantity: 1, unit: "fruit (182g)", gramsPerUnit: 182, calories: 95, protein: 0, carbs: 25, fat: 0 },
-      { name: "Baby Carrots", quantity: 1, unit: "85g (10 carrots)", gramsPerUnit: 85, calories: 35, protein: 1, carbs: 8, fat: 0 },
-    ],
-    [
-      { name: "Tuna, Canned in Water", quantity: 1, unit: "140g can", gramsPerUnit: 140, calories: 150, protein: 35, carbs: 0, fat: 1 },
-      { name: "Mixed Greens Salad", quantity: 1, unit: "85g (3 cups)", gramsPerUnit: 85, calories: 20, protein: 2, carbs: 4, fat: 0 },
-      { name: "Balsamic Vinaigrette", quantity: 2, unit: "tbsp (15ml)", gramsPerUnit: 15, calories: 45, protein: 0, carbs: 2, fat: 4 },
-      { name: "Whole Wheat Crackers", quantity: 1, unit: "28g (10 crackers)", gramsPerUnit: 28, calories: 120, protein: 3, carbs: 20, fat: 3 },
-    ],
-  ];
-
-  const dinnerVariations = [
-    [
-      { name: "Sirloin Steak, Grilled", quantity: 1, unit: "170g (6 oz)", gramsPerUnit: 170, calories: 340, protein: 46, carbs: 0, fat: 16 },
-      { name: "Baked Potato with Skin", quantity: 1, unit: "medium (173g)", gramsPerUnit: 173, calories: 161, protein: 4, carbs: 37, fat: 0 },
-      { name: "Asparagus, Grilled", quantity: 1, unit: "134g (5 spears)", gramsPerUnit: 134, calories: 27, protein: 3, carbs: 5, fat: 0 },
-      { name: "Butter", quantity: 1, unit: "tbsp (14g)", gramsPerUnit: 14, calories: 100, protein: 0, carbs: 0, fat: 11 },
-    ],
-    [
-      { name: "Ground Turkey, 93% Lean", quantity: 1, unit: "112g (4 oz)", gramsPerUnit: 112, calories: 170, protein: 22, carbs: 0, fat: 8 },
-      { name: "Whole Wheat Pasta, Cooked", quantity: 1, unit: "140g cup", gramsPerUnit: 140, calories: 174, protein: 7, carbs: 37, fat: 1 },
-      { name: "Marinara Sauce, Low Sodium", quantity: 1, unit: "125g (1/2 cup)", gramsPerUnit: 125, calories: 70, protein: 2, carbs: 12, fat: 2 },
-      { name: "Parmesan Cheese, Grated", quantity: 1, unit: "5g tbsp", gramsPerUnit: 5, calories: 22, protein: 2, carbs: 0, fat: 1.5 },
-    ],
-    [
-      { name: "Cod Fillet, Baked", quantity: 1, unit: "140g (5 oz)", gramsPerUnit: 140, calories: 140, protein: 30, carbs: 0, fat: 1 },
-      { name: "Quinoa, Cooked", quantity: 1, unit: "185g cup", gramsPerUnit: 185, calories: 222, protein: 8, carbs: 39, fat: 4 },
-      { name: "Brussels Sprouts, Roasted", quantity: 1, unit: "156g cup", gramsPerUnit: 156, calories: 56, protein: 4, carbs: 11, fat: 1 },
-    ],
-  ];
-
+  // Generate diet logs
   for (let i = totalDays - 1; i >= 0; i--) {
     const dateISO = getDateISO(i);
 
-    // Skip some days randomly (75% logged, 25% missed)
-    if (Math.random() < 0.25) continue;
+    // Skip some days randomly (78% logged, 22% missed)
+    if (Math.random() < 0.22) continue;
 
     const numMeals = random(3, 5);
     const meals = [];
 
-    // Always include breakfast (with occasional variation)
-    if (Math.random() < 0.25 && breakfastVariations.length > 0) {
-      const variation = breakfastVariations[random(0, breakfastVariations.length - 1)];
-      meals.push({ name: "Breakfast", items: variation });
-    } else {
-      meals.push(mealTemplates[0]);
-    }
+    // Breakfast (always included)
+    meals.push(pickRandom(breakfastOptions));
 
-    // Add lunch (with variation)
+    // Lunch
     if (numMeals >= 2) {
-      if (Math.random() < 0.3 && lunchVariations.length > 0) {
-        const variation = lunchVariations[random(0, lunchVariations.length - 1)];
-        meals.push({ name: "Lunch", items: variation });
-      } else {
-        meals.push(mealTemplates[1]);
-      }
+      meals.push(pickRandom(lunchOptions));
     }
 
-    // Add snack
+    // Snack
     if (numMeals >= 3) {
-      meals.push(mealTemplates[2]);
+      meals.push(pickRandom(snackOptions));
     }
 
-    // Add dinner (with variation)
+    // Dinner
     if (numMeals >= 4) {
-      if (Math.random() < 0.35 && dinnerVariations.length > 0) {
-        const variation = dinnerVariations[random(0, dinnerVariations.length - 1)];
-        meals.push({ name: "Dinner", items: variation });
-      } else {
-        meals.push(mealTemplates[3]);
-      }
+      meals.push(pickRandom(dinnerOptions));
     }
 
-    // Add post-workout meal (30% chance on workout days - we'll determine this randomly)
-    if (numMeals >= 5 && Math.random() < 0.3) {
-      meals.push(mealTemplates[4]);
+    // Evening snack
+    if (numMeals >= 5) {
+      meals.push(pickRandom(snackOptions));
     }
+
+    // Calorie targets vary based on phase
+    const currentPhase = Math.floor(i / 180);
+    let calorieTarget = 2500;
+    if (currentPhase <= 1) calorieTarget = 2200; // Initial deficit
+    else if (currentPhase <= 3) calorieTarget = 2400; // Moderate deficit
+    else calorieTarget = 2600; // Maintenance
 
     dietData[dateISO] = {
       meals: meals,
       goals: {
-        cal: 2400,
+        cal: calorieTarget,
         p: 180,
-        c: 240,
-        f: 65,
+        c: Math.floor(calorieTarget * 0.40 / 4),
+        f: Math.floor(calorieTarget * 0.25 / 9),
       },
     };
   }
   localStorage.setItem("diet-by-day-v2", JSON.stringify(dietData));
 
-  // 4. Create mock workout logs with progressive overload and repsPerformed
+  // 4. Create comprehensive workout logs with progressive overload
   const workoutData: Record<string, any> = {};
 
-  // Enhanced exercise templates with progressive overload
+  // Enhanced exercise templates with progressive overload and deload weeks
   const createPushExercises = (weekNumber: number) => {
-    const progressMultiplier = Math.floor(weekNumber / 3) * 2.5;
+    // Every 4th week is a deload week (reduce weight by 15%)
+    const isDeload = weekNumber % 4 === 3;
+    const progressMultiplier = isDeload ? 0 : Math.floor(weekNumber / 4) * 5;
 
     return [
       {
         name: "Barbell Bench Press",
         sets: [
-          { weight: 135, repsMin: 12, repsMax: 15, rpe: 6, type: "Warmup", repsPerformed: random(13, 15) },
-          { weight: 185 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 185 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 185 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+          { weight: 135, repsMin: 10, repsMax: 12, rpe: 5, type: "Warmup", repsPerformed: random(10, 12) },
+          { weight: 165, repsMin: 6, repsMax: 8, rpe: 6, type: "Warmup", repsPerformed: random(6, 8) },
+          { weight: 195 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 195 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 195 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 9, type: "Working", repsPerformed: random(5, 7) },
         ],
         source: "quick-add" as const,
-        notes: weekNumber % 4 === 0 ? "Increased weight today!" : "",
+        notes: isDeload ? "Deload week - lighter weight" : (weekNumber % 4 === 0 ? "New weight PR!" : ""),
       },
       {
         name: "Incline Dumbbell Press",
         sets: [
-          { weight: 60 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 60 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 60 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+          { weight: 65 + progressMultiplier * 0.6, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 65 + progressMultiplier * 0.6, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 65 + progressMultiplier * 0.6, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
         ],
         source: "quick-add" as const,
       },
       {
-        name: "Overhead Press",
+        name: "Overhead Press (Barbell)",
         sets: [
-          { weight: 95 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 95 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 95 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+          { weight: 105 + progressMultiplier * 0.6, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 105 + progressMultiplier * 0.6, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 105 + progressMultiplier * 0.6, repsMin: 6, repsMax: 8, rpe: 9, type: "Working", repsPerformed: random(5, 7) },
         ],
         source: "quick-add" as const,
       },
       {
-        name: "Tricep Pushdown",
+        name: "Lateral Raise (Dumbbell)",
         sets: [
-          { weight: 70 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
-          { weight: 70 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
+          { weight: 20 + progressMultiplier * 0.3, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
+          { weight: 20 + progressMultiplier * 0.3, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
+          { weight: 20 + progressMultiplier * 0.3, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Tricep Dips (Weighted)",
+        sets: [
+          { weight: 25 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 25 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 25 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Cable Tricep Pushdown",
+        sets: [
+          { weight: 80 + progressMultiplier * 0.6, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
+          { weight: 80 + progressMultiplier * 0.6, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
         ],
         source: "quick-add" as const,
       },
@@ -269,41 +386,71 @@ export function loadMockData() {
   };
 
   const createPullExercises = (weekNumber: number) => {
-    const progressMultiplier = Math.floor(weekNumber / 3) * 2.5;
+    const isDeload = weekNumber % 4 === 3;
+    const progressMultiplier = isDeload ? 0 : Math.floor(weekNumber / 4) * 5;
 
     return [
       {
-        name: "Barbell Row",
+        name: "Deadlift (Conventional)",
         sets: [
-          { weight: 135 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 135 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 135 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+          { weight: 135, repsMin: 8, repsMax: 10, rpe: 5, type: "Warmup", repsPerformed: random(8, 10) },
+          { weight: 225, repsMin: 5, repsMax: 6, rpe: 6, type: "Warmup", repsPerformed: random(5, 6) },
+          { weight: 315 + progressMultiplier, repsMin: 3, repsMax: 5, rpe: 8, type: "Working", repsPerformed: random(3, 5) },
+          { weight: 315 + progressMultiplier, repsMin: 3, repsMax: 5, rpe: 9, type: "Working", repsPerformed: random(3, 5) },
+          { weight: 315 + progressMultiplier, repsMin: 3, repsMax: 5, rpe: 9, type: "Working", repsPerformed: random(2, 4) },
         ],
         source: "quick-add" as const,
-        notes: weekNumber % 4 === 0 ? "Form felt great today" : "",
+        notes: isDeload ? "Deload week" : (weekNumber % 4 === 0 ? "New PR!" : "Felt strong"),
       },
       {
-        name: "Lat Pulldown",
+        name: "Barbell Row (Bent Over)",
         sets: [
-          { weight: 120 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
-          { weight: 120 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
-          { weight: 120 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
-        ],
-        source: "quick-add" as const,
-      },
-      {
-        name: "Cable Row",
-        sets: [
-          { weight: 110 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
-          { weight: 110 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+          { weight: 155 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 155 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 155 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 9, type: "Working", repsPerformed: random(5, 7) },
         ],
         source: "quick-add" as const,
       },
       {
-        name: "Hammer Curl",
+        name: "Pull-Ups (Weighted)",
         sets: [
-          { weight: 35 + progressMultiplier * 0.3, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
-          { weight: 35 + progressMultiplier * 0.3, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+          { weight: 0, repsMin: 8, repsMax: 10, rpe: 6, type: "Warmup", repsPerformed: random(8, 10) },
+          { weight: 25 + progressMultiplier * 0.4, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 25 + progressMultiplier * 0.4, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 25 + progressMultiplier * 0.4, repsMin: 6, repsMax: 8, rpe: 9, type: "Working", repsPerformed: random(5, 7) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Lat Pulldown (Wide Grip)",
+        sets: [
+          { weight: 140 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 140 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 140 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Seated Cable Row",
+        sets: [
+          { weight: 130 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 130 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Dumbbell Hammer Curl",
+        sets: [
+          { weight: 40 + progressMultiplier * 0.4, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 40 + progressMultiplier * 0.4, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Face Pulls (Cable)",
+        sets: [
+          { weight: 70 + progressMultiplier * 0.5, repsMin: 15, repsMax: 20, rpe: 8, type: "Working", repsPerformed: random(15, 20) },
+          { weight: 70 + progressMultiplier * 0.5, repsMin: 15, repsMax: 20, rpe: 8, type: "Working", repsPerformed: random(15, 20) },
         ],
         source: "quick-add" as const,
       },
@@ -311,42 +458,121 @@ export function loadMockData() {
   };
 
   const createLegExercises = (weekNumber: number) => {
-    const progressMultiplier = Math.floor(weekNumber / 3) * 2.5;
+    const isDeload = weekNumber % 4 === 3;
+    const progressMultiplier = isDeload ? 0 : Math.floor(weekNumber / 4) * 5;
 
     return [
       {
-        name: "Barbell Squat",
+        name: "Barbell Back Squat",
         sets: [
-          { weight: 135, repsMin: 10, repsMax: 12, rpe: 6, type: "Warmup", repsPerformed: random(10, 12) },
-          { weight: 225 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 225 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
-          { weight: 225 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+          { weight: 135, repsMin: 8, repsMax: 10, rpe: 5, type: "Warmup", repsPerformed: random(8, 10) },
+          { weight: 185, repsMin: 5, repsMax: 6, rpe: 6, type: "Warmup", repsPerformed: random(5, 6) },
+          { weight: 275 + progressMultiplier, repsMin: 4, repsMax: 6, rpe: 8, type: "Working", repsPerformed: random(4, 6) },
+          { weight: 275 + progressMultiplier, repsMin: 4, repsMax: 6, rpe: 8, type: "Working", repsPerformed: random(4, 6) },
+          { weight: 275 + progressMultiplier, repsMin: 4, repsMax: 6, rpe: 9, type: "Working", repsPerformed: random(3, 5) },
         ],
         source: "quick-add" as const,
-        notes: weekNumber % 5 === 0 ? "Hit new PR!" : "",
+        notes: isDeload ? "Deload week" : (weekNumber % 5 === 0 ? "New squat PR!" : ""),
       },
       {
         name: "Romanian Deadlift",
         sets: [
-          { weight: 185 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
-          { weight: 185 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
-          { weight: 185 + progressMultiplier, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+          { weight: 205 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 205 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 205 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
         ],
         source: "quick-add" as const,
       },
       {
-        name: "Leg Press",
+        name: "Leg Press (Machine)",
         sets: [
-          { weight: 360 + progressMultiplier * 4, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
-          { weight: 360 + progressMultiplier * 4, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
+          { weight: 400 + progressMultiplier * 5, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 400 + progressMultiplier * 5, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 400 + progressMultiplier * 5, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
         ],
         source: "quick-add" as const,
       },
       {
-        name: "Leg Curl",
+        name: "Walking Lunges (Dumbbell)",
         sets: [
-          { weight: 90 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
-          { weight: 90 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
+          { weight: 45 + progressMultiplier * 0.5, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 45 + progressMultiplier * 0.5, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 45 + progressMultiplier * 0.5, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Leg Curl (Lying)",
+        sets: [
+          { weight: 100 + progressMultiplier * 0.7, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
+          { weight: 100 + progressMultiplier * 0.7, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Calf Raise (Standing)",
+        sets: [
+          { weight: 180 + progressMultiplier, repsMin: 15, repsMax: 20, rpe: 8, type: "Working", repsPerformed: random(15, 20) },
+          { weight: 180 + progressMultiplier, repsMin: 15, repsMax: 20, rpe: 8, type: "Working", repsPerformed: random(15, 20) },
+          { weight: 180 + progressMultiplier, repsMin: 15, repsMax: 20, rpe: 9, type: "Working", repsPerformed: random(14, 19) },
+        ],
+        source: "quick-add" as const,
+      },
+    ];
+  };
+
+  const createUpperExercises = (weekNumber: number) => {
+    const isDeload = weekNumber % 4 === 3;
+    const progressMultiplier = isDeload ? 0 : Math.floor(weekNumber / 4) * 5;
+
+    return [
+      {
+        name: "Incline Barbell Bench Press",
+        sets: [
+          { weight: 135, repsMin: 8, repsMax: 10, rpe: 6, type: "Warmup", repsPerformed: random(8, 10) },
+          { weight: 175 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 8, type: "Working", repsPerformed: random(6, 8) },
+          { weight: 175 + progressMultiplier, repsMin: 6, repsMax: 8, rpe: 9, type: "Working", repsPerformed: random(5, 7) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Chest Supported Row (Machine)",
+        sets: [
+          { weight: 130 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 130 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 130 + progressMultiplier, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Dumbbell Shoulder Press",
+        sets: [
+          { weight: 55 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 8, type: "Working", repsPerformed: random(8, 10) },
+          { weight: 55 + progressMultiplier * 0.5, repsMin: 8, repsMax: 10, rpe: 9, type: "Working", repsPerformed: random(7, 9) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Cable Fly (High to Low)",
+        sets: [
+          { weight: 35 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
+          { weight: 35 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Barbell Curl",
+        sets: [
+          { weight: 75 + progressMultiplier * 0.5, repsMin: 10, repsMax: 12, rpe: 8, type: "Working", repsPerformed: random(10, 12) },
+          { weight: 75 + progressMultiplier * 0.5, repsMin: 10, repsMax: 12, rpe: 9, type: "Working", repsPerformed: random(9, 11) },
+        ],
+        source: "quick-add" as const,
+      },
+      {
+        name: "Overhead Tricep Extension (Cable)",
+        sets: [
+          { weight: 60 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 8, type: "Working", repsPerformed: random(12, 15) },
+          { weight: 60 + progressMultiplier * 0.5, repsMin: 12, repsMax: 15, rpe: 9, type: "Working", repsPerformed: random(11, 14) },
         ],
         source: "quick-add" as const,
       },
@@ -356,19 +582,21 @@ export function loadMockData() {
   const workoutNotes = [
     "Felt strong today! Great session.",
     "Good pump, hit all targets",
-    "Tired but got it done",
-    "Excellent workout",
-    "New PR on compound lift!",
-    "Solid session, feeling good",
-    "Felt a bit sluggish but finished strong",
+    "Tired but pushed through",
+    "Excellent workout, new PR!",
+    "Form felt perfect today",
+    "Solid session, great mind-muscle connection",
+    "Felt a bit sluggish but finished",
     "Best workout this week",
-    "Increased weight on all sets",
-    "Focus on form today, felt great",
+    "Increased weight on main lifts",
+    "Focus on tempo today, great results",
+    "Energy was high, crushed it",
+    "Recovery felt good, no issues",
   ];
 
-  // Generate workouts: Push/Pull/Legs split, 4-5 days per week
+  // Generate workouts: Push/Pull/Legs/Upper split, 4-5 days per week
   let daysSinceLastWorkout = 0;
-  let workoutRotation = 0; // 0 = Push, 1 = Pull, 2 = Legs
+  let workoutRotation = 0; // 0 = Push, 1 = Pull, 2 = Legs, 3 = Upper
 
   for (let i = totalDays - 1; i >= 0; i--) {
     const dateISO = getDateISO(i);
@@ -376,8 +604,8 @@ export function loadMockData() {
 
     daysSinceLastWorkout++;
 
-    // Workout frequency: rest day if worked out yesterday, or random rest (30% chance)
-    const shouldRest = daysSinceLastWorkout < 2 || Math.random() < 0.3;
+    // Workout frequency: rest day if worked out yesterday, or random rest (35% chance)
+    const shouldRest = daysSinceLastWorkout < 2 || Math.random() < 0.35;
 
     if (shouldRest) {
       continue;
@@ -393,18 +621,21 @@ export function loadMockData() {
     } else if (workoutRotation === 1) {
       exercises = createPullExercises(weekNumber);
       workoutType = "Pull Day";
-    } else {
+    } else if (workoutRotation === 2) {
       exercises = createLegExercises(weekNumber);
       workoutType = "Leg Day";
+    } else {
+      exercises = createUpperExercises(weekNumber);
+      workoutType = "Upper Body Day";
     }
 
     workoutData[dateISO] = {
       exercises: exercises,
-      notes: `${workoutType} - ${workoutNotes[random(0, workoutNotes.length - 1)]}`,
+      notes: `${workoutType} - ${pickRandom(workoutNotes)}`,
     };
 
     // Advance rotation
-    workoutRotation = (workoutRotation + 1) % 3;
+    workoutRotation = (workoutRotation + 1) % 4;
     daysSinceLastWorkout = 0;
   }
 
@@ -420,37 +651,54 @@ export function loadMockData() {
         {
           name: "Barbell Bench Press",
           sets: [
-            { weight: 135, repsMin: 12, repsMax: 15, rpe: 6, type: "Warmup" },
-            { weight: 185, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 185, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 185, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+            { weight: 135, repsMin: 10, repsMax: 12, rpe: 5, type: "Warmup" },
+            { weight: 165, repsMin: 6, repsMax: 8, rpe: 6, type: "Warmup" },
+            { weight: 195, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 195, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 195, repsMin: 6, repsMax: 8, rpe: 9, type: "Working" },
           ],
-          notes: "Focus on controlled descent, pause at chest",
+          notes: "Focus on controlled descent, explosive press",
         },
         {
           name: "Incline Dumbbell Press",
           sets: [
-            { weight: 60, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 60, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 60, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+            { weight: 65, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 65, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 65, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
           ],
-          notes: "30-45 degree incline",
+          notes: "30-40 degree incline, full ROM",
         },
         {
-          name: "Overhead Press",
+          name: "Overhead Press (Barbell)",
           sets: [
-            { weight: 95, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 95, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 95, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+            { weight: 105, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 105, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 105, repsMin: 6, repsMax: 8, rpe: 9, type: "Working" },
+          ],
+          notes: "Strict form, no leg drive",
+        },
+        {
+          name: "Lateral Raise (Dumbbell)",
+          sets: [
+            { weight: 20, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
+            { weight: 20, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
+            { weight: 20, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
           ],
         },
         {
-          name: "Tricep Pushdown",
+          name: "Tricep Dips (Weighted)",
           sets: [
-            { weight: 70, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
-            { weight: 70, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
+            { weight: 25, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 25, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 25, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
           ],
-          notes: "Cable attachment, focus on squeeze",
+        },
+        {
+          name: "Cable Tricep Pushdown",
+          sets: [
+            { weight: 80, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
+            { weight: 80, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
+          ],
         },
       ],
     },
@@ -460,34 +708,60 @@ export function loadMockData() {
       emoji: "🏋️",
       exercises: [
         {
-          name: "Barbell Row",
+          name: "Deadlift (Conventional)",
           sets: [
-            { weight: 135, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 135, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 135, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+            { weight: 135, repsMin: 8, repsMax: 10, rpe: 5, type: "Warmup" },
+            { weight: 225, repsMin: 5, repsMax: 6, rpe: 6, type: "Warmup" },
+            { weight: 315, repsMin: 3, repsMax: 5, rpe: 8, type: "Working" },
+            { weight: 315, repsMin: 3, repsMax: 5, rpe: 9, type: "Working" },
+            { weight: 315, repsMin: 3, repsMax: 5, rpe: 9, type: "Working" },
           ],
-          notes: "Underhand or overhand grip",
+          notes: "Keep back neutral, drive through heels",
         },
         {
-          name: "Lat Pulldown",
+          name: "Barbell Row (Bent Over)",
           sets: [
-            { weight: 120, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
-            { weight: 120, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
-            { weight: 120, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
-          ],
-        },
-        {
-          name: "Cable Row",
-          sets: [
-            { weight: 110, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
-            { weight: 110, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+            { weight: 155, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 155, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 155, repsMin: 6, repsMax: 8, rpe: 9, type: "Working" },
           ],
         },
         {
-          name: "Hammer Curl",
+          name: "Pull-Ups (Weighted)",
           sets: [
-            { weight: 35, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
-            { weight: 35, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+            { weight: 0, repsMin: 8, repsMax: 10, rpe: 6, type: "Warmup" },
+            { weight: 25, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 25, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 25, repsMin: 6, repsMax: 8, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Lat Pulldown (Wide Grip)",
+          sets: [
+            { weight: 140, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 140, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 140, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Seated Cable Row",
+          sets: [
+            { weight: 130, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 130, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Dumbbell Hammer Curl",
+          sets: [
+            { weight: 40, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 40, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Face Pulls (Cable)",
+          sets: [
+            { weight: 70, repsMin: 15, repsMax: 20, rpe: 8, type: "Working" },
+            { weight: 70, repsMin: 15, repsMax: 20, rpe: 8, type: "Working" },
           ],
         },
       ],
@@ -498,36 +772,105 @@ export function loadMockData() {
       emoji: "🦵",
       exercises: [
         {
-          name: "Barbell Squat",
+          name: "Barbell Back Squat",
           sets: [
-            { weight: 135, repsMin: 10, repsMax: 12, rpe: 6, type: "Warmup" },
-            { weight: 225, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 225, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
-            { weight: 225, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+            { weight: 135, repsMin: 8, repsMax: 10, rpe: 5, type: "Warmup" },
+            { weight: 185, repsMin: 5, repsMax: 6, rpe: 6, type: "Warmup" },
+            { weight: 275, repsMin: 4, repsMax: 6, rpe: 8, type: "Working" },
+            { weight: 275, repsMin: 4, repsMax: 6, rpe: 8, type: "Working" },
+            { weight: 275, repsMin: 4, repsMax: 6, rpe: 9, type: "Working" },
           ],
           notes: "Full depth, controlled tempo",
         },
         {
           name: "Romanian Deadlift",
           sets: [
-            { weight: 185, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
-            { weight: 185, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
-            { weight: 185, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+            { weight: 205, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 205, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 205, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
           ],
           notes: "Focus on hamstring stretch",
         },
         {
-          name: "Leg Press",
+          name: "Leg Press (Machine)",
           sets: [
-            { weight: 360, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
-            { weight: 360, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
+            { weight: 400, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 400, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 400, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
           ],
         },
         {
-          name: "Leg Curl",
+          name: "Walking Lunges (Dumbbell)",
           sets: [
-            { weight: 90, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
-            { weight: 90, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
+            { weight: 45, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 45, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 45, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Leg Curl (Lying)",
+          sets: [
+            { weight: 100, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
+            { weight: 100, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Calf Raise (Standing)",
+          sets: [
+            { weight: 180, repsMin: 15, repsMax: 20, rpe: 8, type: "Working" },
+            { weight: 180, repsMin: 15, repsMax: 20, rpe: 8, type: "Working" },
+            { weight: 180, repsMin: 15, repsMax: 20, rpe: 9, type: "Working" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "routine-mock-4",
+      name: "Upper Body Day",
+      emoji: "💯",
+      exercises: [
+        {
+          name: "Incline Barbell Bench Press",
+          sets: [
+            { weight: 135, repsMin: 8, repsMax: 10, rpe: 6, type: "Warmup" },
+            { weight: 175, repsMin: 6, repsMax: 8, rpe: 8, type: "Working" },
+            { weight: 175, repsMin: 6, repsMax: 8, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Chest Supported Row (Machine)",
+          sets: [
+            { weight: 130, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 130, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 130, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Dumbbell Shoulder Press",
+          sets: [
+            { weight: 55, repsMin: 8, repsMax: 10, rpe: 8, type: "Working" },
+            { weight: 55, repsMin: 8, repsMax: 10, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Cable Fly (High to Low)",
+          sets: [
+            { weight: 35, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
+            { weight: 35, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Barbell Curl",
+          sets: [
+            { weight: 75, repsMin: 10, repsMax: 12, rpe: 8, type: "Working" },
+            { weight: 75, repsMin: 10, repsMax: 12, rpe: 9, type: "Working" },
+          ],
+        },
+        {
+          name: "Overhead Tricep Extension (Cable)",
+          sets: [
+            { weight: 60, repsMin: 12, repsMax: 15, rpe: 8, type: "Working" },
+            { weight: 60, repsMin: 12, repsMax: 15, rpe: 9, type: "Working" },
           ],
         },
       ],
@@ -539,21 +882,27 @@ export function loadMockData() {
   const savedMealTemplates = [
     {
       id: "meal-template-1",
-      name: "High Protein Breakfast",
-      items: mealTemplates[0].items,
-      createdAt: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000).toISOString(),
+      name: "Oatmeal Power Bowl",
+      items: breakfastOptions[0].items,
+      createdAt: new Date(Date.now() - 600 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: "meal-template-2",
       name: "Chicken & Rice Bowl",
-      items: mealTemplates[1].items,
-      createdAt: new Date(Date.now() - 380 * 24 * 60 * 60 * 1000).toISOString(),
+      items: lunchOptions[0].items,
+      createdAt: new Date(Date.now() - 580 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: "meal-template-3",
-      name: "Post-Workout Shake",
-      items: mealTemplates[4].items,
-      createdAt: new Date(Date.now() - 350 * 24 * 60 * 60 * 1000).toISOString(),
+      name: "Grilled Salmon Dinner",
+      items: dinnerOptions[0].items,
+      createdAt: new Date(Date.now() - 560 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "meal-template-4",
+      name: "Protein Shake",
+      items: snackOptions[4].items,
+      createdAt: new Date(Date.now() - 540 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ];
   localStorage.setItem("meal-templates-v1", JSON.stringify(savedMealTemplates));
@@ -567,15 +916,15 @@ export function loadMockData() {
   const workoutDays = Object.keys(workoutData).length;
 
   console.log('✅ Mock data loaded successfully!');
-  console.log(`📅 Total period: 1.5 years (${totalDays} days)`);
-  console.log(`👤 Profile: Demo User (started ${mockProfile.createdAt.split('T')[0]})`);
+  console.log(`📅 Total period: 2 years (${totalDays} days)`);
+  console.log(`👤 Profile: ${mockProfile.displayName} (started ${mockProfile.createdAt.split('T')[0]})`);
   console.log(`⚖️  Weight logs: ${weightDays} days (~${Math.round(weightDays/totalDays*100)}% logged)`);
-  console.log(`   Starting: 205 lbs → Current: ~175 lbs (-30 lbs)`);
+  console.log(`   Starting: 210 lbs → Current: ~180 lbs (-30 lbs)`);
   console.log(`🍽️  Diet logs: ${dietDays} days (~${Math.round(dietDays/totalDays*100)}% logged)`);
-  console.log(`   Average: 4 meals/day with USDA units`);
+  console.log(`   Varied meals with realistic calorie targets`);
   console.log(`💪 Workout logs: ${workoutDays} sessions (~${Math.round(workoutDays/(totalDays/7))} per week)`);
-  console.log(`   Progressive overload: +2.5 lbs every 3 weeks`);
-  console.log(`📋 Routines: ${routines.length} workout templates (Push/Pull/Legs)`);
+  console.log(`   Progressive overload with deload weeks every 4th week`);
+  console.log(`📋 Routines: ${routines.length} workout templates (Push/Pull/Legs/Upper)`);
   console.log(`🍳 Meal Templates: ${savedMealTemplates.length} saved meals`);
 
   return true;
