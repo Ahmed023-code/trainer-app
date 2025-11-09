@@ -18,6 +18,7 @@ export default function BarcodeScanner({
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string>('');
   const [scanning, setScanning] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -33,6 +34,9 @@ export default function BarcodeScanner({
         streamRef.current = null;
       }
       setScanning(false);
+      setVideoReady(false);
+      setHasPermission(null);
+      setError('');
       return;
     }
 
@@ -47,35 +51,59 @@ export default function BarcodeScanner({
         setHasPermission(true);
 
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          const video = videoRef.current;
+          video.srcObject = stream;
 
-          // Initialize barcode reader
-          codeReaderRef.current = new BrowserMultiFormatReader();
-          setScanning(true);
+          // Wait for video metadata to load
+          const onLoadedMetadata = async () => {
+            console.log('Video metadata loaded');
+            setVideoReady(true);
 
-          // Start continuous barcode detection
-          codeReaderRef.current.decodeFromVideoElement(
-            videoRef.current,
-            (result, error) => {
-              if (result) {
-                const barcode = result.getText();
-                console.log('Barcode detected:', barcode);
-
-                // Stop scanning and trigger callback
-                if (codeReaderRef.current) {
-                  codeReaderRef.current.reset();
-                }
-                setScanning(false);
-                onScan(barcode);
-                onClose();
-              }
-
-              // Ignore errors during continuous scanning (expected when no barcode is visible)
-              if (error && error.name !== 'NotFoundException') {
-                console.error('Barcode scan error:', error);
-              }
+            // Explicitly play the video to ensure it displays
+            try {
+              await video.play();
+              console.log('Video started playing');
+            } catch (playError) {
+              console.error('Error playing video:', playError);
+              setError('Could not start video playback');
+              return;
             }
-          );
+
+            // Initialize barcode reader
+            codeReaderRef.current = new BrowserMultiFormatReader();
+            setScanning(true);
+
+            // Start continuous barcode detection
+            codeReaderRef.current.decodeFromVideoElement(
+              video,
+              (result, error) => {
+                if (result) {
+                  const barcode = result.getText();
+                  console.log('Barcode detected:', barcode);
+
+                  // Stop scanning and trigger callback
+                  if (codeReaderRef.current) {
+                    codeReaderRef.current.reset();
+                  }
+                  setScanning(false);
+                  onScan(barcode);
+                  onClose();
+                }
+
+                // Ignore errors during continuous scanning (expected when no barcode is visible)
+                if (error && error.name !== 'NotFoundException') {
+                  console.error('Barcode scan error:', error);
+                }
+              }
+            );
+          };
+
+          video.addEventListener('loadedmetadata', onLoadedMetadata);
+
+          // If metadata is already loaded, call handler immediately
+          if (video.readyState >= 1) {
+            onLoadedMetadata();
+          }
         }
       } catch (err) {
         console.error('Camera error:', err);
@@ -94,7 +122,11 @@ export default function BarcodeScanner({
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
       setScanning(false);
+      setVideoReady(false);
     };
   }, [isOpen, onScan, onClose]);
 
@@ -159,34 +191,47 @@ export default function BarcodeScanner({
 
           {hasPermission && (
             <>
+              {/* Video loading indicator */}
+              {!videoReady && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <Camera className="w-12 h-12 mx-auto mb-2 animate-pulse" />
+                    <p>Starting camera...</p>
+                  </div>
+                </div>
+              )}
+
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
                 className="absolute inset-0 w-full h-full object-cover"
+                style={{ opacity: videoReady ? 1 : 0 }}
               />
 
               {/* Scanning Frame Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-4 border-green-400 rounded-lg w-64 h-40 relative">
-                  {/* Corner decorations */}
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
+              {videoReady && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="border-4 border-green-400 rounded-lg w-64 h-40 relative">
+                    {/* Corner decorations */}
+                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
+                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
+                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
+                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
 
-                  {/* Scanning line animation */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-green-400 animate-pulse"></div>
+                    {/* Scanning line animation */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-green-400 animate-pulse"></div>
 
-                  {/* Scanning status */}
-                  {scanning && (
-                    <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
-                      Scanning...
-                    </div>
-                  )}
+                    {/* Scanning status */}
+                    {scanning && (
+                      <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                        Scanning...
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
