@@ -20,7 +20,7 @@ export default function BarcodeScanner({
   const [scanning, setScanning] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
-  const [showDebug, setShowDebug] = useState(true);
+  const [showDebug, setShowDebug] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -53,117 +53,99 @@ export default function BarcodeScanner({
       try {
         addDebugLog('Requesting camera access...');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' } // Use back camera on mobile
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         });
 
         addDebugLog('Camera access granted!');
         streamRef.current = stream;
         setHasPermission(true);
 
-        if (videoRef.current) {
-          const video = videoRef.current;
-          addDebugLog('Setting video stream...');
+        // Wait a tick for React to render the video element
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-          video.srcObject = stream;
-
-          // Set video attributes
-          video.setAttribute('autoplay', 'true');
-          video.setAttribute('playsinline', 'true');
-          video.setAttribute('muted', 'true');
-
-          addDebugLog(`Video readyState: ${video.readyState}`);
-
-          // Try multiple approaches to start the video
-          const startVideo = async () => {
-            try {
-              addDebugLog('Calling video.play()...');
-              await video.play();
-              addDebugLog('Video play succeeded!');
-              setVideoReady(true);
-
-              // Give video a moment to render
-              setTimeout(() => {
-                const w = video.videoWidth;
-                const h = video.videoHeight;
-                addDebugLog(`Video size: ${w}x${h}, ready: ${video.readyState}`);
-                if (w === 0 || h === 0) {
-                  setError('Video loaded but has no dimensions. Camera may not be working.');
-                }
-              }, 500);
-            } catch (playError) {
-              const errorMsg = String(playError);
-              addDebugLog(`Play error: ${errorMsg}`);
-              setError('Could not start video: ' + errorMsg);
-              return;
-            }
-
-            // Initialize barcode reader
-            addDebugLog('Initializing barcode scanner...');
-            codeReaderRef.current = new BrowserMultiFormatReader();
-            setScanning(true);
-
-            // Start continuous barcode detection
-            try {
-              codeReaderRef.current.decodeFromVideoElement(
-                video,
-                (result, error) => {
-                  if (result) {
-                    const barcode = result.getText();
-                    addDebugLog(`Barcode detected: ${barcode}`);
-
-                    // Stop scanning and trigger callback
-                    if (codeReaderRef.current) {
-                      codeReaderRef.current.reset();
-                    }
-                    setScanning(false);
-                    onScan(barcode);
-                    onClose();
-                  }
-
-                  // Ignore errors during continuous scanning (expected when no barcode is visible)
-                  if (error && error.name !== 'NotFoundException') {
-                    console.error('Barcode scan error:', error);
-                  }
-                }
-              );
-              addDebugLog('Scanner ready!');
-            } catch (scanError) {
-              const errorMsg = String(scanError);
-              addDebugLog(`Scanner error: ${errorMsg}`);
-            }
-          };
-
-          // Wait for loadedmetadata OR canplay event
-          const onCanPlay = () => {
-            addDebugLog('Event: canplay fired');
-            startVideo();
-          };
-
-          const onLoadedMetadata = () => {
-            addDebugLog('Event: loadedmetadata fired');
-            startVideo();
-          };
-
-          video.addEventListener('canplay', onCanPlay, { once: true });
-          video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
-
-          // Force load
-          addDebugLog('Calling video.load()');
-          video.load();
-
-          // Fallback: try to start after a short delay regardless
-          setTimeout(() => {
-            if (video.paused && video.srcObject) {
-              addDebugLog('Fallback: forcing start');
-              startVideo();
-            }
-          }, 1000);
+        if (!videoRef.current) {
+          addDebugLog('ERROR: Video element not found!');
+          setError('Video element not mounted');
+          return;
         }
+
+        const video = videoRef.current;
+        addDebugLog('Attaching stream to video...');
+
+        // Directly set srcObject
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+
+        addDebugLog(`Initial readyState: ${video.readyState}`);
+
+        // Wait for metadata and play
+        const playVideo = async () => {
+          try {
+            addDebugLog('Starting video playback...');
+            await video.play();
+            addDebugLog('✅ Video playing!');
+            setVideoReady(true);
+
+            // Check dimensions after a moment
+            setTimeout(() => {
+              const w = video.videoWidth;
+              const h = video.videoHeight;
+              addDebugLog(`Video dimensions: ${w}x${h}`);
+
+              if (w > 0 && h > 0) {
+                // Initialize barcode scanner
+                addDebugLog('Starting barcode scanner...');
+                codeReaderRef.current = new BrowserMultiFormatReader();
+                setScanning(true);
+
+                codeReaderRef.current.decodeFromVideoElement(
+                  video,
+                  (result, error) => {
+                    if (result) {
+                      const barcode = result.getText();
+                      addDebugLog(`✅ Scanned: ${barcode}`);
+                      if (codeReaderRef.current) {
+                        codeReaderRef.current.reset();
+                      }
+                      setScanning(false);
+                      onScan(barcode);
+                      onClose();
+                    }
+                  }
+                );
+                addDebugLog('✅ Scanner active!');
+              } else {
+                addDebugLog('⚠️ Video has no dimensions!');
+                setError('Camera feed has no dimensions');
+              }
+            }, 1000);
+          } catch (err) {
+            addDebugLog(`❌ Play failed: ${err}`);
+            setError(`Play failed: ${err}`);
+          }
+        };
+
+        // Listen for loadedmetadata
+        video.addEventListener('loadedmetadata', () => {
+          addDebugLog('📹 Metadata loaded');
+          playVideo();
+        }, { once: true });
+
+        // Fallback if metadata already loaded
+        if (video.readyState >= 1) {
+          addDebugLog('Metadata already ready');
+          playVideo();
+        }
+
       } catch (err) {
-        const errorMsg = String(err);
-        addDebugLog(`Camera error: ${errorMsg}`);
+        addDebugLog(`❌ Camera error: ${err}`);
         setHasPermission(false);
-        setError('Camera error: ' + errorMsg);
+        setError(`Camera error: ${err}`);
       }
     };
 
@@ -249,14 +231,15 @@ export default function BarcodeScanner({
               {/* Debug toggle button */}
               <button
                 onClick={() => setShowDebug(!showDebug)}
-                className="absolute top-2 right-2 z-20 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold"
+                className="absolute top-2 right-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold"
+                style={{ zIndex: 30 }}
               >
                 {showDebug ? 'Hide' : 'Show'} Debug
               </button>
 
               {/* Comprehensive debug overlay */}
               {showDebug && (
-                <div className="absolute top-12 left-2 right-2 z-20 bg-black bg-opacity-95 text-white text-xs p-3 rounded-lg font-mono max-h-[250px] overflow-y-auto">
+                <div className="absolute top-12 left-2 right-2 bg-black bg-opacity-95 text-white text-xs p-3 rounded-lg font-mono max-h-[250px] overflow-y-auto" style={{ zIndex: 30 }}>
                   <div className="font-bold mb-2 text-sm text-yellow-400">Debug Info:</div>
                   <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
                     <div>Ready: {videoReady ? '✅ YES' : '❌ NO'}</div>
@@ -284,7 +267,7 @@ export default function BarcodeScanner({
 
               {/* Error display */}
               {error && (
-                <div className="absolute bottom-20 left-2 right-2 z-20 bg-red-600 text-white text-sm p-3 rounded-lg shadow-lg">
+                <div className="absolute bottom-20 left-2 right-2 bg-red-600 text-white text-sm p-3 rounded-lg shadow-lg" style={{ zIndex: 30 }}>
                   <div className="font-bold mb-1">❌ Error:</div>
                   <div>{error}</div>
                 </div>
@@ -295,18 +278,16 @@ export default function BarcodeScanner({
                 autoPlay
                 playsInline
                 muted
-                className="absolute inset-0 w-full h-full object-cover bg-black"
+                className="absolute inset-0 w-full h-full object-cover"
                 style={{
-                  opacity: videoReady ? 1 : 0.5,
-                  minWidth: '100%',
-                  minHeight: '100%',
-                  display: 'block'
+                  backgroundColor: '#000',
+                  zIndex: 1
                 }}
               />
 
               {/* Scanning Frame Overlay */}
               {videoReady && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 10 }}>
                   <div className="border-4 border-green-400 rounded-lg w-64 h-40 relative">
                     {/* Corner decorations */}
                     <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
