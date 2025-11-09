@@ -52,20 +52,43 @@ export default function BarcodeScanner({
 
         if (videoRef.current) {
           const video = videoRef.current;
+          console.log('Setting video srcObject...', video);
+
           video.srcObject = stream;
 
-          // Wait for video metadata to load
-          const onLoadedMetadata = async () => {
-            console.log('Video metadata loaded');
-            setVideoReady(true);
+          // Set video attributes
+          video.setAttribute('autoplay', 'true');
+          video.setAttribute('playsinline', 'true');
+          video.setAttribute('muted', 'true');
 
-            // Explicitly play the video to ensure it displays
+          console.log('Video element:', {
+            srcObject: video.srcObject,
+            readyState: video.readyState,
+            paused: video.paused,
+            muted: video.muted
+          });
+
+          // Try multiple approaches to start the video
+          const startVideo = async () => {
             try {
+              console.log('Attempting to play video...');
               await video.play();
-              console.log('Video started playing');
+              console.log('Video play() succeeded');
+              setVideoReady(true);
+
+              // Give video a moment to render
+              setTimeout(() => {
+                console.log('Video state after play:', {
+                  paused: video.paused,
+                  currentTime: video.currentTime,
+                  videoWidth: video.videoWidth,
+                  videoHeight: video.videoHeight,
+                  readyState: video.readyState
+                });
+              }, 500);
             } catch (playError) {
               console.error('Error playing video:', playError);
-              setError('Could not start video playback');
+              setError('Could not start video playback: ' + String(playError));
               return;
             }
 
@@ -74,36 +97,58 @@ export default function BarcodeScanner({
             setScanning(true);
 
             // Start continuous barcode detection
-            codeReaderRef.current.decodeFromVideoElement(
-              video,
-              (result, error) => {
-                if (result) {
-                  const barcode = result.getText();
-                  console.log('Barcode detected:', barcode);
+            try {
+              codeReaderRef.current.decodeFromVideoElement(
+                video,
+                (result, error) => {
+                  if (result) {
+                    const barcode = result.getText();
+                    console.log('Barcode detected:', barcode);
 
-                  // Stop scanning and trigger callback
-                  if (codeReaderRef.current) {
-                    codeReaderRef.current.reset();
+                    // Stop scanning and trigger callback
+                    if (codeReaderRef.current) {
+                      codeReaderRef.current.reset();
+                    }
+                    setScanning(false);
+                    onScan(barcode);
+                    onClose();
                   }
-                  setScanning(false);
-                  onScan(barcode);
-                  onClose();
-                }
 
-                // Ignore errors during continuous scanning (expected when no barcode is visible)
-                if (error && error.name !== 'NotFoundException') {
-                  console.error('Barcode scan error:', error);
+                  // Ignore errors during continuous scanning (expected when no barcode is visible)
+                  if (error && error.name !== 'NotFoundException') {
+                    console.error('Barcode scan error:', error);
+                  }
                 }
-              }
-            );
+              );
+            } catch (scanError) {
+              console.error('Error starting barcode scanner:', scanError);
+            }
           };
 
-          video.addEventListener('loadedmetadata', onLoadedMetadata);
+          // Wait for loadedmetadata OR canplay event
+          const onCanPlay = () => {
+            console.log('Video canplay event fired');
+            startVideo();
+          };
 
-          // If metadata is already loaded, call handler immediately
-          if (video.readyState >= 1) {
-            onLoadedMetadata();
-          }
+          const onLoadedMetadata = () => {
+            console.log('Video loadedmetadata event fired');
+            startVideo();
+          };
+
+          video.addEventListener('canplay', onCanPlay, { once: true });
+          video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+
+          // Force load
+          video.load();
+
+          // Fallback: try to start after a short delay regardless
+          setTimeout(() => {
+            if (video.paused && video.srcObject) {
+              console.log('Fallback: forcing video start after 1 second');
+              startVideo();
+            }
+          }, 1000);
         }
       } catch (err) {
         console.error('Camera error:', err);
@@ -193,21 +238,34 @@ export default function BarcodeScanner({
             <>
               {/* Video loading indicator */}
               {!videoReady && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-white text-center">
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                  <div className="text-white text-center bg-black bg-opacity-75 p-4 rounded-lg">
                     <Camera className="w-12 h-12 mx-auto mb-2 animate-pulse" />
                     <p>Starting camera...</p>
+                    <p className="text-xs mt-2 opacity-75">Check browser console for details</p>
                   </div>
                 </div>
               )}
+
+              {/* Debug info overlay */}
+              <div className="absolute top-2 left-2 z-20 bg-black bg-opacity-75 text-white text-xs p-2 rounded font-mono">
+                <div>Ready: {videoReady ? '✓' : '✗'}</div>
+                <div>Scanning: {scanning ? '✓' : '✗'}</div>
+                <div>Stream: {streamRef.current ? '✓' : '✗'}</div>
+              </div>
 
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ opacity: videoReady ? 1 : 0 }}
+                className="absolute inset-0 w-full h-full object-cover bg-black"
+                style={{
+                  opacity: videoReady ? 1 : 0.5,
+                  minWidth: '100%',
+                  minHeight: '100%',
+                  display: 'block'
+                }}
               />
 
               {/* Scanning Frame Overlay */}
