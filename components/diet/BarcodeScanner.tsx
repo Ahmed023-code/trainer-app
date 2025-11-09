@@ -19,9 +19,16 @@ export default function BarcodeScanner({
   const [error, setError] = useState<string>('');
   const [scanning, setScanning] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+
+  const addDebugLog = (message: string) => {
+    setDebugInfo(prev => [...prev.slice(-8), `${new Date().toLocaleTimeString()}: ${message}`]);
+    console.log('[Barcode]', message);
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -37,22 +44,25 @@ export default function BarcodeScanner({
       setVideoReady(false);
       setHasPermission(null);
       setError('');
+      setDebugInfo([]);
       return;
     }
 
     // Request camera permission and start scanning
     const startScanning = async () => {
       try {
+        addDebugLog('Requesting camera access...');
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' } // Use back camera on mobile
         });
 
+        addDebugLog('Camera access granted!');
         streamRef.current = stream;
         setHasPermission(true);
 
         if (videoRef.current) {
           const video = videoRef.current;
-          console.log('Setting video srcObject...', video);
+          addDebugLog('Setting video stream...');
 
           video.srcObject = stream;
 
@@ -61,38 +71,34 @@ export default function BarcodeScanner({
           video.setAttribute('playsinline', 'true');
           video.setAttribute('muted', 'true');
 
-          console.log('Video element:', {
-            srcObject: video.srcObject,
-            readyState: video.readyState,
-            paused: video.paused,
-            muted: video.muted
-          });
+          addDebugLog(`Video readyState: ${video.readyState}`);
 
           // Try multiple approaches to start the video
           const startVideo = async () => {
             try {
-              console.log('Attempting to play video...');
+              addDebugLog('Calling video.play()...');
               await video.play();
-              console.log('Video play() succeeded');
+              addDebugLog('Video play succeeded!');
               setVideoReady(true);
 
               // Give video a moment to render
               setTimeout(() => {
-                console.log('Video state after play:', {
-                  paused: video.paused,
-                  currentTime: video.currentTime,
-                  videoWidth: video.videoWidth,
-                  videoHeight: video.videoHeight,
-                  readyState: video.readyState
-                });
+                const w = video.videoWidth;
+                const h = video.videoHeight;
+                addDebugLog(`Video size: ${w}x${h}, ready: ${video.readyState}`);
+                if (w === 0 || h === 0) {
+                  setError('Video loaded but has no dimensions. Camera may not be working.');
+                }
               }, 500);
             } catch (playError) {
-              console.error('Error playing video:', playError);
-              setError('Could not start video playback: ' + String(playError));
+              const errorMsg = String(playError);
+              addDebugLog(`Play error: ${errorMsg}`);
+              setError('Could not start video: ' + errorMsg);
               return;
             }
 
             // Initialize barcode reader
+            addDebugLog('Initializing barcode scanner...');
             codeReaderRef.current = new BrowserMultiFormatReader();
             setScanning(true);
 
@@ -103,7 +109,7 @@ export default function BarcodeScanner({
                 (result, error) => {
                   if (result) {
                     const barcode = result.getText();
-                    console.log('Barcode detected:', barcode);
+                    addDebugLog(`Barcode detected: ${barcode}`);
 
                     // Stop scanning and trigger callback
                     if (codeReaderRef.current) {
@@ -120,19 +126,21 @@ export default function BarcodeScanner({
                   }
                 }
               );
+              addDebugLog('Scanner ready!');
             } catch (scanError) {
-              console.error('Error starting barcode scanner:', scanError);
+              const errorMsg = String(scanError);
+              addDebugLog(`Scanner error: ${errorMsg}`);
             }
           };
 
           // Wait for loadedmetadata OR canplay event
           const onCanPlay = () => {
-            console.log('Video canplay event fired');
+            addDebugLog('Event: canplay fired');
             startVideo();
           };
 
           const onLoadedMetadata = () => {
-            console.log('Video loadedmetadata event fired');
+            addDebugLog('Event: loadedmetadata fired');
             startVideo();
           };
 
@@ -140,20 +148,22 @@ export default function BarcodeScanner({
           video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
 
           // Force load
+          addDebugLog('Calling video.load()');
           video.load();
 
           // Fallback: try to start after a short delay regardless
           setTimeout(() => {
             if (video.paused && video.srcObject) {
-              console.log('Fallback: forcing video start after 1 second');
+              addDebugLog('Fallback: forcing start');
               startVideo();
             }
           }, 1000);
         }
       } catch (err) {
-        console.error('Camera error:', err);
+        const errorMsg = String(err);
+        addDebugLog(`Camera error: ${errorMsg}`);
         setHasPermission(false);
-        setError('Could not access camera. Please check permissions.');
+        setError('Camera error: ' + errorMsg);
       }
     };
 
@@ -236,23 +246,49 @@ export default function BarcodeScanner({
 
           {hasPermission && (
             <>
-              {/* Video loading indicator */}
-              {!videoReady && (
-                <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <div className="text-white text-center bg-black bg-opacity-75 p-4 rounded-lg">
-                    <Camera className="w-12 h-12 mx-auto mb-2 animate-pulse" />
-                    <p>Starting camera...</p>
-                    <p className="text-xs mt-2 opacity-75">Check browser console for details</p>
+              {/* Debug toggle button */}
+              <button
+                onClick={() => setShowDebug(!showDebug)}
+                className="absolute top-2 right-2 z-20 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold"
+              >
+                {showDebug ? 'Hide' : 'Show'} Debug
+              </button>
+
+              {/* Comprehensive debug overlay */}
+              {showDebug && (
+                <div className="absolute top-12 left-2 right-2 z-20 bg-black bg-opacity-95 text-white text-xs p-3 rounded-lg font-mono max-h-[250px] overflow-y-auto">
+                  <div className="font-bold mb-2 text-sm text-yellow-400">Debug Info:</div>
+                  <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+                    <div>Ready: {videoReady ? '✅ YES' : '❌ NO'}</div>
+                    <div>Scanning: {scanning ? '✅ YES' : '❌ NO'}</div>
+                    <div>Stream: {streamRef.current ? '✅ YES' : '❌ NO'}</div>
+                    <div>Video: {videoRef.current ? '✅ YES' : '❌ NO'}</div>
+                  </div>
+                  {videoRef.current && (
+                    <div className="mb-2 text-xs bg-white/10 p-2 rounded">
+                      <div>Width: {videoRef.current.videoWidth || 0}px</div>
+                      <div>Height: {videoRef.current.videoHeight || 0}px</div>
+                      <div>ReadyState: {videoRef.current.readyState}/4</div>
+                      <div>Paused: {videoRef.current.paused ? 'YES' : 'NO'}</div>
+                    </div>
+                  )}
+                  <div className="border-t border-white/20 pt-2 space-y-1">
+                    <div className="font-bold text-yellow-400 mb-1">Event Log:</div>
+                    {debugInfo.length === 0 && <div className="opacity-50">Waiting...</div>}
+                    {debugInfo.map((log, i) => (
+                      <div key={i} className="text-[10px] leading-tight">{log}</div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Debug info overlay */}
-              <div className="absolute top-2 left-2 z-20 bg-black bg-opacity-75 text-white text-xs p-2 rounded font-mono">
-                <div>Ready: {videoReady ? '✓' : '✗'}</div>
-                <div>Scanning: {scanning ? '✓' : '✗'}</div>
-                <div>Stream: {streamRef.current ? '✓' : '✗'}</div>
-              </div>
+              {/* Error display */}
+              {error && (
+                <div className="absolute bottom-20 left-2 right-2 z-20 bg-red-600 text-white text-sm p-3 rounded-lg shadow-lg">
+                  <div className="font-bold mb-1">❌ Error:</div>
+                  <div>{error}</div>
+                </div>
+              )}
 
               <video
                 ref={videoRef}
