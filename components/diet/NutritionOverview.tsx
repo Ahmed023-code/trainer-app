@@ -366,13 +366,25 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
                       ? Math.min((nutrient.amount / nutrient.target) * 100, 100)
                       : 0;
                     const hasTarget = nutrient.target !== undefined;
+                    const isComplete = hasTarget && nutrient.target && nutrient.amount >= nutrient.target;
+                    const difference = hasTarget && nutrient.target
+                      ? nutrient.amount - nutrient.target
+                      : 0;
+                    const formattedDifference = Math.abs(difference) < 1
+                      ? Math.abs(difference).toFixed(1)
+                      : Math.round(Math.abs(difference));
 
                     return (
                       <div key={nutrient.id} className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                            {nutrient.name}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                              {nutrient.name}
+                            </span>
+                            {isComplete && (
+                              <span className="text-green-500 text-base leading-none">✓</span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
                               {nutrient.amount < 0.01 && nutrient.amount > 0
@@ -390,9 +402,11 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
                                 {nutrient.unit}
                               </span>
                             </span>
-                            {hasTarget && (
-                              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 min-w-[40px] text-right">
-                                {Math.round(percentage)}%
+                            {hasTarget && !isComplete && difference !== 0 && (
+                              <span className={`text-xs font-medium min-w-[60px] text-right ${
+                                difference > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-red-600 dark:text-red-500'
+                              }`}>
+                                {difference > 0 ? '+' : '-'}{formattedDifference} {difference > 0 ? 'over' : 'under'}
                               </span>
                             )}
                           </div>
