@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import Fuse from "fuse.js";
 import type { Exercise, SetItem } from "@/components/workout/types";
 import { getOfflineDB, type ExerciseDBExercise } from "@/utils/offlineDb";
 import ExerciseGif from "@/components/workout/ExerciseGif";
@@ -66,6 +67,7 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
   const [qDeb, setQDeb] = useState("");
   const [category, setCategory] = useState<"strength" | "cardio" | "mobility">("strength");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [fuseInstance, setFuseInstance] = useState<Fuse<Row> | null>(null);
 
   // custom-exercise muscle selection
   const [showCustomMuscles, setShowCustomMuscles] = useState(false);
@@ -120,6 +122,23 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
         }));
 
         setData(exerciseDBRows);
+
+        // Initialize Fuse.js for fuzzy search
+        const fuseOptions = {
+          shouldSort: true,
+          includeScore: true,
+          threshold: 0.4, // allows small spelling errors but still relevant
+          distance: 100,
+          keys: [
+            { name: 'name', weight: 0.7 },
+            { name: 'targetMuscles', weight: 0.2 },
+            { name: 'secondaryMuscles', weight: 0.1 },
+            { name: 'equipment', weight: 0.1 }
+          ]
+        };
+
+        const fuse = new Fuse(exerciseDBRows, fuseOptions);
+        setFuseInstance(fuse);
         setLoaded(true);
       } catch (error) {
         console.error("Failed to load exercises:", error);
@@ -149,54 +168,24 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
   const results = useMemo(() => {
     const list = data.filter(r => r.category === category);
     const query = qDeb;
+
+    // If no query, return first 50 results
     if (!query) return list.slice(0, 50);
 
-    // Check for alias match first (lowercase for alias map)
-    const lowerQuery = query.toLowerCase();
-    const aliasTerms = new Set<string>((bodyAliases[lowerQuery] || []).map(norm).filter(Boolean));
+    // If Fuse instance not ready, fall back to showing all
+    if (!fuseInstance) return list.slice(0, 50);
 
-    const scoreOf = (r: Row) => {
-      const name = norm(r.name);
-      const bodyArr = Array.isArray(r.bodyParts) ? r.bodyParts : [];
-      const body = norm(bodyArr.join(" "));
-      const equip = norm(r.equipment || "");
-      const muscles = norm((r.targetMuscles || []).join(" "));
-      const secondary = norm((r.secondaryMuscles || []).join(" "));
+    // Use Fuse.js for fuzzy search
+    const fuseResults = fuseInstance.search(query);
 
-      let s = 0;
-      // Exact name match gets highest score
-      if (name === query) s += 10;
-      // Name starts with query
-      if (name.startsWith(query)) s += 5;
-      // Any word in name starts with query
-      const words = name.split(" ");
-      if (words.some((w) => w.startsWith(query))) s += 3;
-      // Name contains query as substring
-      if (name.includes(query)) s += 2;
+    // Filter by category and limit to top 50 results
+    const filteredResults = fuseResults
+      .map(result => result.item)
+      .filter(item => item.category === category)
+      .slice(0, 50);
 
-      // Body parts, equipment, and muscles matching
-      if (body.includes(query)) s += 2;
-      if (equip.includes(query)) s += 2;
-      if (muscles.includes(query)) s += 2;
-      if (secondary.includes(query)) s += 1;
-
-      // Alias boost for common terms (legs → quads/glutes/hamstrings, etc.)
-      if (aliasTerms.size > 0) {
-        const bodyTokens = new Set([...body.split(" "), ...muscles.split(" "), ...secondary.split(" ")]);
-        for (const t of aliasTerms) {
-          if (bodyTokens.has(t)) s += 3;
-        }
-      }
-
-      return s;
-    };
-
-    return list
-      .map((r) => ({ r, s: scoreOf(r) }))
-      .filter((x) => x.s >= 2)
-      .sort((a, b) => (b.s - a.s) || a.r.name.localeCompare(b.r.name))
-      .map((x) => x.r);
-  }, [data, qDeb, category]);
+    return filteredResults;
+  }, [data, qDeb, category, fuseInstance]);
 
   if (!isOpen) return null;
 
@@ -240,6 +229,22 @@ export default function ExerciseLibraryModal({ isOpen, onClose, onPick, onSwitch
         gifUrl: ex.gifUrl,
       }));
       setData(exerciseDBRows);
+
+      // Rebuild Fuse instance with updated data
+      const fuseOptions = {
+        shouldSort: true,
+        includeScore: true,
+        threshold: 0.4,
+        distance: 100,
+        keys: [
+          { name: 'name', weight: 0.7 },
+          { name: 'targetMuscles', weight: 0.2 },
+          { name: 'secondaryMuscles', weight: 0.1 },
+          { name: 'equipment', weight: 0.1 }
+        ]
+      };
+      const fuse = new Fuse(exerciseDBRows, fuseOptions);
+      setFuseInstance(fuse);
     } catch (error) {
       console.error('Failed to save custom exercise:', error);
     }

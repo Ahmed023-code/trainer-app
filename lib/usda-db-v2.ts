@@ -5,6 +5,7 @@
  * - Supports incremental online loading
  */
 
+import Fuse from 'fuse.js';
 import type { Database } from 'sql.js';
 import { cacheFood, getCachedFood, searchCachedFoods, type CachedFood } from './food-cache';
 
@@ -118,69 +119,14 @@ export async function ensureEssentialBundles(): Promise<void> {
 }
 
 /**
- * Calculate relevance score for search results
- * Higher score = more relevant
- */
-function calculateRelevanceScore(description: string, query: string): number {
-  let score = 0;
-
-  // Exact match (highest priority)
-  if (description === query) {
-    score += 10000;
-  }
-
-  // Starts with query followed by comma, space, or dash (e.g., "apple, " matches "apple")
-  if (description.startsWith(query + ' ') ||
-      description.startsWith(query + ',') ||
-      description.startsWith(query + '-') ||
-      description.startsWith(query + '(')) {
-    score += 5000;
-  }
-
-  // Exact word match at start (e.g., "apple" for query "apple")
-  const words = description.split(/[\s,\-()]+/);
-  if (words[0] === query) {
-    score += 4000;
-  }
-
-  // Starts with query (e.g., "apple pie" for query "apple")
-  if (description.startsWith(query)) {
-    score += 3000;
-  }
-
-  // Query appears as a whole word anywhere (with word boundaries)
-  // Escape special regex characters in query
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const wordBoundaryRegex = new RegExp(`\\b${escapedQuery}\\b`, 'i');
-  if (wordBoundaryRegex.test(description)) {
-    score += 2000;
-  }
-
-  // Query appears anywhere in description
-  if (description.includes(query)) {
-    score += 1000;
-  }
-
-  // Bonus: Shorter descriptions are more relevant
-  // Inverse length bonus - shorter = better (max 100 points)
-  const lengthPenalty = Math.min(description.length / 2, 100);
-  score -= lengthPenalty;
-
-  // Bonus: Penalize generic/long descriptions
-  const commaCount = (description.match(/,/g) || []).length;
-  score -= commaCount * 10; // Each comma slightly reduces score
-
-  return score;
-}
-
-/**
  * Search in loaded offline databases
+ * Returns all foods matching the query (used for Fuse.js fuzzy search)
  */
 async function searchOffline(query: string, limit: number = 50): Promise<USDAFood[]> {
   const results: USDAFood[] = [];
 
-  // Fetch more results than needed for better ranking (4x limit)
-  const fetchLimit = Math.max(limit * 4, 200);
+  // Fetch more results for fuzzy matching (10x limit for better fuzzy results)
+  const fetchLimit = Math.max(limit * 10, 500);
 
   // Search in loaded bundles
   for (const [bundleName, db] of databases.entries()) {
@@ -195,8 +141,9 @@ async function searchOffline(query: string, limit: number = 50): Promise<USDAFoo
         FROM food f
         LEFT JOIN branded_food bf ON f.fdc_id = bf.fdc_id
         WHERE LOWER(f.description) LIKE LOWER(?)
+           OR LOWER(bf.brand_name) LIKE LOWER(?)
         LIMIT ?
-      `, [`%${query}%`, fetchLimit - results.length]);
+      `, [`%${query}%`, `%${query}%`, fetchLimit - results.length]);
 
       if (bundleResults.length > 0) {
         const [{ columns, values }] = bundleResults;
@@ -219,7 +166,7 @@ async function searchOffline(query: string, limit: number = 50): Promise<USDAFoo
 }
 
 /**
- * Search foods with smart loading
+ * Search foods with smart loading and fuzzy matching
  */
 export async function searchFoods(
   query: string,
@@ -277,36 +224,37 @@ export async function searchFoods(
       }
     });
 
-    // Sort by relevance with scoring system
-    const lowerQuery = query.toLowerCase();
-    merged.sort((a, b) => {
-      const aDesc = a.description.toLowerCase();
-      const bDesc = b.description.toLowerCase();
+    // Use Fuse.js for fuzzy search and ranking
+    const fuseOptions = {
+      shouldSort: true,
+      includeScore: true,
+      threshold: 0.3, // Lower threshold for tighter results with foods
+      distance: 100,
+      keys: [
+        { name: 'description', weight: 0.7 },
+        { name: 'brand_name', weight: 0.2 },
+        { name: 'data_type', weight: 0.1 }
+      ]
+    };
 
-      // Calculate relevance scores
-      const scoreA = calculateRelevanceScore(aDesc, lowerQuery);
-      const scoreB = calculateRelevanceScore(bDesc, lowerQuery);
+    const fuse = new Fuse(merged, fuseOptions);
+    const fuseResults = fuse.search(query);
 
-      // Higher score comes first
-      if (scoreA !== scoreB) return scoreB - scoreA;
-
-      // If scores are equal, sort alphabetically
-      return aDesc.localeCompare(bDesc);
-    });
+    // Extract items from Fuse results
+    const rankedResults = fuseResults.map(result => result.item);
 
     // Debug: Log top 5 results with scores
-    if (merged.length > 0) {
+    if (rankedResults.length > 0) {
       console.log('[USDA DB] Top 5 results for "' + query + '":');
-      merged.slice(0, 5).forEach((food, idx) => {
-        const score = calculateRelevanceScore(food.description.toLowerCase(), lowerQuery);
-        console.log(`  ${idx + 1}. [${score}] ${food.description}`);
+      fuseResults.slice(0, 5).forEach((result, idx) => {
+        console.log(`  ${idx + 1}. [${result.score?.toFixed(3)}] ${result.item.description}`);
       });
     }
 
     return {
-      offlineResults: merged.slice(0, limit),
-      hasOnline: !offlineOnly && merged.length < limit,
-      totalOffline: merged.length
+      offlineResults: rankedResults.slice(0, limit),
+      hasOnline: !offlineOnly && rankedResults.length < limit,
+      totalOffline: rankedResults.length
     };
   } catch (error) {
     console.error('[USDA DB] Search error:', error);

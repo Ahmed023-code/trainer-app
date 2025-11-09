@@ -54,7 +54,7 @@ export default function FoodLibraryModal({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 300);
+    const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 200);
     return () => clearTimeout(t);
   }, [query]);
 
