@@ -65,21 +65,8 @@ export default function HomePage() {
   const [reminderTitle, setReminderTitle] = useState("");
   const [reminderDue, setReminderDue] = useState("");
 
-  // Diet menu and nutrition overview
-  const [showDietMenu, setShowDietMenu] = useState(false);
+  // Nutrition overview
   const [showNutritionOverview, setShowNutritionOverview] = useState(false);
-
-  // Close diet menu on scroll
-  useEffect(() => {
-    if (!showDietMenu) return;
-
-    const handleScroll = () => {
-      setShowDietMenu(false);
-    };
-
-    window.addEventListener('scroll', handleScroll, true);
-    return () => window.removeEventListener('scroll', handleScroll, true);
-  }, [showDietMenu]);
 
   // Load data for today
   useEffect(() => {
@@ -326,6 +313,12 @@ export default function HomePage() {
           {/* Smaller macro rings in 2x2 grid on right */}
           <div className="flex-1 grid grid-cols-2 gap-3">
             <SmallMacroRing
+              label="Cal"
+              current={Math.round(dietSummary.calories)}
+              target={dietSummary.goals.cal}
+              color="var(--accent-diet)"
+            />
+            <SmallMacroRing
               label="P"
               current={Math.round(dietSummary.protein)}
               target={dietSummary.goals.p}
@@ -343,47 +336,8 @@ export default function HomePage() {
               target={dietSummary.goals.c}
               color="#60A5FA"
             />
-            <div className="flex flex-col items-center justify-center">
-              <button
-                onClick={() => setShowDietMenu(!showDietMenu)}
-                className="w-full h-full rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-accent-diet hover:bg-accent-diet/5 transition-colors flex items-center justify-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-neutral-400">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
-
-        {/* Menu popup */}
-        {showDietMenu && (
-          <>
-            <button
-              className="fixed inset-0 z-[99998]"
-              aria-label="Close"
-              onClick={() => setShowDietMenu(false)}
-            />
-            <div className="absolute right-4 top-[calc(100%-1rem)] z-[99999] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 w-48 space-y-2">
-              <button
-                onClick={() => {
-                  setShowNutritionOverview(true);
-                  setShowDietMenu(false);
-                }}
-                className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              >
-                Diet Details
-              </button>
-              <a
-                href={`/settings/diet?returnDate=${todayISO}`}
-                className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                onClick={() => setShowDietMenu(false)}
-              >
-                Diet Settings
-              </a>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Workout summary */}
@@ -803,6 +757,7 @@ function SmallMacroRing({
 
   // Get background color based on label
   const getBgColor = () => {
+    if (label === "Cal") return "#34D3991F";
     if (label === "P") return "#F871711F";
     if (label === "F") return "#FACC151F";
     if (label === "C") return "#60A5FA1F";
@@ -811,6 +766,7 @@ function SmallMacroRing({
 
   // Get darker color for overage
   const getOverageColor = () => {
+    if (label === "Cal") return "#1F9D6D";
     if (label === "P") return "#B84444";
     if (label === "F") return "#C9A000";
     if (label === "C") return "#3D7BC7";
