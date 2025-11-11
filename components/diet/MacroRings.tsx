@@ -102,19 +102,19 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
     const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33;
     const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
 
-    // Calculate how much of the circle to fill based on goal
-    const isOverTarget = totalCals > targetCals;
-    const fillPct = targetCals > 0 ? Math.min(totalCals / targetCals, 1) : 0;
-    const overPct = isOverTarget && targetCals > 0 ? (totalCals - targetCals) / targetCals : 0;
-    const totalFill = circumference * fillPct;
+    // Calculate how much of the circle to fill based on goal (can exceed 100%)
+    const fillPct = targetCals > 0 ? totalCals / targetCals : 0;
+    const totalFill = circumference * Math.min(fillPct, 1.5); // Cap at 150% visually
 
     // Calculate dash lengths for each segment
     const proteinDash = totalFill * proteinPct;
     const fatDash = totalFill * fatPct;
     const carbsDash = totalFill * carbsPct;
 
-    // Overage segment (if over target)
-    const overDash = circumference * Math.min(overPct, 0.5); // Cap excess visual at 50% more
+    // Check which macros are over their targets
+    const proteinOver = protein.current > protein.target;
+    const fatOver = fat.current > fat.target;
+    const carbsOver = carbs.current > carbs.target;
 
     return (
       <>
@@ -134,52 +134,41 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#F87171"
+          stroke={proteinOver ? "#C64444" : "#F87171"}
           strokeWidth={stroke}
           strokeLinecap="round"
-          strokeDasharray={`${proteinDash} ${circumference - proteinDash}`}
+          strokeDasharray={proteinOver ? `2 2` : `${proteinDash} ${circumference - proteinDash}`}
           strokeDashoffset="0"
           fill="none"
+          opacity={proteinOver ? "0.8" : "1"}
+          style={proteinOver ? { strokeDasharray: `${proteinDash} ${circumference - proteinDash}`, stroke: "url(#protein-pattern)" } : {}}
         />
         {/* Fat segment */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#FACC15"
+          stroke={fatOver ? "#C9A000" : "#FACC15"}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${fatDash} ${circumference - fatDash}`}
           strokeDashoffset={-proteinDash}
           fill="none"
+          opacity={fatOver ? "0.8" : "1"}
         />
         {/* Carbs segment */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#60A5FA"
+          stroke={carbsOver ? "#3D7BC7" : "#60A5FA"}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${carbsDash} ${circumference - carbsDash}`}
           strokeDashoffset={-(proteinDash + fatDash)}
           fill="none"
+          opacity={carbsOver ? "0.8" : "1"}
         />
-        {/* Overage segment (darker/desaturated) */}
-        {isOverTarget && overDash > 0 && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#DC2626"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={`${overDash} ${circumference - overDash}`}
-            strokeDashoffset={0}
-            fill="none"
-            opacity="0.6"
-          />
-        )}
       </>
     );
   };
@@ -188,6 +177,13 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
     <div className="flex flex-col items-center justify-center flex-1 min-w-0 shrink">
       <div className="relative" style={{ width: size, height: size }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 rotate-[-90deg] w-full h-full">
+          {/* Define stripe pattern for overage */}
+          <defs>
+            <pattern id={`stripe-${label}`} patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
+              <rect width="2" height="4" fill={color} opacity="0.4" />
+            </pattern>
+          </defs>
+
           {label === "Cal" ? renderCalorieRing() : (
             <>
               {/* Track */}
@@ -201,31 +197,46 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 fill="none"
                 className="text-neutral-400 dark:text-neutral-600"
               />
-              {/* Progress up to target */}
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke={color}
-                strokeWidth={stroke}
-                strokeLinecap="round"
-                strokeDasharray={`${Math.min(dash, circumference)} ${circumference - Math.min(dash, circumference)}`}
-                fill="none"
-              />
-              {/* Overage indicator (if over target) */}
-              {current > target && (
-                <circle
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  stroke="#DC2626"
-                  strokeWidth={stroke}
-                  strokeLinecap="round"
-                  strokeDasharray={`${Math.min((dash - circumference), circumference * 0.5)} ${circumference}`}
-                  strokeDashoffset={0}
-                  fill="none"
-                  opacity="0.6"
-                />
+              {current > target ? (
+                <>
+                  {/* Base darker color */}
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={label === "P" ? "#C64444" : label === "F" ? "#C9A000" : "#3D7BC7"}
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={`${Math.min(dash, circumference * 1.5)} ${circumference - Math.min(dash, circumference * 1.5)}`}
+                    fill="none"
+                    opacity="0.8"
+                  />
+                  {/* Diagonal stripe overlay */}
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={`url(#stripe-${label})`}
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={`${Math.min(dash, circumference * 1.5)} ${circumference - Math.min(dash, circumference * 1.5)}`}
+                    fill="none"
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Progress up to target */}
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={color}
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={`${dash} ${circumference - dash}`}
+                    fill="none"
+                  />
+                </>
               )}
             </>
           )}
