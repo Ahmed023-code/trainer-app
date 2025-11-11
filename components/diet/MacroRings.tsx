@@ -64,8 +64,12 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
   const stroke = 6;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.max(0, Math.min(1, target > 0 ? current / target : 0));
+  // Allow ring to go beyond 100%, cap at 150% for visual display
+  const pct = Math.max(0, Math.min(1.5, target > 0 ? current / target : 0));
   const dash = circumference * pct;
+  // Track if we're at or below 100%
+  const normalPct = Math.min(1, target > 0 ? current / target : 0);
+  const normalDash = circumference * normalPct;
 
   console.log(`[Ring ${label}] Rendering with current=${current}, target=${target}`);
 
@@ -107,7 +111,7 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
             fill="none"
             className="text-neutral-400 dark:text-neutral-600"
           />
-          {/* Base progress ring */}
+          {/* Base progress ring - shows up to 100% */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -115,10 +119,10 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
             stroke={color}
             strokeWidth={stroke}
             strokeLinecap="butt"
-            strokeDasharray={`${Math.min(dash, circumference)} ${circumference - Math.min(dash, circumference)}`}
+            strokeDasharray={`${normalDash} ${circumference - normalDash}`}
             fill="none"
           />
-          {/* Darker overage overlay with diagonal lines */}
+          {/* Overage portion - shows amount beyond 100% with darker color and stripes */}
           {current > target && (
             <>
               {/* Darker base - shows the portion over 100% */}
@@ -129,12 +133,12 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 stroke={label === "Cal" ? "#1F9D6D" : label === "P" ? "#B84444" : label === "F" ? "#C9A000" : "#3D7BC7"}
                 strokeWidth={stroke}
                 strokeLinecap="butt"
-                strokeDasharray={`${dash - circumference} ${circumference}`}
-                strokeDashoffset={-circumference}
+                strokeDasharray={`${dash - normalDash} ${circumference}`}
+                strokeDashoffset={-normalDash}
                 fill="none"
                 opacity="0.9"
               />
-              {/* Diagonal stripe overlay */}
+              {/* Diagonal stripe overlay for overage */}
               <circle
                 cx={size / 2}
                 cy={size / 2}
@@ -142,8 +146,8 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 stroke={`url(#stripe-${label})`}
                 strokeWidth={stroke}
                 strokeLinecap="butt"
-                strokeDasharray={`${dash - circumference} ${circumference}`}
-                strokeDashoffset={-circumference}
+                strokeDasharray={`${dash - normalDash} ${circumference}`}
+                strokeDashoffset={-normalDash}
                 fill="none"
               />
             </>
