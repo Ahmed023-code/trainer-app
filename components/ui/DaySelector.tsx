@@ -22,10 +22,12 @@ function CalendarPicker({
   selectedDate,
   onSelectDate,
   onClose,
+  accentColor,
 }: {
   selectedDate: Date;
   onSelectDate: (dateISO: string) => void;
   onClose: () => void;
+  accentColor?: string;
 }) {
   const [viewMonth, setViewMonth] = useState(new Date(selectedDate));
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -162,13 +164,14 @@ function CalendarPicker({
             <button
               key={index}
               onClick={() => handleDayClick(day)}
-              className={`aspect-square rounded-lg text-sm font-medium transition-colors ${
+              className={`aspect-square rounded-full text-sm font-medium transition-colors border ${
                 selected
-                  ? "bg-accent-diet text-white"
+                  ? "text-white border-transparent"
                   : today
-                  ? "bg-neutral-200 dark:bg-neutral-700"
-                  : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  ? "bg-neutral-200 dark:bg-neutral-700 border-transparent"
+                  : "border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
               }`}
+              style={selected ? { backgroundColor: accentColor || "var(--accent-diet)" } : undefined}
             >
               {day.getDate()}
             </button>
@@ -262,6 +265,7 @@ export default function DaySelector({
                 selectedDate={dateObj}
                 onSelectDate={handleDateSelect}
                 onClose={() => setShowPicker(false)}
+                accentColor={accentColor}
               />
             )}
           </div>
@@ -355,6 +359,7 @@ export default function DaySelector({
               selectedDate={dateObj}
               onSelectDate={handleDateSelect}
               onClose={() => setShowPicker(false)}
+              accentColor={accentColor}
             />
           )}
 

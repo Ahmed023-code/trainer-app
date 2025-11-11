@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { getTodayISO } from "@/utils/completion";
 import { readDiet, readWorkout, readWeight, writeWeight } from "@/stores/storageV2";
 import { useInboxStore } from "@/stores/inboxStore";
-import MacroRings from "@/components/diet/MacroRings";
 import DaySelector from "@/components/ui/DaySelector";
 import NutritionOverview from "@/components/diet/NutritionOverview";
 
@@ -307,15 +306,53 @@ export default function HomePage() {
             Open Diet
           </button>
         </div>
-        <div className="flex justify-center overflow-hidden">
-          <div className="w-full max-w-full">
-            <MacroRings
-              calories={{ label: "Cal", color: "var(--accent-diet)", current: Math.round(dietSummary.calories), target: dietSummary.goals.cal }}
-              protein={{ label: "P", color: "#F87171", current: Math.round(dietSummary.protein), target: dietSummary.goals.p }}
-              fat={{ label: "F", color: "var(--accent-diet-fat)", current: Math.round(dietSummary.fat), target: dietSummary.goals.f }}
-              carbs={{ label: "C", color: "#60A5FA", current: Math.round(dietSummary.carbs), target: dietSummary.goals.c }}
-              onMenuClick={() => setShowDietMenu(!showDietMenu)}
+
+        {/* Layout: Large calorie ring on left, smaller macro rings in 2x2 grid on right */}
+        <div className="flex gap-4 items-center">
+          {/* Large calorie ring on left */}
+          <div className="flex-shrink-0">
+            <CalorieRing
+              current={Math.round(dietSummary.calories)}
+              target={dietSummary.goals.cal}
+              protein={Math.round(dietSummary.protein)}
+              carbs={Math.round(dietSummary.carbs)}
+              fat={Math.round(dietSummary.fat)}
+              proteinTarget={dietSummary.goals.p}
+              carbsTarget={dietSummary.goals.c}
+              fatTarget={dietSummary.goals.f}
             />
+          </div>
+
+          {/* Smaller macro rings in 2x2 grid on right */}
+          <div className="flex-1 grid grid-cols-2 gap-3">
+            <SmallMacroRing
+              label="P"
+              current={Math.round(dietSummary.protein)}
+              target={dietSummary.goals.p}
+              color="#F87171"
+            />
+            <SmallMacroRing
+              label="F"
+              current={Math.round(dietSummary.fat)}
+              target={dietSummary.goals.f}
+              color="#FACC15"
+            />
+            <SmallMacroRing
+              label="C"
+              current={Math.round(dietSummary.carbs)}
+              target={dietSummary.goals.c}
+              color="#60A5FA"
+            />
+            <div className="flex flex-col items-center justify-center">
+              <button
+                onClick={() => setShowDietMenu(!showDietMenu)}
+                className="w-full h-full rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-accent-diet hover:bg-accent-diet/5 transition-colors flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-neutral-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -481,5 +518,399 @@ export default function HomePage() {
         onClose={() => setShowNutritionOverview(false)}
       />
     </main>
+  );
+}
+
+// Large calorie ring component (similar to the one in NutritionOverview but simplified)
+function CalorieRing({
+  current,
+  target,
+  protein,
+  carbs,
+  fat,
+  proteinTarget,
+  carbsTarget,
+  fatTarget
+}: {
+  current: number;
+  target: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+}) {
+  const size = 140;
+  const stroke = 16;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // Calculate calories from each macro
+  const proteinCals = protein * 4;
+  const carbsCals = carbs * 4;
+  const fatCals = fat * 9;
+  const totalCals = proteinCals + carbsCals + fatCals;
+
+  // Calculate percentages of the ring based on caloric contribution
+  const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33;
+  const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33;
+  const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
+
+  // Ring circumference represents consumption relative to goal
+  const fillPct = target > 0 ? current / target : 0;
+  const totalFill = fillPct <= 1 ? circumference * fillPct : circumference;
+
+  // Calculate dash lengths for each segment
+  const proteinDash = totalFill * proteinPct;
+  const fatDash = totalFill * fatPct;
+  const carbsDash = totalFill * carbsPct;
+
+  // Check if each macro is over its target
+  const proteinOver = protein > proteinTarget;
+  const carbsOver = carbs > carbsTarget;
+  const fatOver = fat > fatTarget;
+
+  // Calculate segment portions (normal vs overage)
+  const getSegmentPortions = (
+    curr: number,
+    targ: number,
+    totalDash: number
+  ) => {
+    if (curr <= targ) {
+      return { normalDash: totalDash, overageDash: 0 };
+    }
+    const normalPortion = targ / curr;
+    const normalDash = totalDash * normalPortion;
+    const overageDash = totalDash - normalDash;
+    return { normalDash, overageDash };
+  };
+
+  const proteinPortions = getSegmentPortions(protein, proteinTarget, proteinDash);
+  const fatPortions = getSegmentPortions(fat, fatTarget, fatDash);
+  const carbsPortions = getSegmentPortions(carbs, carbsTarget, carbsDash);
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg] w-full h-full">
+        {/* Define stripe patterns for overage */}
+        <defs>
+          <pattern
+            id="stripe-protein-home"
+            patternUnits="userSpaceOnUse"
+            width="3"
+            height="3"
+            patternTransform="rotate(45)"
+          >
+            <rect width="1.5" height="3" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+          </pattern>
+          <pattern
+            id="stripe-fat-home"
+            patternUnits="userSpaceOnUse"
+            width="3"
+            height="3"
+            patternTransform="rotate(45)"
+          >
+            <rect width="1.5" height="3" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+          </pattern>
+          <pattern
+            id="stripe-carbs-home"
+            patternUnits="userSpaceOnUse"
+            width="3"
+            height="3"
+            patternTransform="rotate(45)"
+          >
+            <rect width="1.5" height="3" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+          </pattern>
+        </defs>
+
+        {/* Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeOpacity="0.15"
+          strokeWidth={stroke}
+          fill="none"
+          className="text-neutral-400 dark:text-neutral-600"
+        />
+
+        {/* Protein segment - normal portion */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#F87171"
+          strokeWidth={stroke}
+          strokeLinecap="butt"
+          strokeDasharray={`${proteinPortions.normalDash} ${circumference - proteinPortions.normalDash}`}
+          strokeDashoffset="0"
+          fill="none"
+        />
+        {/* Protein segment - overage portion */}
+        {proteinOver && (
+          <g>
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#B84444"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${proteinPortions.overageDash} ${circumference - proteinPortions.overageDash}`}
+              strokeDashoffset={-proteinPortions.normalDash}
+              fill="none"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#stripe-protein-home)"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${proteinPortions.overageDash} ${circumference - proteinPortions.overageDash}`}
+              strokeDashoffset={-proteinPortions.normalDash}
+              fill="none"
+              opacity="0.6"
+            />
+          </g>
+        )}
+
+        {/* Fat segment - normal portion */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#FACC15"
+          strokeWidth={stroke}
+          strokeLinecap="butt"
+          strokeDasharray={`${fatPortions.normalDash} ${circumference - fatPortions.normalDash}`}
+          strokeDashoffset={-proteinDash}
+          fill="none"
+        />
+        {/* Fat segment - overage portion */}
+        {fatOver && (
+          <g>
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#C9A000"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${fatPortions.overageDash} ${circumference - fatPortions.overageDash}`}
+              strokeDashoffset={-(proteinDash + fatPortions.normalDash)}
+              fill="none"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#stripe-fat-home)"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${fatPortions.overageDash} ${circumference - fatPortions.overageDash}`}
+              strokeDashoffset={-(proteinDash + fatPortions.normalDash)}
+              fill="none"
+              opacity="0.6"
+            />
+          </g>
+        )}
+
+        {/* Carbs segment - normal portion */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#60A5FA"
+          strokeWidth={stroke}
+          strokeLinecap="butt"
+          strokeDasharray={`${carbsPortions.normalDash} ${circumference - carbsPortions.normalDash}`}
+          strokeDashoffset={-(proteinDash + fatDash)}
+          fill="none"
+        />
+        {/* Carbs segment - overage portion */}
+        {carbsOver && (
+          <g>
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#3D7BC7"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${carbsPortions.overageDash} ${circumference - carbsPortions.overageDash}`}
+              strokeDashoffset={-(proteinDash + fatDash + carbsPortions.normalDash)}
+              fill="none"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#stripe-carbs-home)"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${carbsPortions.overageDash} ${circumference - carbsPortions.overageDash}`}
+              strokeDashoffset={-(proteinDash + fatDash + carbsPortions.normalDash)}
+              fill="none"
+              opacity="0.6"
+            />
+          </g>
+        )}
+      </svg>
+
+      {/* Center content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+          {current}
+        </div>
+        <div className="text-[10px] text-neutral-500 dark:text-neutral-400">
+          of {target}
+        </div>
+        <div className="text-[8px] text-neutral-400 dark:text-neutral-500">
+          kcal
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Small macro ring component for the 2x2 grid
+function SmallMacroRing({
+  label,
+  current,
+  target,
+  color
+}: {
+  label: string;
+  current: number;
+  target: number;
+  color: string;
+}) {
+  const size = 70;
+  const stroke = 6;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // Allow ring to go beyond 100%, cap at 150% for visual display
+  const pct = Math.max(0, Math.min(1.5, target > 0 ? current / target : 0));
+  const dash = circumference * pct;
+
+  // Track if we're at or below 100%
+  const normalPct = Math.min(1, target > 0 ? current / target : 0);
+  const normalDash = circumference * normalPct;
+
+  // Get background color based on label
+  const getBgColor = () => {
+    if (label === "P") return "#F871711F";
+    if (label === "F") return "#FACC151F";
+    if (label === "C") return "#60A5FA1F";
+    return `${color}22`;
+  };
+
+  // Get darker color for overage
+  const getOverageColor = () => {
+    if (label === "P") return "#B84444";
+    if (label === "F") return "#C9A000";
+    if (label === "C") return "#3D7BC7";
+    return color;
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 rotate-[-90deg] w-full h-full">
+          {/* Define stripe pattern for overage */}
+          <defs>
+            <pattern
+              id={`stripe-${label}-small`}
+              patternUnits="userSpaceOnUse"
+              width="3"
+              height="3"
+              patternTransform="rotate(45)"
+            >
+              <rect width="1.5" height="3" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+            </pattern>
+          </defs>
+
+          {/* Track */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeOpacity="0.15"
+            strokeWidth={stroke}
+            fill="none"
+            className="text-neutral-400 dark:text-neutral-600"
+          />
+
+          {/* Base progress ring - shows up to 100% */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={stroke}
+            strokeLinecap="butt"
+            strokeDasharray={`${normalDash} ${circumference - normalDash}`}
+            fill="none"
+          />
+
+          {/* Overage portion - shows amount beyond 100% */}
+          {current > target && (
+            <g>
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke={getOverageColor()}
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${dash - normalDash} ${circumference - (dash - normalDash)}`}
+                strokeDashoffset={-normalDash}
+                fill="none"
+              />
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke={`url(#stripe-${label}-small)`}
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${dash - normalDash} ${circumference - (dash - normalDash)}`}
+                strokeDashoffset={-normalDash}
+                fill="none"
+                opacity="0.6"
+              />
+            </g>
+          )}
+        </svg>
+
+        {/* Center label */}
+        <div className="absolute inset-0 grid place-items-center">
+          <span
+            className="inline-grid place-items-center rounded-full font-extrabold text-[9px] leading-none"
+            style={{ width: 18, height: 18, backgroundColor: color, color: "#000" }}
+          >
+            {label}
+          </span>
+        </div>
+      </div>
+
+      {/* Value bubble under ring */}
+      <div className="mt-1">
+        <span
+          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums whitespace-nowrap"
+          style={{
+            backgroundColor: getBgColor(),
+            color: color
+          }}
+        >
+          {current}/{target}
+        </span>
+      </div>
+    </div>
   );
 }
