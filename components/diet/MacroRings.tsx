@@ -143,18 +143,31 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
         />
         {/* Protein segment - overage darker overlay */}
         {proteinOver && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#B84444"
-            strokeWidth={stroke}
-            strokeLinecap="butt"
-            strokeDasharray={`${proteinDash - (circumference * (protein.target / targetCals) * fillPct)} ${circumference - (proteinDash - (circumference * (protein.target / targetCals) * fillPct))}`}
-            strokeDashoffset={-(circumference * (protein.target / targetCals) * fillPct)}
-            fill="none"
-            opacity="0.9"
-          />
+          <>
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#B84444"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${proteinDash - (circumference * (protein.target / targetCals) * fillPct)} ${circumference - (proteinDash - (circumference * (protein.target / targetCals) * fillPct))}`}
+              strokeDashoffset={-(circumference * (protein.target / targetCals) * fillPct)}
+              fill="none"
+              opacity="0.9"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#stripe-P)"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${proteinDash - (circumference * (protein.target / targetCals) * fillPct)} ${circumference - (proteinDash - (circumference * (protein.target / targetCals) * fillPct))}`}
+              strokeDashoffset={-(circumference * (protein.target / targetCals) * fillPct)}
+              fill="none"
+            />
+          </>
         )}
         {/* Fat segment - base */}
         <circle
@@ -170,18 +183,31 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
         />
         {/* Fat segment - overage darker overlay */}
         {fatOver && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#C9A000"
-            strokeWidth={stroke}
-            strokeLinecap="butt"
-            strokeDasharray={`${fatDash - (circumference * (fat.target / targetCals) * fillPct)} ${circumference - (fatDash - (circumference * (fat.target / targetCals) * fillPct))}`}
-            strokeDashoffset={-(proteinDash + (circumference * (fat.target / targetCals) * fillPct))}
-            fill="none"
-            opacity="0.9"
-          />
+          <>
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#C9A000"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${fatDash - (circumference * (fat.target / targetCals) * fillPct)} ${circumference - (fatDash - (circumference * (fat.target / targetCals) * fillPct))}`}
+              strokeDashoffset={-(proteinDash + (circumference * (fat.target / targetCals) * fillPct))}
+              fill="none"
+              opacity="0.9"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#stripe-F)"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${fatDash - (circumference * (fat.target / targetCals) * fillPct)} ${circumference - (fatDash - (circumference * (fat.target / targetCals) * fillPct))}`}
+              strokeDashoffset={-(proteinDash + (circumference * (fat.target / targetCals) * fillPct))}
+              fill="none"
+            />
+          </>
         )}
         {/* Carbs segment - base */}
         <circle
@@ -197,18 +223,31 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
         />
         {/* Carbs segment - overage darker overlay */}
         {carbsOver && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#3D7BC7"
-            strokeWidth={stroke}
-            strokeLinecap="butt"
-            strokeDasharray={`${carbsDash - (circumference * (carbs.target / targetCals) * fillPct)} ${circumference - (carbsDash - (circumference * (carbs.target / targetCals) * fillPct))}`}
-            strokeDashoffset={-(proteinDash + fatDash + (circumference * (carbs.target / targetCals) * fillPct))}
-            fill="none"
-            opacity="0.9"
-          />
+          <>
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#3D7BC7"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${carbsDash - (circumference * (carbs.target / targetCals) * fillPct)} ${circumference - (carbsDash - (circumference * (carbs.target / targetCals) * fillPct))}`}
+              strokeDashoffset={-(proteinDash + fatDash + (circumference * (carbs.target / targetCals) * fillPct))}
+              fill="none"
+              opacity="0.9"
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#stripe-C)"
+              strokeWidth={stroke}
+              strokeLinecap="butt"
+              strokeDasharray={`${carbsDash - (circumference * (carbs.target / targetCals) * fillPct)} ${circumference - (carbsDash - (circumference * (carbs.target / targetCals) * fillPct))}`}
+              strokeDashoffset={-(proteinDash + fatDash + (circumference * (carbs.target / targetCals) * fillPct))}
+              fill="none"
+            />
+          </>
         )}
       </>
     );
@@ -249,20 +288,35 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 strokeDasharray={`${Math.min(dash, circumference)} ${circumference - Math.min(dash, circumference)}`}
                 fill="none"
               />
-              {/* Darker overage overlay */}
+              {/* Darker overage overlay with diagonal lines */}
               {current > target && (
-                <circle
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  stroke={label === "P" ? "#B84444" : label === "F" ? "#C9A000" : "#3D7BC7"}
-                  strokeWidth={stroke}
-                  strokeLinecap="butt"
-                  strokeDasharray={`${Math.min(dash - circumference, circumference * 0.5)} ${circumference - Math.min(dash - circumference, circumference * 0.5)}`}
-                  strokeDashoffset={-circumference}
-                  fill="none"
-                  opacity="0.9"
-                />
+                <>
+                  {/* Darker base */}
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={label === "P" ? "#B84444" : label === "F" ? "#C9A000" : "#3D7BC7"}
+                    strokeWidth={stroke}
+                    strokeLinecap="butt"
+                    strokeDasharray={`${Math.min(dash - circumference, circumference * 0.5)} ${circumference - Math.min(dash - circumference, circumference * 0.5)}`}
+                    strokeDashoffset={-circumference}
+                    fill="none"
+                    opacity="0.9"
+                  />
+                  {/* Diagonal stripe overlay */}
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={`url(#stripe-${label})`}
+                    strokeWidth={stroke}
+                    strokeLinecap="butt"
+                    strokeDasharray={`${Math.min(dash - circumference, circumference * 0.5)} ${circumference - Math.min(dash - circumference, circumference * 0.5)}`}
+                    strokeDashoffset={-circumference}
+                    fill="none"
+                  />
+                </>
               )}
             </>
           )}

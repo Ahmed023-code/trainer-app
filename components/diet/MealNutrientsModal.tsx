@@ -324,80 +324,38 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
             <div className="flex flex-col items-center py-8">
               <MealCalorieRing meal={meal} />
             </div>
-            {/* Nutrients with targets (progress bars) */}
-            {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => (
-              <div key={category}>
-                <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
-                  {category}
-                </h2>
-                <div className="space-y-3">
-                  {nutrients.map((nutrient) => {
-                    const percentage = nutrient.target
-                      ? Math.min((nutrient.amount / nutrient.target) * 100, 100)
-                      : 0;
-                    const hasTarget = nutrient.target !== undefined;
-                    const isComplete = hasTarget && nutrient.target && nutrient.amount >= nutrient.target;
-                    const difference = hasTarget && nutrient.target
-                      ? nutrient.amount - nutrient.target
-                      : 0;
-                    const formattedDifference = Math.abs(difference) < 1
-                      ? Math.abs(difference).toFixed(1)
-                      : Math.round(Math.abs(difference));
+            {/* Nutrients with targets (simple display, skip Macronutrients) */}
+            {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => {
+              // Skip Macronutrients category
+              if (category === 'Macronutrients') return null;
 
-                    return (
-                      <div key={nutrient.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                              {nutrient.name}
-                            </span>
-                            {isComplete && (
-                              <span className="text-green-500 text-base leading-none">✓</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
-                              {nutrient.amount < 0.01 && nutrient.amount > 0
-                                ? "< 0.01"
-                                : nutrient.amount < 1
-                                ? nutrient.amount.toFixed(2)
-                                : Math.round(nutrient.amount)}{" "}
-                              {hasTarget && nutrient.target && (
-                                <span className="text-neutral-500 dark:text-neutral-400">
-                                  / {Math.round(nutrient.target)}
-                                </span>
-                              )}
-                              {" "}
-                              <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                                {nutrient.unit}
-                              </span>
-                            </span>
-                            {hasTarget && !isComplete && difference !== 0 && (
-                              <span className={`text-xs font-medium min-w-[60px] text-right ${
-                                difference > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-red-600 dark:text-red-500'
-                              }`}>
-                                {difference > 0 ? '+' : '-'}{formattedDifference} {difference > 0 ? 'over' : 'under'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {hasTarget && (
-                          <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full transition-all duration-300"
-                              style={{
-                                width: `${percentage}%`,
-                                backgroundColor: NUTRIENT_COLORS[nutrient.id] || '#1f00ff'
-                              }}
-                            />
-                          </div>
-                        )}
+              return (
+                <div key={category}>
+                  <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
+                    {category}
+                  </h2>
+                  <div className="space-y-3">
+                    {nutrients.map((nutrient) => (
+                      <div key={nutrient.id} className="flex items-center justify-between py-2">
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                          {nutrient.name}
+                        </span>
+                        <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                          {nutrient.amount < 0.01 && nutrient.amount > 0
+                            ? "< 0.01"
+                            : nutrient.amount < 1
+                            ? nutrient.amount.toFixed(2)
+                            : Math.round(nutrient.amount)}{" "}
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {nutrient.unit}
+                          </span>
+                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Show More Button */}
             {Object.keys(nutrientsWithoutTargets).length > 0 && (
