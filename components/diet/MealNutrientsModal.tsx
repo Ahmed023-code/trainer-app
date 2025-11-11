@@ -322,7 +322,7 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
           <div className="space-y-8">
             {/* Large Calorie Ring */}
             <div className="flex flex-col items-center py-8">
-              <MealCalorieRing nutrientTotals={nutrientTotals} />
+              <MealCalorieRing meal={meal} />
             </div>
             {/* Nutrients with targets (progress bars) */}
             {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => (
@@ -453,16 +453,23 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
 }
 
 // Large Calorie Ring Component
-function MealCalorieRing({ nutrientTotals }: { nutrientTotals: Map<number, NutrientData> }) {
+function MealCalorieRing({ meal }: { meal: Meal }) {
   const size = 200;
   const stroke = 18;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Get macro data
-  const protein = nutrientTotals.get(1003)?.amount || 0;
-  const fat = nutrientTotals.get(1004)?.amount || 0;
-  const carbs = nutrientTotals.get(1005)?.amount || 0;
+  // Calculate actual meal macros from items
+  let protein = 0;
+  let fat = 0;
+  let carbs = 0;
+
+  for (const item of meal.items) {
+    const quantity = item.quantity || 1;
+    protein += (item.protein || 0) * quantity;
+    fat += (item.fat || 0) * quantity;
+    carbs += (item.carbs || 0) * quantity;
+  }
 
   // Calculate calories from macros
   const proteinCals = protein * 4;
@@ -503,7 +510,7 @@ function MealCalorieRing({ nutrientTotals }: { nutrientTotals: Map<number, Nutri
             r={radius}
             stroke="#F87171"
             strokeWidth={stroke}
-            strokeLinecap="round"
+            strokeLinecap="butt"
             strokeDasharray={`${proteinDash} ${circumference - proteinDash}`}
             strokeDashoffset="0"
             fill="none"
@@ -515,7 +522,7 @@ function MealCalorieRing({ nutrientTotals }: { nutrientTotals: Map<number, Nutri
             r={radius}
             stroke="#FACC15"
             strokeWidth={stroke}
-            strokeLinecap="round"
+            strokeLinecap="butt"
             strokeDasharray={`${fatDash} ${circumference - fatDash}`}
             strokeDashoffset={-proteinDash}
             fill="none"
@@ -527,7 +534,7 @@ function MealCalorieRing({ nutrientTotals }: { nutrientTotals: Map<number, Nutri
             r={radius}
             stroke="#60A5FA"
             strokeWidth={stroke}
-            strokeLinecap="round"
+            strokeLinecap="butt"
             strokeDasharray={`${carbsDash} ${circumference - carbsDash}`}
             strokeDashoffset={-(proteinDash + fatDash)}
             fill="none"
@@ -550,19 +557,19 @@ function MealCalorieRing({ nutrientTotals }: { nutrientTotals: Map<number, Nutri
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F87171' }} />
           <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            Protein: <span className="font-semibold">{Math.round(proteinCals)}</span>
+            Protein: <span className="font-semibold">{Math.round(protein)}g</span> <span className="text-neutral-500 dark:text-neutral-400">({Math.round(proteinCals)} cal)</span>
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FACC15' }} />
           <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            Fat: <span className="font-semibold">{Math.round(fatCals)}</span>
+            Fat: <span className="font-semibold">{Math.round(fat)}g</span> <span className="text-neutral-500 dark:text-neutral-400">({Math.round(fatCals)} cal)</span>
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#60A5FA' }} />
           <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            Carbs: <span className="font-semibold">{Math.round(carbsCals)}</span>
+            Carbs: <span className="font-semibold">{Math.round(carbs)}g</span> <span className="text-neutral-500 dark:text-neutral-400">({Math.round(carbsCals)} cal)</span>
           </span>
         </div>
       </div>
