@@ -206,109 +206,69 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
   if (!isOpen || !meal) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <button
-        className="fixed inset-0 z-[100011] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
-        aria-label="Close"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="fixed inset-0 z-[100012] flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl flex flex-col">
-          {/* Header */}
-          <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
-            <h2 className="font-semibold text-xl">{meal.name} - Nutrient Breakdown</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-              {meal.items.length} food item{meal.items.length === 1 ? "" : "s"}
-            </p>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {loading && (
-              <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-                Loading nutrient data...
-              </div>
-            )}
-
-            {!loading && nutrientTotals.size === 0 && (
-              <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-                No nutrient data available for this meal.
-              </div>
-            )}
-
-            {!loading && nutrientTotals.size > 0 && (
-              <div className="space-y-6">
-                {/* Debug: Show total nutrient count */}
-                <div className="text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 p-2 rounded">
-                  Found {nutrientTotals.size} unique nutrients | {Object.keys(organizedNutrients).length} categories
-                </div>
-
-                {/* Show all nutrients organized by category */}
-                {Object.keys(organizedNutrients).length > 0 ? (
-                  Object.entries(organizedNutrients).map(([category, nutrients]) => (
-                    <div key={category}>
-                      <h3 className="font-semibold text-lg mb-3 text-neutral-700 dark:text-neutral-300">
-                        {category}
-                      </h3>
-                      <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-xl overflow-hidden">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-neutral-200 dark:border-neutral-700">
-                              <th className="text-left p-3 text-sm font-semibold text-neutral-600 dark:text-neutral-400">
-                                Nutrient
-                              </th>
-                              <th className="text-right p-3 text-sm font-semibold text-neutral-600 dark:text-neutral-400">
-                                Amount
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {nutrients.map((nutrient, idx) => (
-                              <tr
-                                key={nutrient.id}
-                                className={idx !== nutrients.length - 1 ? "border-b border-neutral-200 dark:border-neutral-700" : ""}
-                              >
-                                <td className="p-3 text-sm">
-                                  {nutrient.name}
-                                  <span className="text-xs text-neutral-400 ml-1">(ID: {nutrient.id})</span>
-                                </td>
-                                <td className="p-3 text-sm text-right tabular-nums font-medium">
-                                  {nutrient.amount < 0.01 && nutrient.amount > 0
-                                    ? "< 0.01"
-                                    : nutrient.amount.toFixed(nutrient.amount < 1 ? 2 : 1)}{" "}
-                                  {nutrient.unit}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-neutral-500">
-                    <p>No categorized nutrients found.</p>
-                    <p className="text-xs mt-2">This might indicate an issue with nutrient data loading.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
-            <button
-              className="w-full px-4 py-3 rounded-full bg-accent-diet text-black font-medium hover:opacity-90 transition-opacity"
-              onClick={onClose}
-            >
-              Close
-            </button>
-          </div>
+    <div className="fixed inset-0 z-[100015] bg-white dark:bg-neutral-900 overflow-y-auto">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-neutral-900/95 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-between p-4">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold">{meal.name}</h1>
+          <div className="w-10" /> {/* Spacer for alignment */}
         </div>
       </div>
-    </>
+
+      {/* Content */}
+      <div className="p-4 max-w-2xl mx-auto pb-20">
+        {loading && (
+          <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+            Loading nutrient data...
+          </div>
+        )}
+
+        {!loading && nutrientTotals.size === 0 && (
+          <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+            No nutrient data available for this meal.
+          </div>
+        )}
+
+        {!loading && nutrientTotals.size > 0 && (
+          <div className="space-y-8">
+            {/* Show all nutrients organized by category */}
+            {Object.entries(organizedNutrients).map(([category, nutrients]) => (
+              <div key={category}>
+                <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
+                  {category}
+                </h2>
+                <div className="space-y-3">
+                  {nutrients.map((nutrient) => (
+                    <div key={nutrient.id} className="flex items-center justify-between py-2">
+                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {nutrient.name}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                        {nutrient.amount < 0.01 && nutrient.amount > 0
+                          ? "< 0.01"
+                          : nutrient.amount < 1
+                          ? nutrient.amount.toFixed(2)
+                          : Math.round(nutrient.amount)}{" "}
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {nutrient.unit}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
