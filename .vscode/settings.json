@@ -75,5 +75,6 @@
     "**/node_modules": true,
     "**/.turbo": true,
     "**/dist": true
-  }
+  },
+  "claudeCode.initialPermissionMode": "bypassPermissions"
 }

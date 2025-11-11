@@ -113,20 +113,25 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
     <section className="space-y-3 overflow-visible">
       {/* Improved layout: meal name on top, macros below, icons on right */}
       <div className="w-full flex items-start gap-3">
-        {/* Left: Meal info (name + macros) */}
+        {/* Left: Meal info (name + food count + macros) */}
         <div className="text-left flex-1 min-w-0">
           {/* Meal name */}
-          <h2 className="font-semibold text-base mb-1.5">{meal.name}</h2>
+          <h2 className="font-semibold text-base">{meal.name}</h2>
 
-          {/* Macro summary */}
-          <div className="flex items-center gap-2 tabular-nums flex-wrap">
+          {/* Food count */}
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">
+            {meal.items?.length || 0} food{(meal.items?.length || 0) !== 1 ? 's' : ''}
+          </p>
+
+          {/* Macro summary - always on same row with optimized sizing for narrow screens */}
+          <div className="flex items-center gap-1.5 tabular-nums">
             {/* Cal */}
             <span
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap"
+              className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
               style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
             >
               <span
-                className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[8px]"
+                className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px]"
                 style={{ backgroundColor: "#34D399", color: "#000" }}
               >
                 Cal
@@ -141,11 +146,11 @@ export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, 
             ].map(({ label, col, bg, v }) => (
               <span
                 key={label}
-                className="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+                className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
                 style={{ color: col, backgroundColor: bg }}
               >
                 <span
-                  className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full mr-1 leading-none text-center text-[8px]"
+                  className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px]"
                   style={{ backgroundColor: col, color: "#000" }}
                 >
                   {label}
