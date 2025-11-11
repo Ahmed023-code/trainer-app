@@ -90,14 +90,45 @@ export default function FoodLibraryModal({
         const result = await searchFoods(debounced, { limit: 100, includeCache: true });
 
         if (!cancelled) {
-          // Sort results: prioritize foundation_food and sr_legacy_food over branded_food
+          // Sort results: prioritize exact matches, then basic foods, then by relevance
           const sortedResults = result.offlineResults.sort((a, b) => {
+            const queryLower = debounced.toLowerCase();
+            const aDesc = a.description.toLowerCase();
+            const bDesc = b.description.toLowerCase();
+
+            // 1. Exact match first
+            const aExact = aDesc === queryLower;
+            const bExact = bDesc === queryLower;
+            if (aExact && !bExact) return -1;
+            if (!aExact && bExact) return 1;
+
+            // 2. Starts with query
+            const aStarts = aDesc.startsWith(queryLower);
+            const bStarts = bDesc.startsWith(queryLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+
+            // 3. Word starts with query (e.g., "egg" matches "hard boiled egg")
+            const aWordStart = aDesc.split(' ').some(word => word.startsWith(queryLower));
+            const bWordStart = bDesc.split(' ').some(word => word.startsWith(queryLower));
+            if (aWordStart && !bWordStart) return -1;
+            if (!aWordStart && bWordStart) return 1;
+
+            // 4. Prioritize basic foods (foundation_food, sr_legacy_food)
             const aIsBasic = a.data_type === 'foundation_food' || a.data_type === 'sr_legacy_food';
             const bIsBasic = b.data_type === 'foundation_food' || b.data_type === 'sr_legacy_food';
-
             if (aIsBasic && !bIsBasic) return -1;
             if (!aIsBasic && bIsBasic) return 1;
-            return 0; // Keep original order within same type
+
+            // 5. Shorter descriptions (simpler foods) first
+            const aLen = aDesc.length;
+            const bLen = bDesc.length;
+            if (Math.abs(aLen - bLen) > 10) { // Only consider if significant difference
+              return aLen - bLen;
+            }
+
+            // 6. Keep original Fuse.js order
+            return 0;
           });
 
           setSearchResults(sortedResults);
@@ -989,7 +1020,7 @@ export default function FoodLibraryModal({
                   }
                 }}
               >
-                Load More ({Math.min(10, searchResults.length - displayedCount)} more)
+                Load More
               </button>
             </li>
           )}
