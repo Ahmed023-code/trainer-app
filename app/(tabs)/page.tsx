@@ -477,6 +477,7 @@ export default function HomePage() {
         isOpen={showNutritionOverview}
         meals={readDiet(todayISO).meals}
         goals={dietSummary.goals}
+        dateISO={todayISO}
         onClose={() => setShowNutritionOverview(false)}
       />
     </main>

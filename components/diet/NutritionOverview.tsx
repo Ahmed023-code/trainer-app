@@ -3,12 +3,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { X, ChevronLeft } from "lucide-react";
 import { getFoodDetails } from "@/lib/usda-db-v2";
+import { readDiet } from "@/stores/storageV2";
+import { getWeekRange, getMonthMatrix, get3MonthsMatrices } from "@/utils/dateHelpers";
 import type { Meal } from "./types";
 
 type Props = {
   isOpen: boolean;
   meals: Meal[];
   goals: { cal: number; p: number; c: number; f: number };
+  dateISO: string;
   onClose: () => void;
 };
 
@@ -55,16 +58,62 @@ const NUTRIENT_COLORS: Record<number, string> = {
 // Time period tabs
 type TimePeriod = "today" | "week" | "month" | "3months" | "year";
 
-export default function NutritionOverview({ isOpen, meals, goals, onClose }: Props) {
+export default function NutritionOverview({ isOpen, meals, goals, dateISO, onClose }: Props) {
   const [nutrientTotals, setNutrientTotals] = useState<Map<number, NutrientData>>(new Map());
   const [loading, setLoading] = useState(false);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
   const [showAllNutrients, setShowAllNutrients] = useState(false);
+  const [daysLogged, setDaysLogged] = useState(0);
+
+  // Get all dates for the selected time period
+  const getDatesForPeriod = (period: TimePeriod): string[] => {
+    if (period === "today") {
+      return [dateISO];
+    } else if (period === "week") {
+      const { dates } = getWeekRange(dateISO);
+      return dates;
+    } else if (period === "month") {
+      const matrix = getMonthMatrix(dateISO);
+      return matrix.flat().filter((d): d is string => d !== null);
+    } else if (period === "3months") {
+      const matrices = get3MonthsMatrices(dateISO);
+      return matrices.flatMap(m => m.matrix.flat()).filter((d): d is string => d !== null);
+    } else { // year
+      const [year] = dateISO.split("-").map(Number);
+      const dates: string[] = [];
+      for (let month = 0; month < 12; month++) {
+        const monthMatrix = getMonthMatrix(`${year}-${String(month + 1).padStart(2, '0')}-01`);
+        dates.push(...monthMatrix.flat().filter((d): d is string => d !== null));
+      }
+      return dates;
+    }
+  };
+
+  // Fetch all meals for the time period
+  const fetchMealsForPeriod = async (period: TimePeriod): Promise<Meal[]> => {
+    const dates = getDatesForPeriod(period);
+    const allMeals: Meal[] = [];
+    let daysWithData = 0;
+
+    for (const date of dates) {
+      const diet = readDiet(date);
+      const hasMeals = diet.meals.some(meal => meal.items.length > 0);
+
+      if (hasMeals) {
+        daysWithData++;
+        allMeals.push(...diet.meals);
+      }
+    }
+
+    setDaysLogged(daysWithData);
+    return allMeals;
+  };
 
   useEffect(() => {
     if (!isOpen) {
       setNutrientTotals(new Map());
       setShowAllNutrients(false);
+      setDaysLogged(0);
       return;
     }
 
@@ -74,9 +123,12 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
     (async () => {
       const totals = new Map<number, NutrientData>();
 
+      // Fetch meals for the selected time period
+      const mealsToProcess = timePeriod === "today" ? meals : await fetchMealsForPeriod(timePeriod);
+
       // First, calculate simple macro totals (to match MacroRings display)
       let simpleMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-      for (const meal of meals) {
+      for (const meal of mealsToProcess) {
         for (const item of meal.items) {
           const quantity = item.quantity || 1;
           simpleMacros.calories += (item.calories || 0) * quantity;
@@ -86,8 +138,15 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
         }
       }
 
+      // For time periods other than "today", calculate averages
+      const divisor = timePeriod === "today" ? 1 : Math.max(daysLogged, 1);
+      simpleMacros.calories /= divisor;
+      simpleMacros.protein /= divisor;
+      simpleMacros.carbs /= divisor;
+      simpleMacros.fat /= divisor;
+
       // Load nutrient data for each food item
-      for (const meal of meals) {
+      for (const meal of mealsToProcess) {
         for (const item of meal.items) {
           const quantity = item.quantity || 1;
 
@@ -131,6 +190,16 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
             // Custom food - nutrients already counted in simpleMacros
           }
         }
+      }
+
+      // Apply averaging to micronutrients as well
+      if (timePeriod !== "today") {
+        totals.forEach((nutrient, id) => {
+          totals.set(id, {
+            ...nutrient,
+            amount: nutrient.amount / divisor
+          });
+        });
       }
 
       // Set main macros from simple totals (to match MacroRings)
@@ -192,7 +261,7 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
     return () => {
       cancelled = true;
     };
-  }, [isOpen, meals, goals]);
+  }, [isOpen, meals, goals, dateISO, timePeriod]);
 
   // Categorize nutrient by name
   const categorizeNutrient = (name: string): string => {
@@ -354,6 +423,20 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
 
         {!loading && nutrientTotals.size > 0 && (
           <div className="space-y-8">
+            {/* Calorie Ring divided by macros */}
+            <div className="flex flex-col items-center justify-center py-6">
+              <CalorieBreakdownRing
+                protein={nutrientTotals.get(1003)?.amount || 0}
+                carbs={nutrientTotals.get(1005)?.amount || 0}
+                fat={nutrientTotals.get(1004)?.amount || 0}
+                calorieTarget={goals.cal}
+              />
+              {timePeriod !== "today" && daysLogged > 0 && (
+                <div className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                  Average over {daysLogged} day{daysLogged !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
             {/* Nutrients with targets (progress bars) */}
             {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => (
               <div key={category}>
@@ -402,7 +485,7 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
                                 {nutrient.unit}
                               </span>
                             </span>
-                            {hasTarget && !isComplete && difference !== 0 && (
+                            {hasTarget && difference !== 0 && (
                               <span className={`text-xs font-medium min-w-[60px] text-right ${
                                 difference > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-red-600 dark:text-red-500'
                               }`}>
@@ -477,6 +560,136 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Calorie Breakdown Ring Component
+function CalorieBreakdownRing({
+  protein,
+  carbs,
+  fat,
+  calorieTarget
+}: {
+  protein: number;
+  carbs: number;
+  fat: number;
+  calorieTarget: number;
+}) {
+  const size = 200;
+  const stroke = 20;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // Calculate calories from each macro
+  const proteinCals = protein * 4;
+  const carbsCals = carbs * 4;
+  const fatCals = fat * 9;
+  const totalCals = proteinCals + carbsCals + fatCals;
+
+  // Calculate percentages of the ring
+  const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33;
+  const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33;
+  const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
+
+  // Calculate how much of the circle to fill based on goal (can exceed 100%)
+  const fillPct = calorieTarget > 0 ? totalCals / calorieTarget : 0;
+  const totalFill = circumference * Math.min(fillPct, 1.5); // Cap at 150% visually
+
+  // Calculate dash lengths for each segment
+  const proteinDash = totalFill * proteinPct;
+  const fatDash = totalFill * fatPct;
+  const carbsDash = totalFill * carbsPct;
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      {/* Ring */}
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg] w-full h-full">
+          {/* Track */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeOpacity="0.15"
+            strokeWidth={stroke}
+            fill="none"
+            className="text-neutral-400 dark:text-neutral-600"
+          />
+          {/* Protein segment */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#F87171"
+            strokeWidth={stroke}
+            strokeLinecap="butt"
+            strokeDasharray={`${Math.min(proteinDash, circumference)} ${circumference - Math.min(proteinDash, circumference)}`}
+            strokeDashoffset="0"
+            fill="none"
+          />
+          {/* Fat segment */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#FACC15"
+            strokeWidth={stroke}
+            strokeLinecap="butt"
+            strokeDasharray={`${Math.min(fatDash, circumference)} ${circumference - Math.min(fatDash, circumference)}`}
+            strokeDashoffset={-proteinDash}
+            fill="none"
+          />
+          {/* Carbs segment */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#60A5FA"
+            strokeWidth={stroke}
+            strokeLinecap="butt"
+            strokeDasharray={`${Math.min(carbsDash, circumference)} ${circumference - Math.min(carbsDash, circumference)}`}
+            strokeDashoffset={-(proteinDash + fatDash)}
+            fill="none"
+          />
+        </svg>
+
+        {/* Center content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100">
+            {Math.round(totalCals)}
+          </div>
+          <div className="text-sm text-neutral-500 dark:text-neutral-400">
+            of {calorieTarget} kcal
+          </div>
+          <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+            {Math.round((totalCals / calorieTarget) * 100)}%
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex gap-6 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F87171' }} />
+          <span className="text-neutral-700 dark:text-neutral-300">
+            Protein {Math.round(protein)}g ({Math.round(proteinCals)} kcal)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FACC15' }} />
+          <span className="text-neutral-700 dark:text-neutral-300">
+            Fat {Math.round(fat)}g ({Math.round(fatCals)} kcal)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#60A5FA' }} />
+          <span className="text-neutral-700 dark:text-neutral-300">
+            Carbs {Math.round(carbs)}g ({Math.round(carbsCals)} kcal)
+          </span>
+        </div>
       </div>
     </div>
   );
