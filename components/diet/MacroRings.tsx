@@ -93,10 +93,16 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
     <div className="flex flex-col items-center justify-center flex-1 min-w-0 shrink">
       <div className="relative" style={{ width: size, height: size }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 rotate-[-90deg] w-full h-full">
-          {/* Define stripe pattern for overage */}
+          {/* Define stripe pattern for overage - unique per ring */}
           <defs>
-            <pattern id={`stripe-${label}`} patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
-              <rect width="2" height="4" fill={color} opacity="0.4" />
+            <pattern
+              id={`stripe-${label}-${current}-${target}`}
+              patternUnits="userSpaceOnUse"
+              width="4"
+              height="4"
+              patternTransform="rotate(45)"
+            >
+              <rect width="2" height="4" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
             </pattern>
           </defs>
 
@@ -121,11 +127,12 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
             strokeLinecap="butt"
             strokeDasharray={`${normalDash} ${circumference - normalDash}`}
             fill="none"
+            style={{ transition: 'stroke-dasharray 0.3s ease-in-out' }}
           />
           {/* Overage portion - shows amount beyond 100% with darker color and stripes */}
           {current > target && (
-            <>
-              {/* Darker base - shows the portion over 100% */}
+            <g className="overflow-layer">
+              {/* Darker base layer - shows the portion over 100% */}
               <circle
                 cx={size / 2}
                 cy={size / 2}
@@ -133,24 +140,26 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 stroke={label === "Cal" ? "#1F9D6D" : label === "P" ? "#B84444" : label === "F" ? "#C9A000" : "#3D7BC7"}
                 strokeWidth={stroke}
                 strokeLinecap="butt"
-                strokeDasharray={`${dash - normalDash} ${circumference}`}
+                strokeDasharray={`${dash - normalDash} ${circumference - (dash - normalDash)}`}
                 strokeDashoffset={-normalDash}
                 fill="none"
-                opacity="0.9"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
               />
-              {/* Diagonal stripe overlay for overage */}
+              {/* Diagonal stripe pattern overlay */}
               <circle
                 cx={size / 2}
                 cy={size / 2}
                 r={radius}
-                stroke={`url(#stripe-${label})`}
+                stroke={`url(#stripe-${label}-${current}-${target})`}
                 strokeWidth={stroke}
                 strokeLinecap="butt"
-                strokeDasharray={`${dash - normalDash} ${circumference}`}
+                strokeDasharray={`${dash - normalDash} ${circumference - (dash - normalDash)}`}
                 strokeDashoffset={-normalDash}
                 fill="none"
+                opacity="0.6"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
               />
-            </>
+            </g>
           )}
         </svg>
 
