@@ -335,12 +335,12 @@ export default function ExerciseSection({
         {/* Expanded sets section */}
         <div
           className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            isExpanded ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'
+            isExpanded ? 'max-h-[2000px] opacity-100 mt-6' : 'max-h-0 opacity-0'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
           {exercise.sets && exercise.sets.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-5 px-2">
               {/* Column headers */}
               <div className="grid grid-cols-[minmax(24px,30px),minmax(80px,90px),minmax(50px,70px),minmax(50px,1fr),minmax(40px,50px),minmax(36px,50px)] gap-1 px-1 text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
                 <div className="text-center">Set</div>
@@ -352,7 +352,7 @@ export default function ExerciseSection({
               </div>
 
               {/* Sets list - pill-shaped rows */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {exercise.sets.map((s, i) => {
                   const isQuickAdd =
                     !exercise.source || exercise.source === 'quick-add'
