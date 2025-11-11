@@ -286,7 +286,7 @@ export default function WorkoutPage() {
             onDragEnter={handleDragEnter(i)}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop(i)}
-            className={`rounded-xl border backdrop-blur p-1 shadow-sm overflow-visible cursor-move hover:shadow-md transition-all ${
+            className={`rounded-xl border backdrop-blur p-4 shadow-sm overflow-visible cursor-move hover:shadow-md transition-all ${
               draggedIndex === i
                 ? 'opacity-50 border-accent-workout'
                 : dragOverIndex === i
