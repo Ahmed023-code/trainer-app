@@ -89,8 +89,8 @@ export default function NutritionOverview({ isOpen, meals, goals, dateISO, onClo
     }
   };
 
-  // Fetch all meals for the time period
-  const fetchMealsForPeriod = async (period: TimePeriod): Promise<Meal[]> => {
+  // Fetch all meals for the time period and return both meals and days logged
+  const fetchMealsForPeriod = async (period: TimePeriod): Promise<{ meals: Meal[], daysWithData: number }> => {
     const dates = getDatesForPeriod(period);
     const allMeals: Meal[] = [];
     let daysWithData = 0;
@@ -105,8 +105,7 @@ export default function NutritionOverview({ isOpen, meals, goals, dateISO, onClo
       }
     }
 
-    setDaysLogged(daysWithData);
-    return allMeals;
+    return { meals: allMeals, daysWithData };
   };
 
   useEffect(() => {
@@ -124,7 +123,18 @@ export default function NutritionOverview({ isOpen, meals, goals, dateISO, onClo
       const totals = new Map<number, NutrientData>();
 
       // Fetch meals for the selected time period
-      const mealsToProcess = timePeriod === "today" ? meals : await fetchMealsForPeriod(timePeriod);
+      let mealsToProcess: Meal[];
+      let daysWithData = 1;
+
+      if (timePeriod === "today") {
+        mealsToProcess = meals;
+        daysWithData = 1;
+      } else {
+        const result = await fetchMealsForPeriod(timePeriod);
+        mealsToProcess = result.meals;
+        daysWithData = result.daysWithData;
+        setDaysLogged(daysWithData);
+      }
 
       // First, calculate simple macro totals (to match MacroRings display)
       let simpleMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -139,7 +149,7 @@ export default function NutritionOverview({ isOpen, meals, goals, dateISO, onClo
       }
 
       // For time periods other than "today", calculate averages
-      const divisor = timePeriod === "today" ? 1 : Math.max(daysLogged, 1);
+      const divisor = timePeriod === "today" ? 1 : Math.max(daysWithData, 1);
       simpleMacros.calories /= divisor;
       simpleMacros.protein /= divisor;
       simpleMacros.carbs /= divisor;
