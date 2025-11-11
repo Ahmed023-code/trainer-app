@@ -209,7 +209,7 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
             fill="none"
             opacity="0.9"
           />
-        }}
+        )}
       </>
     );
   };
