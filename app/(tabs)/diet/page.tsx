@@ -491,6 +491,7 @@ export default function DietPage() {
         isOpen={showNutritionOverview}
         meals={meals}
         goals={goals}
+        dateISO={dateISO}
         onClose={() => setShowNutritionOverview(false)}
       />
     </main>
