@@ -90,15 +90,22 @@ export default function FoodLibraryModal({
         const result = await searchFoods(debounced, { limit: 100, includeCache: true });
 
         if (!cancelled) {
-          // Sort results: prioritize basic ingredients over branded foods
+          // Sort results: prioritize foundation > legacy > branded
           const sortedResults = result.offlineResults.sort((a, b) => {
             const queryLower = debounced.toLowerCase();
             const aDesc = a.description.toLowerCase();
             const bDesc = b.description.toLowerCase();
 
-            // Check if basic food (foundation/legacy) vs branded
-            const aIsBasic = a.data_type === 'foundation_food' || a.data_type === 'sr_legacy_food';
-            const bIsBasic = b.data_type === 'foundation_food' || b.data_type === 'sr_legacy_food';
+            // Assign priority scores for data types
+            const getTypePriority = (dataType: string) => {
+              if (dataType === 'foundation_food') return 1;
+              if (dataType === 'sr_legacy_food') return 2;
+              if (dataType === 'branded_food') return 3;
+              return 4; // survey_food or other
+            };
+
+            const aPriority = getTypePriority(a.data_type);
+            const bPriority = getTypePriority(b.data_type);
 
             // 1. Exact match (singular or plural)
             const aExact = aDesc === queryLower || aDesc === queryLower + 's' || aDesc === queryLower.slice(0, -1);
@@ -106,9 +113,8 @@ export default function FoodLibraryModal({
             if (aExact && !bExact) return -1;
             if (!aExact && bExact) return 1;
 
-            // 2. Basic foods first (before considering string matches)
-            if (aIsBasic && !bIsBasic) return -1;
-            if (!aIsBasic && bIsBasic) return 1;
+            // 2. Prioritize by data type: foundation > legacy > branded
+            if (aPriority !== bPriority) return aPriority - bPriority;
 
             // 3. For items of same type, prioritize starts with query
             const aStarts = aDesc.startsWith(queryLower);
