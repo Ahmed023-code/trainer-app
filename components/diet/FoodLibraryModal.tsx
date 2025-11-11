@@ -44,6 +44,7 @@ export default function FoodLibraryModal({
 
   // ---------- data state ----------
   const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
+  const [displayedCount, setDisplayedCount] = useState(10); // Start with 10 results
   const [loadedDetails, setLoadedDetails] = useState<Record<number, FoodDetails>>({});
   const [loading, setLoading] = useState(false);
   const [dbLoading, setDbLoading] = useState(false);
@@ -72,6 +73,7 @@ export default function FoodLibraryModal({
   useEffect(() => {
     if (!isOpen || !debounced) {
       setSearchResults([]);
+      setDisplayedCount(10);
       return;
     }
 
@@ -85,15 +87,26 @@ export default function FoodLibraryModal({
           setDbLoading(true);
         }
 
-        const result = await searchFoods(debounced, { limit: 50, includeCache: true });
+        const result = await searchFoods(debounced, { limit: 100, includeCache: true });
 
         if (!cancelled) {
-          setSearchResults(result.offlineResults);
+          // Sort results: prioritize foundation_food and sr_legacy_food over branded_food
+          const sortedResults = result.offlineResults.sort((a, b) => {
+            const aIsBasic = a.data_type === 'foundation_food' || a.data_type === 'sr_legacy_food';
+            const bIsBasic = b.data_type === 'foundation_food' || b.data_type === 'sr_legacy_food';
+
+            if (aIsBasic && !bIsBasic) return -1;
+            if (!aIsBasic && bIsBasic) return 1;
+            return 0; // Keep original order within same type
+          });
+
+          setSearchResults(sortedResults);
+          setDisplayedCount(10); // Reset to 10 on new search
           setLoading(false);
           setDbLoading(false);
 
           // Preload nutrition data for first 10 results
-          const preloadFoods = result.offlineResults.slice(0, 10);
+          const preloadFoods = sortedResults.slice(0, 10);
           for (const food of preloadFoods) {
             if (!loadedDetails[food.fdc_id]) {
               loadFoodDetails(food.fdc_id);
@@ -104,6 +117,7 @@ export default function FoodLibraryModal({
         console.error('Search error:', err);
         if (!cancelled) {
           setSearchResults([]);
+          setDisplayedCount(10);
           setLoading(false);
           setDbLoading(false);
         }
@@ -170,6 +184,7 @@ export default function FoodLibraryModal({
     if (!isOpen) {
       setQuery("");
       setDebounced("");
+      setDisplayedCount(10);
       setActiveIdx(null);
       setMode("servings");
       setSelPortionIdx(0);
@@ -654,7 +669,7 @@ export default function FoodLibraryModal({
             </li>
           )}
 
-          {searchResults.map((food, i) => {
+          {searchResults.slice(0, displayedCount).map((food, i) => {
             const isActive = activeIdx === i;
             const hasDetails = !!loadedDetails[food.fdc_id];
 
@@ -955,6 +970,29 @@ export default function FoodLibraryModal({
               </li>
             );
           })}
+
+          {/* Load More button */}
+          {!loading && searchResults.length > displayedCount && (
+            <li className="py-3">
+              <button
+                className="w-full px-4 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium transition-colors"
+                onClick={async () => {
+                  const nextCount = displayedCount + 10;
+                  setDisplayedCount(nextCount);
+
+                  // Preload nutrition data for next 10 results
+                  const nextFoods = searchResults.slice(displayedCount, nextCount);
+                  for (const food of nextFoods) {
+                    if (!loadedDetails[food.fdc_id]) {
+                      await loadFoodDetails(food.fdc_id);
+                    }
+                  }
+                }}
+              >
+                Load More ({Math.min(10, searchResults.length - displayedCount)} more)
+              </button>
+            </li>
+          )}
         </ul>
       </div>
 
