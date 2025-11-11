@@ -198,6 +198,7 @@ export default function HomePage() {
       writeWeight(todayISO, value);
       setSavedWeight(value);
       setWeightValue(value.toFixed(1));
+      setIsEditingWeight(false);
     }
   };
 
@@ -340,20 +341,21 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Mini sparkline */}
-        {weightHistory.length > 1 && (
-          <div className="px-4 pb-4">
-            <div className="flex items-end gap-1 h-12">
-              {weightHistory.map((w, i) => {
-                const max = Math.max(...weightHistory);
-                const height = (w / max) * 100;
-                return (
-                  <div key={i} className="flex-1 bg-accent-home/30 rounded-t" style={{ height: `${height}%` }} />
-                );
-              })}
+          {/* Mini sparkline */}
+          {weightHistory.length > 1 && (
+            <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-end gap-1 h-12">
+                {weightHistory.map((w, i) => {
+                  const max = Math.max(...weightHistory);
+                  const height = (w / max) * 100;
+                  return (
+                    <div key={i} className="flex-1 bg-accent-home/30 rounded-t" style={{ height: `${height}%` }} />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Diet summary */}

@@ -215,6 +215,7 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
       writeWeight(dateISO, value);
       setSavedWeight(value);
       setWeightValue(value.toFixed(1));
+      setIsEditingWeight(false);
     }
   };
 
@@ -371,7 +372,7 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
 
           {/* Mini sparkline */}
           {weightHistory.length > 1 && (
-            <div className="px-4 pb-4">
+            <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
               <div className="flex items-end gap-1 h-12">
                 {weightHistory.map((w, i) => {
                   const max = Math.max(...weightHistory);
@@ -384,6 +385,7 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
             </div>
           )}
         </div>
+      </div>
 
         {/* Diet summary */}
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
