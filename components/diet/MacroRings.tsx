@@ -103,13 +103,18 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
     const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
 
     // Calculate how much of the circle to fill based on goal
-    const fillPct = Math.max(0, Math.min(1, targetCals > 0 ? totalCals / targetCals : 0));
+    const isOverTarget = totalCals > targetCals;
+    const fillPct = targetCals > 0 ? Math.min(totalCals / targetCals, 1) : 0;
+    const overPct = isOverTarget && targetCals > 0 ? (totalCals - targetCals) / targetCals : 0;
     const totalFill = circumference * fillPct;
 
     // Calculate dash lengths for each segment
     const proteinDash = totalFill * proteinPct;
     const fatDash = totalFill * fatPct;
     const carbsDash = totalFill * carbsPct;
+
+    // Overage segment (if over target)
+    const overDash = circumference * Math.min(overPct, 0.5); // Cap excess visual at 50% more
 
     return (
       <>
@@ -160,6 +165,21 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
           strokeDashoffset={-(proteinDash + fatDash)}
           fill="none"
         />
+        {/* Overage segment (darker/desaturated) */}
+        {isOverTarget && overDash > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#DC2626"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${overDash} ${circumference - overDash}`}
+            strokeDashoffset={0}
+            fill="none"
+            opacity="0.6"
+          />
+        )}
       </>
     );
   };
@@ -181,7 +201,7 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 fill="none"
                 className="text-neutral-400 dark:text-neutral-600"
               />
-              {/* Progress */}
+              {/* Progress up to target */}
               <circle
                 cx={size / 2}
                 cy={size / 2}
@@ -189,9 +209,24 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
                 stroke={color}
                 strokeWidth={stroke}
                 strokeLinecap="round"
-                strokeDasharray={`${dash} ${circumference - dash}`}
+                strokeDasharray={`${Math.min(dash, circumference)} ${circumference - Math.min(dash, circumference)}`}
                 fill="none"
               />
+              {/* Overage indicator (if over target) */}
+              {current > target && (
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  stroke="#DC2626"
+                  strokeWidth={stroke}
+                  strokeLinecap="round"
+                  strokeDasharray={`${Math.min((dash - circumference), circumference * 0.5)} ${circumference}`}
+                  strokeDashoffset={0}
+                  fill="none"
+                  opacity="0.6"
+                />
+              )}
             </>
           )}
         </svg>

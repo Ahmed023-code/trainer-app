@@ -314,19 +314,19 @@ export default function NutritionOverview({ isOpen, meals, goals, onClose }: Pro
           <div className="w-10" /> {/* Spacer for alignment */}
         </div>
 
-        {/* Time period tabs */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
+        {/* Time period tabs - optimized for narrow screens */}
+        <div className="flex gap-1.5 px-4 pb-3">
           {[
             { key: 'today' as TimePeriod, label: 'Today' },
-            { key: 'week' as TimePeriod, label: '1 Week' },
-            { key: 'month' as TimePeriod, label: '1 Month' },
-            { key: '3months' as TimePeriod, label: '3 Months' },
-            { key: 'year' as TimePeriod, label: '1 Year' }
+            { key: 'week' as TimePeriod, label: 'Week' },
+            { key: 'month' as TimePeriod, label: 'Month' },
+            { key: '3months' as TimePeriod, label: '3M' },
+            { key: 'year' as TimePeriod, label: 'Year' }
           ].map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setTimePeriod(key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`flex-1 px-2 py-2 rounded-full text-xs font-medium transition-colors ${
                 timePeriod === key
                   ? 'bg-accent-diet text-black'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'

@@ -76,5 +76,6 @@
     "**/.turbo": true,
     "**/dist": true
   },
-  "claudeCode.initialPermissionMode": "bypassPermissions"
+  "claudeCode.initialPermissionMode": "bypassPermissions",
+  "vercelVSCode.accessToken": "WVdQ0faM13Uxf4oe6A3utviJ"
 }
