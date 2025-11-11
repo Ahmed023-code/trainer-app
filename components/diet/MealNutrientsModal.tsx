@@ -320,6 +320,10 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
 
         {!loading && nutrientTotals.size > 0 && (
           <div className="space-y-8">
+            {/* Large Calorie Ring */}
+            <div className="flex flex-col items-center py-8">
+              <MealCalorieRing nutrientTotals={nutrientTotals} />
+            </div>
             {/* Nutrients with targets (progress bars) */}
             {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => (
               <div key={category}>
@@ -443,6 +447,124 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Large Calorie Ring Component
+function MealCalorieRing({ nutrientTotals }: { nutrientTotals: Map<number, NutrientData> }) {
+  const size = 200;
+  const stroke = 18;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // Get macro data
+  const protein = nutrientTotals.get(1003)?.amount || 0;
+  const fat = nutrientTotals.get(1004)?.amount || 0;
+  const carbs = nutrientTotals.get(1005)?.amount || 0;
+
+  // Calculate calories from macros
+  const proteinCals = protein * 4;
+  const fatCals = fat * 9;
+  const carbsCals = carbs * 4;
+  const totalCals = proteinCals + fatCals + carbsCals;
+
+  // Calculate proportions
+  const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33;
+  const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33;
+  const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
+
+  // Calculate dash lengths
+  const proteinDash = circumference * proteinPct;
+  const fatDash = circumference * fatPct;
+  const carbsDash = circumference * carbsPct;
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      {/* Ring */}
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 rotate-[-90deg] w-full h-full">
+          {/* Track */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeOpacity="0.15"
+            strokeWidth={stroke}
+            fill="none"
+            className="text-neutral-400 dark:text-neutral-600"
+          />
+          {/* Protein segment */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#F87171"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${proteinDash} ${circumference - proteinDash}`}
+            strokeDashoffset="0"
+            fill="none"
+          />
+          {/* Fat segment */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#FACC15"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${fatDash} ${circumference - fatDash}`}
+            strokeDashoffset={-proteinDash}
+            fill="none"
+          />
+          {/* Carbs segment */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#60A5FA"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${carbsDash} ${circumference - carbsDash}`}
+            strokeDashoffset={-(proteinDash + fatDash)}
+            fill="none"
+          />
+        </svg>
+
+        {/* Center total calories */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100">
+            {Math.round(totalCals)}
+          </div>
+          <div className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">
+            calories
+          </div>
+        </div>
+      </div>
+
+      {/* Macro breakdown legend */}
+      <div className="flex items-center gap-4 flex-wrap justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F87171' }} />
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">
+            Protein: <span className="font-semibold">{Math.round(proteinCals)}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FACC15' }} />
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">
+            Fat: <span className="font-semibold">{Math.round(fatCals)}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#60A5FA' }} />
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">
+            Carbs: <span className="font-semibold">{Math.round(carbsCals)}</span>
+          </span>
+        </div>
       </div>
     </div>
   );

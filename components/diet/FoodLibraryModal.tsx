@@ -122,20 +122,39 @@ export default function FoodLibraryModal({
             if (aStarts && !bStarts) return -1;
             if (!aStarts && bStarts) return 1;
 
-            // 4. Word starts with query (e.g., "egg" matches "hard boiled egg")
+            // 4. Prioritize simple modifiers (ends with comma or 's') before other modifiers
+            // e.g., "apple, raw" or "apples" before "apple pie" or "apple juice"
+            const getSimpleModifier = (desc: string, query: string) => {
+              // Remove the query from start to see what remains
+              if (desc.startsWith(query)) {
+                const remainder = desc.slice(query.length).trim();
+                // Check if it's just plural 's' or starts with a comma (simple modifiers)
+                if (remainder === '' || remainder === 's' || remainder.startsWith(',')) {
+                  return true;
+                }
+              }
+              return false;
+            };
+
+            const aSimple = getSimpleModifier(aDesc, queryLower);
+            const bSimple = getSimpleModifier(bDesc, queryLower);
+            if (aSimple && !bSimple) return -1;
+            if (!aSimple && bSimple) return 1;
+
+            // 5. Word starts with query (e.g., "egg" matches "hard boiled egg")
             const aWordStart = aDesc.split(' ').some(word => word.startsWith(queryLower));
             const bWordStart = bDesc.split(' ').some(word => word.startsWith(queryLower));
             if (aWordStart && !bWordStart) return -1;
             if (!aWordStart && bWordStart) return 1;
 
-            // 5. Shorter descriptions (simpler foods) first
+            // 6. Shorter descriptions (simpler foods) first
             const aLen = aDesc.length;
             const bLen = bDesc.length;
             if (Math.abs(aLen - bLen) > 10) { // Only consider if significant difference
               return aLen - bLen;
             }
 
-            // 6. Keep original Fuse.js order
+            // 7. Keep original Fuse.js order
             return 0;
           });
 
