@@ -100,23 +100,8 @@ export default function DietPage() {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
 
-  // Diet settings menu (three-dot menu next to rings)
-  const [showDietMenu, setShowDietMenu] = useState(false);
-
   // Nutrition overview page
   const [showNutritionOverview, setShowNutritionOverview] = useState(false);
-
-  // Close diet menu on scroll
-  useEffect(() => {
-    if (!showDietMenu) return;
-
-    const handleScroll = () => {
-      setShowDietMenu(false);
-    };
-
-    window.addEventListener('scroll', handleScroll, true);
-    return () => window.removeEventListener('scroll', handleScroll, true);
-  }, [showDietMenu]);
 
   // Track if bubble was triggered from Log Meal button - no longer needed
   // const [bubbleSource, setBubbleSource] = useState<"fab" | "button">("fab");
@@ -320,46 +305,17 @@ export default function DietPage() {
         />
       </header>
 
-      {/* CHANGE: Removed key from wrapper to prevent duplicate ring mounting on date change */}
-      {/* Rings under header with integrated three-dot menu */}
-      <div className="mt-3 flex justify-center transition-all duration-150 relative">
+      {/* Rings under header with action buttons */}
+      <div className="mt-3 flex justify-center transition-all duration-150">
         <MacroRings
           key={`${goals.cal}-${goals.p}-${goals.c}-${goals.f}`}
           calories={{ label: "Cal", color: "var(--accent-diet)", current: Math.round(totals.calories), target: goals.cal }}
           protein={{ label: "P",   color: "#F87171", current: Math.round(totals.protein),  target: goals.p }}
-          fat={{     label: "F",   color: "var(--accent-diet-fat)", current: Math.round(totals.fat),      target: goals.f }}
+          fat={{     label: "F",   color: "#FACC15", current: Math.round(totals.fat),      target: goals.f }}
           carbs={{   label: "C",   color: "#60A5FA", current: Math.round(totals.carbs),    target: goals.c }}
-          onMenuClick={() => setShowDietMenu(!showDietMenu)}
+          onDietDetailsClick={() => setShowNutritionOverview(true)}
+          onDietSettingsClick={() => window.location.href = `/settings/diet?returnDate=${dateISO}`}
         />
-
-        {/* Menu popup positioned relative to rings - rectangular box with pill buttons */}
-        {showDietMenu && (
-          <>
-            <button
-              className="fixed inset-0 z-[99998]"
-              aria-label="Close"
-              onClick={() => setShowDietMenu(false)}
-            />
-            <div className="absolute right-0 top-full mt-2 z-[99999] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-3 w-48 space-y-2">
-              <button
-                onClick={() => {
-                  setShowNutritionOverview(true);
-                  setShowDietMenu(false);
-                }}
-                className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              >
-                Diet Details
-              </button>
-              <a
-                href={`/settings/diet?returnDate=${dateISO}`}
-                className="block w-full text-center px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                onClick={() => setShowDietMenu(false)}
-              >
-                Diet Settings
-              </a>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Meals list in page-level bubbles */}

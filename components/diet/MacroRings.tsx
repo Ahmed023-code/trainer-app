@@ -14,13 +14,15 @@ export default function MacroRings({
   protein,
   fat,
   carbs,
-  onMenuClick,
+  onDietDetailsClick,
+  onDietSettingsClick,
 }: {
   calories: RingProps;
   protein: RingProps;
   fat: RingProps;
   carbs: RingProps;
-  onMenuClick?: () => void;
+  onDietDetailsClick?: () => void;
+  onDietSettingsClick?: () => void;
 }) {
   // Force re-render when props change by tracking them in state
   const [rings, setRings] = useState([calories, protein, fat, carbs]);
@@ -31,22 +33,34 @@ export default function MacroRings({
   }, [calories.target, protein.target, fat.target, carbs.target, calories.current, protein.current, fat.current, carbs.current]);
 
   return (
-    <button
-      onClick={onMenuClick}
-      className="rounded-3xl p-3 sm:p-4 border border-neutral-200 dark:border-neutral-800 bg-white/10 dark:bg-neutral-900/30 backdrop-blur shadow-inner relative transition-colors hover:bg-white/15 dark:hover:bg-neutral-900/40 cursor-pointer w-full"
-      aria-label="Open diet menu"
-    >
+    <div className="rounded-3xl p-3 sm:p-4 border border-neutral-200 dark:border-neutral-800 bg-white/10 dark:bg-neutral-900/30 backdrop-blur shadow-inner w-full">
       <div className="flex items-center gap-2 sm:gap-4 justify-around">
         {rings.map((r) => (
-          <Ring key={`${r.label}-${r.target}`} {...r} />
+          <Ring key={`${r.label}-${r.target}`} {...r} protein={protein} fat={fat} carbs={carbs} />
         ))}
       </div>
-    </button>
+
+      {/* Action buttons */}
+      <div className="flex gap-2 mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+        <button
+          onClick={onDietDetailsClick}
+          className="flex-1 px-3 py-2 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+        >
+          Diet Details
+        </button>
+        <button
+          onClick={onDietSettingsClick}
+          className="flex-1 px-3 py-2 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+        >
+          Diet Settings
+        </button>
+      </div>
+    </div>
   );
 }
 
-function Ring({ label, current, target, color }: RingProps) {
-  const size = 62; // diameter - reduced for better fit
+function Ring({ label, current, target, color, protein, fat, carbs }: RingProps & { protein?: RingProps; fat?: RingProps; carbs?: RingProps }) {
+  const size = 62;
   const stroke = 6;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -59,44 +73,127 @@ function Ring({ label, current, target, color }: RingProps) {
   const getBgColor = () => {
     switch (label) {
       case "Cal":
-        return "#34D3991F"; // Green with transparency
+        return "#34D3991F";
       case "P":
-        return "#F871711F"; // Red with transparency
+        return "#F871711F";
       case "F":
-        return "#FACC151F"; // Yellow with transparency
+        return "#FACC151F";
       case "C":
-        return "#60A5FA1F"; // Blue with transparency
+        return "#60A5FA1F";
       default:
         return `${color}22`;
     }
+  };
+
+  // For calorie ring, create multi-colored segments based on macro ratios
+  const renderCalorieRing = () => {
+    if (!protein || !fat || !carbs) return null;
+
+    const totalCals = protein.current * 4 + carbs.current * 4 + fat.current * 9;
+    const targetCals = target;
+
+    // Calculate proportions based on current consumption
+    const proteinCals = protein.current * 4;
+    const carbsCals = carbs.current * 4;
+    const fatCals = fat.current * 9;
+
+    // Calculate percentages of the ring
+    const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33;
+    const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33;
+    const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
+
+    // Calculate how much of the circle to fill based on goal
+    const fillPct = Math.max(0, Math.min(1, targetCals > 0 ? totalCals / targetCals : 0));
+    const totalFill = circumference * fillPct;
+
+    // Calculate dash lengths for each segment
+    const proteinDash = totalFill * proteinPct;
+    const fatDash = totalFill * fatPct;
+    const carbsDash = totalFill * carbsPct;
+
+    return (
+      <>
+        {/* Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeOpacity="0.15"
+          strokeWidth={stroke}
+          fill="none"
+          className="text-neutral-400 dark:text-neutral-600"
+        />
+        {/* Protein segment */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#F87171"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${proteinDash} ${circumference - proteinDash}`}
+          strokeDashoffset="0"
+          fill="none"
+        />
+        {/* Fat segment */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#FACC15"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${fatDash} ${circumference - fatDash}`}
+          strokeDashoffset={-proteinDash}
+          fill="none"
+        />
+        {/* Carbs segment */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#60A5FA"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${carbsDash} ${circumference - carbsDash}`}
+          strokeDashoffset={-(proteinDash + fatDash)}
+          fill="none"
+        />
+      </>
+    );
   };
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 min-w-0 shrink">
       <div className="relative" style={{ width: size, height: size }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 rotate-[-90deg] w-full h-full">
-          {/* Track */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="currentColor"
-            strokeOpacity="0.15"
-            strokeWidth={stroke}
-            fill="none"
-            className="text-neutral-400 dark:text-neutral-600"
-          />
-          {/* Progress */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke={color}
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${circumference - dash}`}
-            fill="none"
-          />
+          {label === "Cal" ? renderCalorieRing() : (
+            <>
+              {/* Track */}
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="currentColor"
+                strokeOpacity="0.15"
+                strokeWidth={stroke}
+                fill="none"
+                className="text-neutral-400 dark:text-neutral-600"
+              />
+              {/* Progress */}
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke={color}
+                strokeWidth={stroke}
+                strokeLinecap="round"
+                strokeDasharray={`${dash} ${circumference - dash}`}
+                fill="none"
+              />
+            </>
+          )}
         </svg>
 
         {/* Center label as colored circle with black text */}
