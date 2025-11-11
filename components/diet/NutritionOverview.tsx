@@ -616,16 +616,17 @@ function CalorieBreakdownRing({
   const carbsOver = carbs > carbsTarget;
   const fatOver = fat > fatTarget;
 
-  // Calculate percentages of the ring
+  // Calculate percentages of the ring based on caloric contribution
   const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33;
   const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33;
   const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34;
 
-  // Calculate how much of the circle to fill based on goal (can exceed 100%)
+  // Ring circumference represents either total consumed (if over goal) or proportional to goal (if under)
+  // This ensures the ring always shows the full consumption relative to the goal
   const fillPct = calorieTarget > 0 ? totalCals / calorieTarget : 0;
-  const totalFill = circumference * Math.min(fillPct, 1.5); // Cap at 150% visually
+  const totalFill = fillPct <= 1 ? circumference * fillPct : circumference;
 
-  // Calculate dash lengths for each segment
+  // Calculate dash lengths for each segment based on their caloric proportion
   const proteinDash = totalFill * proteinPct;
   const fatDash = totalFill * fatPct;
   const carbsDash = totalFill * carbsPct;
