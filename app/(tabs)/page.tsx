@@ -236,41 +236,82 @@ export default function HomePage() {
       {/* Weight card */}
       <div className="rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 px-5 shadow-sm">
         <label className="block text-sm font-medium mb-2">Weight</label>
-        <div className="flex gap-2 items-center">
-          <input
-            type="number"
-            inputMode="decimal"
-            value={weightValue}
-            onChange={(e) => {
-              setWeightValue(e.target.value);
-              // Allow editing by resetting saved state when value changes
-              const newValue = parseFloat(e.target.value);
-              if (savedWeight !== null && !isNaN(newValue) && newValue !== savedWeight) {
-                setSavedWeight(null);
-              }
-            }}
-            placeholder="0.0"
-            className="flex-1 rounded-full border border-neutral-300 dark:border-neutral-700 px-4 py-2 bg-white dark:bg-neutral-900 text-sm"
-          />
-          {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
+
+        {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
+          // Edit mode - show plus/minus buttons with weight in center
+          <div className="flex items-center justify-center gap-3">
             <button
-              onClick={saveWeight}
-              className="px-3 py-1.5 rounded-full bg-accent-home text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              onClick={() => {
+                const current = parseFloat(weightValue) || 0;
+                const newValue = Math.max(0, current - 0.5);
+                setWeightValue(newValue.toFixed(1));
+              }}
+              className="w-10 h-10 rounded-full border-2 border-accent-home text-accent-home flex items-center justify-center hover:bg-accent-home/10 transition-colors font-bold text-xl"
             >
-              Save
+              −
             </button>
-          ) : (
+
+            <div className="flex-1 text-center">
+              <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100">
+                {parseFloat(weightValue) || 0}
+              </div>
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">kg</div>
+            </div>
+
+            <button
+              onClick={() => {
+                const current = parseFloat(weightValue) || 0;
+                const newValue = current + 0.5;
+                setWeightValue(newValue.toFixed(1));
+              }}
+              className="w-10 h-10 rounded-full border-2 border-accent-home text-accent-home flex items-center justify-center hover:bg-accent-home/10 transition-colors font-bold text-xl"
+            >
+              +
+            </button>
+          </div>
+        ) : (
+          // Saved mode - show weight with checkmark and edit button
+          <div className="flex items-center justify-center gap-3">
             <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 text-green-600 dark:text-green-400">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
-          )}
-        </div>
+
+            <div className="flex-1 text-center">
+              <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100">
+                {savedWeight.toFixed(1)}
+              </div>
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">kg</div>
+            </div>
+
+            <button
+              onClick={() => setSavedWeight(null)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              aria-label="Edit weight"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-neutral-600 dark:text-neutral-400">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Save button below weight display when in edit mode */}
+        {(savedWeight === null || parseFloat(weightValue) !== savedWeight) && (
+          <div className="mt-3">
+            <button
+              onClick={saveWeight}
+              className="w-full py-2 rounded-full bg-accent-home text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Save Weight
+            </button>
+          </div>
+        )}
 
         {/* Mini sparkline */}
         {weightHistory.length > 1 && (
-          <div className="mt-2 flex items-end gap-1 h-12">
+          <div className="mt-3 flex items-end gap-1 h-12">
             {weightHistory.map((w, i) => {
               const max = Math.max(...weightHistory);
               const height = (w / max) * 100;
