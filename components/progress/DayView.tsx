@@ -368,7 +368,6 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
                 </button>
               </div>
             )}
-          </div>
 
           {/* Mini sparkline */}
           {weightHistory.length > 1 && (
@@ -387,8 +386,8 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
         </div>
       </div>
 
-        {/* Diet summary */}
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
+      {/* Diet summary */}
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-medium">Diet Summary</h2>
             <button

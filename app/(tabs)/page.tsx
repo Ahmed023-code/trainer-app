@@ -339,7 +339,6 @@ export default function HomePage() {
               </button>
             </div>
           )}
-        </div>
 
           {/* Mini sparkline */}
           {weightHistory.length > 1 && (
@@ -358,188 +357,142 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Diet summary */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Diet Summary</h2>
-          <button
-            onClick={openDiet}
-            className="tap-target px-3 py-1.5 rounded-full bg-accent-diet text-white text-xs font-medium hover:opacity-90 transition-opacity"
-          >
-            Open Diet
-          </button>
-        </div>
-
-        {/* Layout: Large calorie ring on left, smaller macro rings in 2x2 grid on right */}
-        <div className="flex gap-4 items-center">
-          {/* Large calorie ring on left */}
-          <div className="flex-shrink-0">
-            <CalorieRing
-              current={Math.round(dietSummary.calories)}
-              target={dietSummary.goals.cal}
-              protein={Math.round(dietSummary.protein)}
-              carbs={Math.round(dietSummary.carbs)}
-              fat={Math.round(dietSummary.fat)}
-              proteinTarget={dietSummary.goals.p}
-              carbsTarget={dietSummary.goals.c}
-              fatTarget={dietSummary.goals.f}
-            />
-          </div>
-
-          {/* Smaller macro rings in 2x2 grid on right */}
-          <div className="flex-1 grid grid-cols-2 gap-3">
-            <SmallMacroRing
-              label="Cal"
-              current={Math.round(dietSummary.calories)}
-              target={dietSummary.goals.cal}
-              color="var(--accent-diet)"
-            />
-            <SmallMacroRing
-              label="P"
-              current={Math.round(dietSummary.protein)}
-              target={dietSummary.goals.p}
-              color="#F87171"
-            />
-            <SmallMacroRing
-              label="F"
-              current={Math.round(dietSummary.fat)}
-              target={dietSummary.goals.f}
-              color="#FACC15"
-            />
-            <SmallMacroRing
-              label="C"
-              current={Math.round(dietSummary.carbs)}
-              target={dietSummary.goals.c}
-              color="#60A5FA"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Workout summary */}
+      {/* Reminders inbox */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Workout Summary</h2>
+          <h2 className="font-medium">Inbox</h2>
           <button
-            onClick={openWorkout}
-            className="tap-target px-3 py-1.5 rounded-full bg-[var(--accent-workout)] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+            onClick={() => setShowReminderModal(true)}
+            className="tap-target px-3 py-1.5 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black text-xs font-medium hover:opacity-90 transition-opacity"
           >
-            Open Workout
+            + New Reminder
           </button>
         </div>
-        {workoutSummary.exerciseCount > 0 ? (
-          <>
-            <div className="grid grid-cols-2 gap-4 text-center mb-3">
-              <div>
-                <div className="text-2xl font-bold">{workoutSummary.exerciseCount}</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">Exercises</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{workoutSummary.setCount}</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">Sets</div>
-              </div>
-            </div>
-            {(() => {
-              const bodyParts = getWorkoutBodyParts(workoutSummary.exerciseNames);
-              return bodyParts ? (
-                <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800">
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Body Parts</div>
-                  <div className="text-sm font-medium">{bodyParts}</div>
-                </div>
-              ) : null;
-            })()}
-          </>
+
+        {reminders.length === 0 ? (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-4">
+            No reminders yet
+          </p>
         ) : (
-          <div className="text-center py-4 text-sm text-neutral-500 dark:text-neutral-400">
-            No workout logged
+          <div className="space-y-2">
+            {reminders.map((reminder) => (
+              <div
+                key={reminder.id}
+                className="flex items-start gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50"
+              >
+                <input
+                  type="checkbox"
+                  checked={reminder.done}
+                  onChange={() => toggleReminder(reminder.id)}
+                  className="mt-0.5 w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-neutral-500 cursor-pointer"
+                />
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`text-sm font-medium ${
+                      reminder.done
+                        ? "line-through text-neutral-400 dark:text-neutral-500"
+                        : "text-neutral-900 dark:text-neutral-100"
+                    }`}
+                  >
+                    {reminder.title}
+                  </p>
+                  {reminder.dueISO && (
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      Due: {new Date(reminder.dueISO).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeReminder(reminder.id)}
+                  className="text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  aria-label="Delete reminder"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Reminders */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">Reminders</h2>
-          <button
-            onClick={() => setShowReminderModal(true)}
-            className="tap-target w-8 h-8 rounded-full bg-accent-home text-white flex items-center justify-center text-lg font-bold"
-            aria-label="Add reminder"
-          >
-            +
-          </button>
-        </div>
-        {reminders.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">No reminders</p>
-        ) : (
-          <ul className="space-y-2">
-            {reminders.slice(0, 3).map((r) => (
-              <li key={r.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={r.done}
-                  onChange={() => toggleReminder(r.id)}
-                  className="w-4 h-4 rounded"
-                />
-                <span className={`text-sm flex-1 ${r.done ? "line-through text-neutral-400" : ""}`}>
-                  {r.title}
-                </span>
-                <button
-                  onClick={() => removeReminder(r.id)}
-                  className="text-xs text-red-500 hover:underline"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Reminder modal */}
+      {/* New Reminder Modal */}
       {showReminderModal && (
-        <div className="fixed inset-0 z-[10000] bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4">Add Reminder</h3>
-            <div className="space-y-3">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowReminderModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-neutral-900 rounded-2xl p-6 max-w-md w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-4">New Reminder</h3>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Title</label>
+                <label className="block text-sm font-medium mb-2">Title</label>
                 <input
                   type="text"
                   value={reminderTitle}
                   onChange={(e) => setReminderTitle(e.target.value)}
-                  className="input"
-                  placeholder="Reminder title"
+                  placeholder="What do you need to remember?"
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Due Date (optional)</label>
+                <label className="block text-sm font-medium mb-2">Due Date (Optional)</label>
                 <input
                   type="date"
                   value={reminderDue}
                   onChange={(e) => setReminderDue(e.target.value)}
-                  className="input"
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-500"
                 />
               </div>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={() => setShowReminderModal(false)}
-                className="flex-1 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddReminder}
-                className="flex-1 py-2 rounded-full bg-accent-home text-white font-medium hover:opacity-90 transition-opacity"
-              >
-                Add
-              </button>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    if (reminderTitle.trim()) {
+                      addReminder(
+                        reminderTitle,
+                        reminderDue || undefined
+                      );
+                      setReminderTitle("");
+                      setReminderDue("");
+                      setShowReminderModal(false);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black font-medium hover:opacity-90 transition-opacity"
+                >
+                  Add Reminder
+                </button>
+                <button
+                  onClick={() => {
+                    setShowReminderModal(false);
+                    setReminderTitle("");
+                    setReminderDue("");
+                  }}
+                  className="px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-600 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Nutrition overview page */}
+      {/* Nutrition Overview Modal */}
       <NutritionOverview
         isOpen={showNutritionOverview}
         meals={readDiet(todayISO).meals}
