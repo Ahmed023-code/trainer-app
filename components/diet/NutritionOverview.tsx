@@ -440,6 +440,9 @@ export default function NutritionOverview({ isOpen, meals, goals, dateISO, onClo
                 carbs={nutrientTotals.get(1005)?.amount || 0}
                 fat={nutrientTotals.get(1004)?.amount || 0}
                 calorieTarget={goals.cal}
+                proteinTarget={goals.p}
+                carbsTarget={goals.c}
+                fatTarget={goals.f}
               />
               {timePeriod !== "today" && daysLogged > 0 && (
                 <div className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
@@ -580,23 +583,38 @@ function CalorieBreakdownRing({
   protein,
   carbs,
   fat,
-  calorieTarget
+  calorieTarget,
+  proteinTarget,
+  carbsTarget,
+  fatTarget
 }: {
   protein: number;
   carbs: number;
   fat: number;
   calorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
 }) {
   const size = 200;
   const stroke = 20;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Calculate calories from each macro
+  // Calculate calories from each macro (current and target)
   const proteinCals = protein * 4;
   const carbsCals = carbs * 4;
   const fatCals = fat * 9;
   const totalCals = proteinCals + carbsCals + fatCals;
+
+  const proteinTargetCals = proteinTarget * 4;
+  const carbsTargetCals = carbsTarget * 4;
+  const fatTargetCals = fatTarget * 9;
+
+  // Check if each macro is over its target
+  const proteinOver = protein > proteinTarget;
+  const carbsOver = carbs > carbsTarget;
+  const fatOver = fat > fatTarget;
 
   // Calculate percentages of the ring
   const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33;
@@ -612,11 +630,62 @@ function CalorieBreakdownRing({
   const fatDash = totalFill * fatPct;
   const carbsDash = totalFill * carbsPct;
 
+  // For each macro, calculate normal portion and overage portion
+  const getSegmentPortions = (
+    current: number,
+    target: number,
+    calsPerGram: number,
+    totalDash: number
+  ) => {
+    if (current <= target) {
+      return { normalDash: totalDash, overageDash: 0 };
+    }
+    const normalPortion = target / current;
+    const normalDash = totalDash * normalPortion;
+    const overageDash = totalDash - normalDash;
+    return { normalDash, overageDash };
+  };
+
+  const proteinPortions = getSegmentPortions(protein, proteinTarget, 4, proteinDash);
+  const fatPortions = getSegmentPortions(fat, fatTarget, 9, fatDash);
+  const carbsPortions = getSegmentPortions(carbs, carbsTarget, 4, carbsDash);
+
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Ring */}
       <div className="relative" style={{ width: size, height: size }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg] w-full h-full">
+          {/* Define stripe patterns for overage */}
+          <defs>
+            <pattern
+              id="stripe-protein-breakdown"
+              patternUnits="userSpaceOnUse"
+              width="4"
+              height="4"
+              patternTransform="rotate(45)"
+            >
+              <rect width="2" height="4" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+            </pattern>
+            <pattern
+              id="stripe-fat-breakdown"
+              patternUnits="userSpaceOnUse"
+              width="4"
+              height="4"
+              patternTransform="rotate(45)"
+            >
+              <rect width="2" height="4" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+            </pattern>
+            <pattern
+              id="stripe-carbs-breakdown"
+              patternUnits="userSpaceOnUse"
+              width="4"
+              height="4"
+              patternTransform="rotate(45)"
+            >
+              <rect width="2" height="4" fill="currentColor" className="text-white dark:text-black" opacity="0.5" />
+            </pattern>
+          </defs>
+
           {/* Track */}
           <circle
             cx={size / 2}
@@ -628,7 +697,8 @@ function CalorieBreakdownRing({
             fill="none"
             className="text-neutral-400 dark:text-neutral-600"
           />
-          {/* Protein segment */}
+
+          {/* Protein segment - normal portion */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -636,11 +706,43 @@ function CalorieBreakdownRing({
             stroke="#F87171"
             strokeWidth={stroke}
             strokeLinecap="butt"
-            strokeDasharray={`${Math.min(proteinDash, circumference)} ${circumference - Math.min(proteinDash, circumference)}`}
+            strokeDasharray={`${proteinPortions.normalDash} ${circumference - proteinPortions.normalDash}`}
             strokeDashoffset="0"
             fill="none"
+            style={{ transition: 'stroke-dasharray 0.3s ease-in-out' }}
           />
-          {/* Fat segment */}
+          {/* Protein segment - overage portion */}
+          {proteinOver && (
+            <g>
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="#B84444"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${proteinPortions.overageDash} ${circumference - proteinPortions.overageDash}`}
+                strokeDashoffset={-proteinPortions.normalDash}
+                fill="none"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
+              />
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="url(#stripe-protein-breakdown)"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${proteinPortions.overageDash} ${circumference - proteinPortions.overageDash}`}
+                strokeDashoffset={-proteinPortions.normalDash}
+                fill="none"
+                opacity="0.6"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
+              />
+            </g>
+          )}
+
+          {/* Fat segment - normal portion */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -648,11 +750,43 @@ function CalorieBreakdownRing({
             stroke="#FACC15"
             strokeWidth={stroke}
             strokeLinecap="butt"
-            strokeDasharray={`${Math.min(fatDash, circumference)} ${circumference - Math.min(fatDash, circumference)}`}
+            strokeDasharray={`${fatPortions.normalDash} ${circumference - fatPortions.normalDash}`}
             strokeDashoffset={-proteinDash}
             fill="none"
+            style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
           />
-          {/* Carbs segment */}
+          {/* Fat segment - overage portion */}
+          {fatOver && (
+            <g>
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="#C9A000"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${fatPortions.overageDash} ${circumference - fatPortions.overageDash}`}
+                strokeDashoffset={-(proteinDash + fatPortions.normalDash)}
+                fill="none"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
+              />
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="url(#stripe-fat-breakdown)"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${fatPortions.overageDash} ${circumference - fatPortions.overageDash}`}
+                strokeDashoffset={-(proteinDash + fatPortions.normalDash)}
+                fill="none"
+                opacity="0.6"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
+              />
+            </g>
+          )}
+
+          {/* Carbs segment - normal portion */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -660,10 +794,41 @@ function CalorieBreakdownRing({
             stroke="#60A5FA"
             strokeWidth={stroke}
             strokeLinecap="butt"
-            strokeDasharray={`${Math.min(carbsDash, circumference)} ${circumference - Math.min(carbsDash, circumference)}`}
+            strokeDasharray={`${carbsPortions.normalDash} ${circumference - carbsPortions.normalDash}`}
             strokeDashoffset={-(proteinDash + fatDash)}
             fill="none"
+            style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
           />
+          {/* Carbs segment - overage portion */}
+          {carbsOver && (
+            <g>
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="#3D7BC7"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${carbsPortions.overageDash} ${circumference - carbsPortions.overageDash}`}
+                strokeDashoffset={-(proteinDash + fatDash + carbsPortions.normalDash)}
+                fill="none"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
+              />
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="url(#stripe-carbs-breakdown)"
+                strokeWidth={stroke}
+                strokeLinecap="butt"
+                strokeDasharray={`${carbsPortions.overageDash} ${circumference - carbsPortions.overageDash}`}
+                strokeDashoffset={-(proteinDash + fatDash + carbsPortions.normalDash)}
+                fill="none"
+                opacity="0.6"
+                style={{ transition: 'stroke-dasharray 0.3s ease-in-out, stroke-dashoffset 0.3s ease-in-out' }}
+              />
+            </g>
+          )}
         </svg>
 
         {/* Center content */}
