@@ -10,54 +10,82 @@ type Props = {
   onClose: () => void;
 };
 
-// Nutrient categories for organization
-const NUTRIENT_CATEGORIES = {
-  "Macronutrients": [1008, 1003, 1004, 1005, 1079, 2000], // Energy, Protein, Fat, Carbs, Fiber, Sugars
-  "Vitamins": [1106, 1109, 1114, 1162, 1165, 1166, 1167, 1170, 1175, 1176, 1177, 1178, 1180, 1183, 1184, 1185, 1186, 1187, 1190], // A, C, D, K, B vitamins, etc
-  "Minerals": [1087, 1089, 1090, 1091, 1092, 1093, 1095, 1096, 1098, 1099, 1100, 1101, 1103, 1104, 1097, 1102], // Calcium, Iron, Magnesium, Phosphorus, Potassium, Sodium, Zinc, etc
-  "Fats": [1258, 1259, 1292, 1293], // Saturated, Monounsaturated, Polyunsaturated, Trans
-  "Amino Acids": [1210, 1211, 1212, 1213, 1214, 1215, 1216, 1217, 1218, 1219, 1220, 1221], // Essential amino acids
+// Nutrient targets (daily recommended values) - same as NutritionOverview
+const NUTRIENT_TARGETS: Record<number, number> = {
+  1008: 2400, // Energy (kcal) - not used for meal view
+  1003: 180,  // Protein (g) - not used for meal view
+  1004: 70,   // Total Fat (g) - not used for meal view
+  1005: 240,  // Carbs (g) - not used for meal view
+  1079: 30,   // Fiber (g)
+  1093: 2300, // Sodium (mg)
+  1087: 1000, // Calcium (mg)
+  1089: 18,   // Iron (mg)
+  1090: 400,  // Magnesium (mg)
+  1092: 3500, // Potassium (mg)
+  1095: 11,   // Zinc (mg)
+  1106: 900,  // Vitamin A (mcg)
+  1109: 90,   // Vitamin C (mg)
+  1114: 20,   // Vitamin D (mcg)
+  1162: 1.7,  // Vitamin B6 (mg)
+  1165: 2.4,  // Vitamin B12 (mcg)
+  1178: 120,  // Vitamin K (mcg)
+  1175: 15,   // Vitamin E (mg)
 };
 
-const NUTRIENT_NAMES: Record<number, string> = {
-  1008: "Calories",
-  1003: "Protein",
-  1004: "Total Fat",
-  1005: "Carbohydrates",
-  1079: "Fiber",
-  1087: "Calcium",
-  1089: "Iron",
-  1090: "Magnesium",
-  1091: "Phosphorus",
-  1092: "Potassium",
-  1093: "Sodium",
-  1095: "Zinc",
-  1098: "Copper",
-  1106: "Vitamin A",
-  1109: "Vitamin C",
-  1114: "Vitamin D",
-  1162: "Vitamin B6",
-  1165: "Vitamin B12",
-  1166: "Thiamin (B1)",
-  1167: "Riboflavin (B2)",
-  1170: "Folate",
-  1175: "Vitamin E",
-  1176: "Niacin (B3)",
-  1177: "Pantothenic Acid (B5)",
-  1178: "Vitamin K",
-  1258: "Saturated Fat",
-  1259: "Monounsaturated Fat",
-  1292: "Polyunsaturated Fat",
-  1293: "Trans Fat",
+// Nutrient colors matching MacroRings
+const NUTRIENT_COLORS: Record<number, string> = {
+  1008: '#34D399', // Calories - green
+  1003: '#F87171', // Protein - red/pink
+  1005: '#60A5FA', // Carbs - blue
+  1004: '#FACC15', // Fat - yellow
+  1079: '#60A5FA', // Fiber - blue (same as carbs)
+};
+
+type NutrientData = {
+  id: number;
+  name: string;
+  amount: number;
+  unit: string;
+  target?: number;
+  category: string;
 };
 
 export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
-  const [nutrientTotals, setNutrientTotals] = useState<Map<number, { name: string; amount: number; unit: string }>>(new Map());
+  const [nutrientTotals, setNutrientTotals] = useState<Map<number, NutrientData>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [showAllNutrients, setShowAllNutrients] = useState(false);
+
+  // Categorize nutrient by name
+  const categorizeNutrient = (name: string): string => {
+    const lowerName = name.toLowerCase();
+
+    if (lowerName.includes('energy') || lowerName.includes('calorie')) return 'Macronutrients';
+    if (lowerName.includes('protein') && !lowerName.includes('alanine')) return 'Macronutrients';
+    if (lowerName.includes('carbohydrate') || lowerName.includes('fiber')) return 'Macronutrients';
+    if (lowerName === 'total lipid (fat)' || lowerName.includes('total fat')) return 'Macronutrients';
+
+    if (lowerName.includes('saturated') || lowerName.includes('monounsaturated') ||
+        lowerName.includes('polyunsaturated') || lowerName.includes('trans fat') ||
+        lowerName.includes('omega') || lowerName.includes('cholesterol')) return 'Fats';
+
+    if (lowerName.includes('vitamin')) return 'Vitamins';
+    if (lowerName.includes('thiamin') || lowerName.includes('riboflavin') ||
+        lowerName.includes('niacin') || lowerName.includes('folate') ||
+        lowerName.includes('choline')) return 'Vitamins';
+
+    if (lowerName.includes('calcium') || lowerName.includes('iron') ||
+        lowerName.includes('magnesium') || lowerName.includes('phosphorus') ||
+        lowerName.includes('potassium') || lowerName.includes('sodium') ||
+        lowerName.includes('zinc') || lowerName.includes('copper') ||
+        lowerName.includes('manganese') || lowerName.includes('selenium')) return 'Minerals';
+
+    return 'Other';
+  };
 
   useEffect(() => {
     if (!isOpen || !meal) {
       setNutrientTotals(new Map());
+      setShowAllNutrients(false);
       return;
     }
 
@@ -65,7 +93,17 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
     setLoading(true);
 
     (async () => {
-      const totals = new Map<number, { name: string; amount: number; unit: string }>();
+      const totals = new Map<number, NutrientData>();
+
+      // First, calculate simple macro totals (to match display)
+      let simpleMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+      for (const item of meal.items) {
+        const quantity = item.quantity || 1;
+        simpleMacros.calories += (item.calories || 0) * quantity;
+        simpleMacros.protein += (item.protein || 0) * quantity;
+        simpleMacros.carbs += (item.carbs || 0) * quantity;
+        simpleMacros.fat += (item.fat || 0) * quantity;
+      }
 
       // Load nutrient data for each food item
       for (const item of meal.items) {
@@ -77,15 +115,14 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
             const details = await getFoodDetails(item.fdcId, { cacheReason: 'viewed' });
             if (!details || cancelled) continue;
 
-            console.log(`[MealNutrients] Loaded ${details.nutrients.length} nutrients for ${item.name}`);
-            console.log(`[MealNutrients] First 5 nutrients:`, details.nutrients.slice(0, 5));
-
             const gramsPerUnit = item.gramsPerUnit || 100;
             const totalGrams = quantity * gramsPerUnit;
 
-            // Aggregate nutrients
+            // Aggregate nutrients (but skip main macros - we'll use simple totals for those)
             for (const nutrient of details.nutrients) {
-              // Scale nutrient amount from per-100g to total grams
+              // Skip main macros - we'll set them from simple totals
+              if ([1008, 1003, 1004, 1005].includes(nutrient.id)) continue;
+
               const scaledAmount = (nutrient.amount / 100) * totalGrams;
 
               const existing = totals.get(nutrient.id);
@@ -96,37 +133,71 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
                 });
               } else {
                 totals.set(nutrient.id, {
-                  name: nutrient.name || NUTRIENT_NAMES[nutrient.id] || `Nutrient ${nutrient.id}`,
+                  id: nutrient.id,
+                  name: nutrient.name || `Nutrient ${nutrient.id}`,
                   amount: scaledAmount,
-                  unit: nutrient.unit_name || "g"
+                  unit: nutrient.unit_name || "g",
+                  target: NUTRIENT_TARGETS[nutrient.id],
+                  category: categorizeNutrient(nutrient.name || "")
                 });
               }
             }
           } catch (err) {
             console.error(`Error loading nutrients for ${item.name}:`, err);
           }
-        } else {
-          // Custom food - add basic macros
-          const addNutrient = (id: number, amount: number, unit: string) => {
-            if (amount <= 0) return;
-            const existing = totals.get(id);
-            if (existing) {
-              totals.set(id, { ...existing, amount: existing.amount + (amount * quantity) });
-            } else {
-              totals.set(id, { name: NUTRIENT_NAMES[id] || `Nutrient ${id}`, amount: amount * quantity, unit });
-            }
-          };
-
-          addNutrient(1008, item.calories, 'kcal');
-          addNutrient(1003, item.protein, 'g');
-          addNutrient(1004, item.fat, 'g');
-          addNutrient(1005, item.carbs, 'g');
         }
       }
 
+      // Set main macros from simple totals (no targets for meal view)
+      totals.set(1008, {
+        id: 1008,
+        name: 'Calories',
+        amount: simpleMacros.calories,
+        unit: 'kcal',
+        target: undefined,
+        category: 'Macronutrients'
+      });
+      totals.set(1003, {
+        id: 1003,
+        name: 'Protein',
+        amount: simpleMacros.protein,
+        unit: 'g',
+        target: undefined,
+        category: 'Macronutrients'
+      });
+      totals.set(1004, {
+        id: 1004,
+        name: 'Total Fat',
+        amount: simpleMacros.fat,
+        unit: 'g',
+        target: undefined,
+        category: 'Macronutrients'
+      });
+      totals.set(1005, {
+        id: 1005,
+        name: 'Total Carbohydrates',
+        amount: simpleMacros.carbs,
+        unit: 'g',
+        target: undefined,
+        category: 'Macronutrients'
+      });
+
+      // Add Net Carbs (Total Carbs - Fiber)
+      const totalCarbs = totals.get(1005);
+      const fiber = totals.get(1079);
+      if (totalCarbs && fiber) {
+        const netCarbsAmount = Math.max(0, totalCarbs.amount - fiber.amount);
+        totals.set(9999, {
+          id: 9999,
+          name: 'Net Carbohydrates',
+          amount: netCarbsAmount,
+          unit: 'g',
+          target: undefined,
+          category: 'Macronutrients'
+        });
+      }
+
       if (!cancelled) {
-        console.log(`[MealNutrients] Total unique nutrients aggregated: ${totals.size}`);
-        console.log('[MealNutrients] Nutrient IDs:', Array.from(totals.keys()));
         setNutrientTotals(totals);
         setLoading(false);
       }
@@ -137,70 +208,80 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
     };
   }, [isOpen, meal]);
 
-  // Organize nutrients by category - categorize by nutrient name instead of ID
-  const organizedNutrients = useMemo(() => {
-    const result: Record<string, Array<{ id: number; name: string; amount: number; unit: string }>> = {};
-
-    // Helper to categorize by nutrient name
-    const categorizeByName = (name: string): string => {
-      const lowerName = name.toLowerCase();
-
-      // Macronutrients
-      if (lowerName.includes('energy') || lowerName.includes('calorie')) return 'Macronutrients';
-      if (lowerName.includes('protein') && !lowerName.includes('alanine') && !lowerName.includes('arginine')) return 'Macronutrients';
-      if (lowerName.includes('carbohydrate') || lowerName.includes('sugars') || lowerName.includes('fiber')) return 'Macronutrients';
-      if ((lowerName === 'total lipid (fat)' || lowerName.includes('total fat')) && !lowerName.includes('fatty')) return 'Macronutrients';
-
-      // Fats
-      if (lowerName.includes('saturated') || lowerName.includes('monounsaturated') ||
-          lowerName.includes('polyunsaturated') || lowerName.includes('trans fat')) return 'Fats';
-      if (lowerName.includes('fatty acids') || lowerName.includes('cholesterol')) return 'Fats';
-
-      // Vitamins
-      if (lowerName.includes('vitamin')) return 'Vitamins';
-      if (lowerName.includes('thiamin') || lowerName.includes('riboflavin') ||
-          lowerName.includes('niacin') || lowerName.includes('folate') ||
-          lowerName.includes('choline')) return 'Vitamins';
-
-      // Minerals
-      if (lowerName.includes('calcium') || lowerName.includes('iron') ||
-          lowerName.includes('magnesium') || lowerName.includes('phosphorus') ||
-          lowerName.includes('potassium') || lowerName.includes('sodium') ||
-          lowerName.includes('zinc') || lowerName.includes('copper') ||
-          lowerName.includes('manganese') || lowerName.includes('selenium')) return 'Minerals';
-
-      // Amino Acids
-      if (lowerName.includes('alanine') || lowerName.includes('arginine') ||
-          lowerName.includes('leucine') || lowerName.includes('lysine') ||
-          lowerName.includes('methionine') || lowerName.includes('phenylalanine') ||
-          lowerName.includes('threonine') || lowerName.includes('tryptophan') ||
-          lowerName.includes('valine') || lowerName.includes('histidine') ||
-          lowerName.includes('isoleucine') || lowerName.includes('glycine') ||
-          lowerName.includes('serine') || lowerName.includes('proline') ||
-          lowerName.includes('cysteine') || lowerName.includes('aspartic') ||
-          lowerName.includes('glutamic') || lowerName.includes('tyrosine') ||
-          lowerName.includes('asparagine')) return 'Amino Acids';
-
-      return 'Other Nutrients';
+  // Organize nutrients by category, separating those with and without targets
+  const { nutrientsWithTargets, nutrientsWithoutTargets } = useMemo(() => {
+    const withTargets: Record<string, NutrientData[]> = {
+      'Macronutrients': [],
+      'Fats': [],
+      'Vitamins': [],
+      'Minerals': [],
+      'Other': []
     };
 
-    // Organize all nutrients by their category
-    nutrientTotals.forEach((nutrient, id) => {
-      const category = categorizeByName(nutrient.name);
+    const withoutTargets: Record<string, NutrientData[]> = {
+      'Macronutrients': [],
+      'Fats': [],
+      'Vitamins': [],
+      'Minerals': [],
+      'Other': []
+    };
 
-      if (!result[category]) {
-        result[category] = [];
+    nutrientTotals.forEach((nutrient) => {
+      const category = nutrient.category;
+      // Special case: Net Carbohydrates (id: 9999) should appear in main section even without target
+      const targetList = (nutrient.target !== undefined || nutrient.id === 9999) ? withTargets : withoutTargets;
+
+      if (targetList[category]) {
+        targetList[category].push(nutrient);
       }
-
-      result[category].push({ id, ...nutrient });
     });
 
-    // Sort nutrients within each category by name
-    Object.keys(result).forEach(category => {
-      result[category].sort((a, b) => a.name.localeCompare(b.name));
-    });
+    // Custom sort order for macronutrients with targets
+    const macroSortOrder: Record<number, number> = {
+      1008: 1, // Calories
+      1003: 2, // Protein
+      1005: 3, // Total Carbs
+      1079: 4, // Fiber
+      9999: 5, // Net Carbs
+      1004: 6, // Fat
+    };
 
-    return result;
+    // Sort nutrients within each category
+    const sortCategories = (obj: Record<string, NutrientData[]>) => {
+      Object.keys(obj).forEach(category => {
+        if (category === 'Macronutrients') {
+          // Custom sort for macros
+          obj[category].sort((a, b) => {
+            const orderA = macroSortOrder[a.id] || 999;
+            const orderB = macroSortOrder[b.id] || 999;
+            return orderA - orderB;
+          });
+        } else {
+          // Alphabetical sort for other categories
+          obj[category].sort((a, b) => a.name.localeCompare(b.name));
+        }
+      });
+    };
+
+    sortCategories(withTargets);
+    sortCategories(withoutTargets);
+
+    // Remove empty categories
+    const removeEmpty = (obj: Record<string, NutrientData[]>) => {
+      Object.keys(obj).forEach(key => {
+        if (obj[key].length === 0) {
+          delete obj[key];
+        }
+      });
+    };
+
+    removeEmpty(withTargets);
+    removeEmpty(withoutTargets);
+
+    return {
+      nutrientsWithTargets: withTargets,
+      nutrientsWithoutTargets: withoutTargets
+    };
   }, [nutrientTotals]);
 
   if (!isOpen || !meal) return null;
@@ -239,33 +320,127 @@ export default function MealNutrientsModal({ isOpen, meal, onClose }: Props) {
 
         {!loading && nutrientTotals.size > 0 && (
           <div className="space-y-8">
-            {/* Show all nutrients organized by category */}
-            {Object.entries(organizedNutrients).map(([category, nutrients]) => (
+            {/* Nutrients with targets (progress bars) */}
+            {Object.entries(nutrientsWithTargets).map(([category, nutrients]) => (
               <div key={category}>
                 <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
                   {category}
                 </h2>
                 <div className="space-y-3">
-                  {nutrients.map((nutrient) => (
-                    <div key={nutrient.id} className="flex items-center justify-between py-2">
-                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                        {nutrient.name}
-                      </span>
-                      <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
-                        {nutrient.amount < 0.01 && nutrient.amount > 0
-                          ? "< 0.01"
-                          : nutrient.amount < 1
-                          ? nutrient.amount.toFixed(2)
-                          : Math.round(nutrient.amount)}{" "}
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {nutrient.unit}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
+                  {nutrients.map((nutrient) => {
+                    const percentage = nutrient.target
+                      ? Math.min((nutrient.amount / nutrient.target) * 100, 100)
+                      : 0;
+                    const hasTarget = nutrient.target !== undefined;
+                    const isComplete = hasTarget && nutrient.target && nutrient.amount >= nutrient.target;
+                    const difference = hasTarget && nutrient.target
+                      ? nutrient.amount - nutrient.target
+                      : 0;
+                    const formattedDifference = Math.abs(difference) < 1
+                      ? Math.abs(difference).toFixed(1)
+                      : Math.round(Math.abs(difference));
+
+                    return (
+                      <div key={nutrient.id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                              {nutrient.name}
+                            </span>
+                            {isComplete && (
+                              <span className="text-green-500 text-base leading-none">✓</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                              {nutrient.amount < 0.01 && nutrient.amount > 0
+                                ? "< 0.01"
+                                : nutrient.amount < 1
+                                ? nutrient.amount.toFixed(2)
+                                : Math.round(nutrient.amount)}{" "}
+                              {hasTarget && nutrient.target && (
+                                <span className="text-neutral-500 dark:text-neutral-400">
+                                  / {Math.round(nutrient.target)}
+                                </span>
+                              )}
+                              {" "}
+                              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                                {nutrient.unit}
+                              </span>
+                            </span>
+                            {hasTarget && !isComplete && difference !== 0 && (
+                              <span className={`text-xs font-medium min-w-[60px] text-right ${
+                                difference > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-red-600 dark:text-red-500'
+                              }`}>
+                                {difference > 0 ? '+' : '-'}{formattedDifference} {difference > 0 ? 'over' : 'under'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {hasTarget && (
+                          <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-300"
+                              style={{
+                                width: `${percentage}%`,
+                                backgroundColor: NUTRIENT_COLORS[nutrient.id] || '#1f00ff'
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
+
+            {/* Show More Button */}
+            {Object.keys(nutrientsWithoutTargets).length > 0 && (
+              <div className="pt-4">
+                <button
+                  onClick={() => setShowAllNutrients(!showAllNutrients)}
+                  className="w-full px-4 py-3 rounded-full border-2 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium text-neutral-700 dark:text-neutral-300"
+                >
+                  {showAllNutrients ? "Hide Detailed Nutrients" : "Show All Nutrients"}
+                </button>
+              </div>
+            )}
+
+            {/* Detailed nutrients (without targets) */}
+            {showAllNutrients && (
+              <div className="space-y-8 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Detailed micronutrient breakdown
+                </p>
+                {Object.entries(nutrientsWithoutTargets).map(([category, nutrients]) => (
+                  <div key={category}>
+                    <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
+                      {category}
+                    </h2>
+                    <div className="space-y-3">
+                      {nutrients.map((nutrient) => (
+                        <div key={nutrient.id} className="flex items-center justify-between py-2">
+                          <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            {nutrient.name}
+                          </span>
+                          <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">
+                            {nutrient.amount < 0.01 && nutrient.amount > 0
+                              ? "< 0.01"
+                              : nutrient.amount < 1
+                              ? nutrient.amount.toFixed(2)
+                              : Math.round(nutrient.amount)}{" "}
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                              {nutrient.unit}
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
