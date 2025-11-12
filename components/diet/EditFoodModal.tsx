@@ -214,16 +214,25 @@ export default function EditFoodModal({ isOpen, foodItem, onClose, onSave }: Pro
 
   const handleSave = () => {
     const pv = computePreview();
+    const base = per100g();
+
+    // Save per-unit values (not totals) so that multiplication by quantity works correctly
+    const perUnit = {
+      calories: Math.round(base.calories * (pv.gramsPerUnit / 100)),
+      protein: Math.round(base.protein * (pv.gramsPerUnit / 100)),
+      fat: Math.round(base.fat * (pv.gramsPerUnit / 100)),
+      carbs: Math.round(base.carbs * (pv.gramsPerUnit / 100)),
+    };
 
     onSave({
       ...foodItem,
       quantity: pv.quantity,
       unit: pv.unit,
       gramsPerUnit: pv.gramsPerUnit,
-      calories: pv.cal,
-      protein: pv.p,
-      fat: pv.fat,
-      carbs: pv.c,
+      calories: perUnit.calories,
+      protein: perUnit.protein,
+      fat: perUnit.fat,
+      carbs: perUnit.carbs,
     });
 
     onClose();
