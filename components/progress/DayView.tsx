@@ -272,26 +272,26 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
       <div className="space-y-4">
         {/* Weight card */}
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur shadow-sm">
-          <div className="p-4">
-            <label className="block text-sm font-medium mb-3">Weight</label>
+          <div className="p-3">
+            <label className="block text-sm font-medium mb-2">Weight</label>
 
             {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
               // Edit mode - show plus/minus buttons with weight in center
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     const current = parseFloat(weightValue) || 0;
                     const newValue = Math.max(0, current - 0.5);
                     setWeightValue(newValue.toFixed(1));
                   }}
-                  className="w-10 h-10 flex-shrink-0 rounded-full border-2 border-accent-progress text-accent-progress flex items-center justify-center hover:bg-accent-progress/10 transition-colors font-bold text-xl"
+                  className="w-8 h-8 flex-shrink-0 rounded-full border-2 border-accent-progress text-accent-progress flex items-center justify-center hover:bg-accent-progress/10 transition-colors font-bold text-lg"
                 >
                   −
                 </button>
 
                 <div className="flex-1 min-w-0">
                   <div
-                    className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-4 py-2.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     onClick={() => {
                       const input = document.getElementById("weight-input-progress") as HTMLInputElement;
                       if (input) {
@@ -309,10 +309,10 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
                       value={weightValue}
                       onChange={(e) => setWeightValue(e.target.value)}
                       onBlur={() => setIsEditingWeight(false)}
-                      className="text-2xl font-bold text-center bg-transparent border-none outline-none w-20 text-neutral-900 dark:text-neutral-100"
+                      className="text-xl font-bold text-center bg-transparent border-none outline-none w-16 text-neutral-900 dark:text-neutral-100"
                       style={{ WebkitAppearance: "none", MozAppearance: "textfield" }}
                     />
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
                   </div>
                 </div>
 
@@ -322,35 +322,35 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
                     const newValue = current + 0.5;
                     setWeightValue(newValue.toFixed(1));
                   }}
-                  className="w-10 h-10 flex-shrink-0 rounded-full border-2 border-accent-progress text-accent-progress flex items-center justify-center hover:bg-accent-progress/10 transition-colors font-bold text-xl"
+                  className="w-8 h-8 flex-shrink-0 rounded-full border-2 border-accent-progress text-accent-progress flex items-center justify-center hover:bg-accent-progress/10 transition-colors font-bold text-lg"
                 >
                   +
                 </button>
               </div>
             ) : (
               // Saved mode - show weight with checkmark and edit button
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 text-green-600 dark:text-green-400">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 text-green-600 dark:text-green-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-4 py-2.5 flex items-center justify-center gap-2">
-                    <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                  <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 flex items-center justify-center gap-2">
+                    <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
                       {savedWeight.toFixed(1)}
                     </span>
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setSavedWeight(null)}
-                  className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                   aria-label="Edit weight"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-neutral-600 dark:text-neutral-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                   </svg>
                 </button>
@@ -359,32 +359,17 @@ export default function DayView({ dateISO, isToday }: DayViewProps) {
 
             {/* Save button below weight display when in edit mode */}
             {(savedWeight === null || parseFloat(weightValue) !== savedWeight) && (
-              <div className="mt-3">
+              <div className="mt-2">
                 <button
                   onClick={saveWeight}
-                  className="w-full py-2 rounded-full bg-accent-progress text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                  className="w-full py-1.5 rounded-full bg-accent-progress text-white text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   Save Weight
                 </button>
               </div>
             )}
-
-          {/* Mini sparkline */}
-          {weightHistory.length > 1 && (
-            <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-              <div className="flex items-end gap-1 h-12">
-                {weightHistory.map((w, i) => {
-                  const max = Math.max(...weightHistory);
-                  const height = (w / max) * 100;
-                  return (
-                    <div key={i} className="flex-1 bg-accent-progress/30 rounded-t" style={{ height: `${height}%` }} />
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
 
       {/* Diet summary */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
@@ -826,6 +811,11 @@ function SmallMacroRing({
   const normalPct = Math.min(1, target > 0 ? current / target : 0);
   const normalDash = circumference * normalPct;
 
+  // Calculate difference
+  const diff = current - target;
+  const isOver = diff > 0;
+  const isUnder = diff < 0;
+
   // Get background color based on label
   const getBgColor = () => {
     if (label === "Cal") return "#34D3991F";
@@ -927,7 +917,7 @@ function SmallMacroRing({
       </div>
 
       {/* Value bubble under ring */}
-      <div className="mt-1">
+      <div className="mt-1 flex flex-col items-center gap-0.5">
         <span
           className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums whitespace-nowrap"
           style={{
@@ -937,6 +927,14 @@ function SmallMacroRing({
         >
           {current}/{target}
         </span>
+        {/* Difference indicator */}
+        {diff !== 0 && (
+          <span className={`text-[8px] font-medium flex items-center gap-0.5 ${
+            isOver ? 'text-red-600 dark:text-red-400' : 'text-neutral-500 dark:text-neutral-400'
+          }`}>
+            {isOver ? '↑' : '↓'} {Math.abs(Math.round(diff))}
+          </span>
+        )}
       </div>
     </div>
   );

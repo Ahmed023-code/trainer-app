@@ -241,25 +241,25 @@ export default function HomePage() {
 
       {/* Weight card */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur shadow-sm">
-        <div className="p-4">
-          <label className="block text-sm font-medium mb-3">Weight</label>
+        <div className="p-3">
+          <label className="block text-sm font-medium mb-2">Weight</label>
 
           {savedWeight === null || parseFloat(weightValue) !== savedWeight || isEditingWeight ? (
             // Edit mode - show plus/minus buttons with clickable weight in center
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => {
                   const current = parseFloat(weightValue) || 0;
                   const newValue = Math.max(0, current - 0.5);
                   setWeightValue(newValue.toFixed(1));
                 }}
-                className="w-10 h-10 flex-shrink-0 rounded-full border-2 border-accent-home text-accent-home flex items-center justify-center hover:bg-accent-home/10 transition-colors font-bold text-xl"
+                className="w-8 h-8 flex-shrink-0 rounded-full border-2 border-accent-home text-accent-home flex items-center justify-center hover:bg-accent-home/10 transition-colors font-bold text-lg"
               >
                 −
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-4 py-2.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                      onClick={() => {
                        setIsEditingWeight(true);
                        setTimeout(() => {
@@ -277,10 +277,10 @@ export default function HomePage() {
                     value={weightValue}
                     onChange={(e) => setWeightValue(e.target.value)}
                     onBlur={() => setIsEditingWeight(false)}
-                    className="text-2xl font-bold text-center bg-transparent border-none outline-none w-20 text-neutral-900 dark:text-neutral-100"
+                    className="text-xl font-bold text-center bg-transparent border-none outline-none w-16 text-neutral-900 dark:text-neutral-100"
                     style={{ appearance: 'textfield' }}
                   />
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
                 </div>
               </div>
 
@@ -290,26 +290,26 @@ export default function HomePage() {
                   const newValue = current + 0.5;
                   setWeightValue(newValue.toFixed(1));
                 }}
-                className="w-10 h-10 flex-shrink-0 rounded-full border-2 border-accent-home text-accent-home flex items-center justify-center hover:bg-accent-home/10 transition-colors font-bold text-xl"
+                className="w-8 h-8 flex-shrink-0 rounded-full border-2 border-accent-home text-accent-home flex items-center justify-center hover:bg-accent-home/10 transition-colors font-bold text-lg"
               >
                 +
               </button>
             </div>
           ) : (
             // Saved mode - show weight with checkmark and edit button
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 text-green-600 dark:text-green-400">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-4 py-2.5 flex items-center justify-center gap-2">
-                  <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 flex items-center justify-center gap-2">
+                  <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
                     {savedWeight.toFixed(1)}
                   </span>
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
                 </div>
               </div>
 
@@ -318,10 +318,10 @@ export default function HomePage() {
                   setSavedWeight(null);
                   setIsEditingWeight(true);
                 }}
-                className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 aria-label="Edit weight"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-neutral-600 dark:text-neutral-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                 </svg>
               </button>
@@ -330,31 +330,114 @@ export default function HomePage() {
 
           {/* Save button below weight display when in edit mode */}
           {(savedWeight === null || parseFloat(weightValue) !== savedWeight || isEditingWeight) && (
-            <div className="mt-3">
+            <div className="mt-2">
               <button
                 onClick={saveWeight}
-                className="w-full py-2 rounded-full bg-accent-home text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                className="w-full py-1.5 rounded-full bg-accent-home text-white text-xs font-medium hover:opacity-90 transition-opacity"
               >
                 Save Weight
               </button>
             </div>
           )}
+        </div>
+      </div>
 
-          {/* Mini sparkline */}
-          {weightHistory.length > 1 && (
-            <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-              <div className="flex items-end gap-1 h-12">
-                {weightHistory.map((w, i) => {
-                  const max = Math.max(...weightHistory);
-                  const height = (w / max) * 100;
-                  return (
-                    <div key={i} className="flex-1 bg-accent-home/30 rounded-t" style={{ height: `${height}%` }} />
-                  );
-                })}
+      {/* Diet summary */}
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm relative">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-medium">Diet Summary</h2>
+          <button
+            onClick={openDiet}
+            className="tap-target px-3 py-1.5 rounded-full bg-accent-diet text-white text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            Open Diet
+          </button>
+        </div>
+
+        {/* Layout: Large calorie ring on left, smaller macro rings in 2x2 grid on right */}
+        <div className="flex gap-4 items-center">
+          {/* Large calorie ring on left */}
+          <div className="flex-shrink-0">
+            <CalorieRing
+              current={Math.round(dietSummary.calories)}
+              target={dietSummary.goals.cal}
+              protein={Math.round(dietSummary.protein)}
+              carbs={Math.round(dietSummary.carbs)}
+              fat={Math.round(dietSummary.fat)}
+              proteinTarget={dietSummary.goals.p}
+              carbsTarget={dietSummary.goals.c}
+              fatTarget={dietSummary.goals.f}
+            />
+          </div>
+
+          {/* Smaller macro rings in 2x2 grid on right */}
+          <div className="flex-1 grid grid-cols-2 gap-3">
+            <SmallMacroRing
+              label="Cal"
+              current={Math.round(dietSummary.calories)}
+              target={dietSummary.goals.cal}
+              color="var(--accent-diet)"
+            />
+            <SmallMacroRing
+              label="P"
+              current={Math.round(dietSummary.protein)}
+              target={dietSummary.goals.p}
+              color="#F87171"
+            />
+            <SmallMacroRing
+              label="F"
+              current={Math.round(dietSummary.fat)}
+              target={dietSummary.goals.f}
+              color="#FACC15"
+            />
+            <SmallMacroRing
+              label="C"
+              current={Math.round(dietSummary.carbs)}
+              target={dietSummary.goals.c}
+              color="#60A5FA"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Workout summary */}
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-medium">Workout Summary</h2>
+          <button
+            onClick={openWorkout}
+            className="tap-target px-3 py-1.5 rounded-full bg-[var(--accent-workout)] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            Open Workout
+          </button>
+        </div>
+        {workoutSummary.exerciseCount > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-4 text-center mb-3">
+              <div>
+                <div className="text-2xl font-bold">{workoutSummary.exerciseCount}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Exercises</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{workoutSummary.setCount}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Sets</div>
               </div>
             </div>
-          )}
-        </div>
+            {(() => {
+              const bodyParts = getWorkoutBodyParts(workoutSummary.exerciseNames);
+              return bodyParts ? (
+                <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800">
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Body Parts</div>
+                  <div className="text-sm font-medium">{bodyParts}</div>
+                </div>
+              ) : null;
+            })()}
+          </>
+        ) : (
+          <div className="text-center py-4 text-sm text-neutral-500 dark:text-neutral-400">
+            No workout logged
+          </div>
+        )}
       </div>
 
       {/* Reminders inbox */}
@@ -784,6 +867,11 @@ function SmallMacroRing({
   const normalPct = Math.min(1, target > 0 ? current / target : 0);
   const normalDash = circumference * normalPct;
 
+  // Calculate difference
+  const diff = current - target;
+  const isOver = diff > 0;
+  const isUnder = diff < 0;
+
   // Get background color based on label
   const getBgColor = () => {
     if (label === "Cal") return "#34D3991F";
@@ -885,7 +973,7 @@ function SmallMacroRing({
       </div>
 
       {/* Value bubble under ring */}
-      <div className="mt-1">
+      <div className="mt-1 flex flex-col items-center gap-0.5">
         <span
           className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums whitespace-nowrap"
           style={{
@@ -895,6 +983,14 @@ function SmallMacroRing({
         >
           {current}/{target}
         </span>
+        {/* Difference indicator */}
+        {diff !== 0 && (
+          <span className={`text-[8px] font-medium flex items-center gap-0.5 ${
+            isOver ? 'text-red-600 dark:text-red-400' : 'text-neutral-500 dark:text-neutral-400'
+          }`}>
+            {isOver ? '↑' : '↓'} {Math.abs(Math.round(diff))}
+          </span>
+        )}
       </div>
     </div>
   );
