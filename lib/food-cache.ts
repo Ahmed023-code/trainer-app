@@ -154,9 +154,9 @@ export async function deleteCachedFood(fdcId: number): Promise<void> {
 }
 
 /**
- * Get all logged foods
+ * Get logged foods sorted by most recent
  */
-export async function getLoggedFoods(): Promise<CachedFood[]> {
+export async function getLoggedFoods(limit?: number): Promise<CachedFood[]> {
   const db = await initDB();
   const transaction = db.transaction(STORE_NAME, 'readonly');
   const store = transaction.objectStore(STORE_NAME);
@@ -164,7 +164,19 @@ export async function getLoggedFoods(): Promise<CachedFood[]> {
 
   return new Promise((resolve, reject) => {
     const request = index.getAll('logged');
-    request.onsuccess = () => resolve((request.result as CachedFood[]) || []);
+    request.onsuccess = () => {
+      let foods = (request.result as CachedFood[]) || [];
+
+      // Sort by most recent first
+      foods.sort((a, b) => b.cached_at - a.cached_at);
+
+      // Apply limit if specified
+      if (limit) {
+        foods = foods.slice(0, limit);
+      }
+
+      resolve(foods);
+    };
     request.onerror = () => reject(request.error);
   });
 }
