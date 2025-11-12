@@ -71,6 +71,11 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
   const normalPct = Math.min(1, target > 0 ? current / target : 0);
   const normalDash = circumference * normalPct;
 
+  // Calculate difference
+  const diff = current - target;
+  const isOver = diff > 0;
+  const isUnder = diff < 0;
+
   console.log(`[Ring ${label}] Rendering with current=${current}, target=${target}`);
 
   // Get background color based on label
@@ -175,7 +180,7 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
       </div>
 
       {/* Value bubble under ring */}
-      <div className="mt-1.5">
+      <div className="mt-1.5 flex flex-col items-center gap-1">
         <span
           className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold tabular-nums whitespace-nowrap"
           style={{
@@ -185,6 +190,18 @@ function Ring({ label, current, target, color, protein, fat, carbs }: RingProps 
         >
           {Math.round(current)}/{Math.round(target)}
         </span>
+        {/* Difference indicator */}
+        {diff !== 0 && (
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold gap-0.5"
+            style={{
+              backgroundColor: color,
+              color: '#000'
+            }}
+          >
+            {isOver ? '↑' : '↓'} {Math.abs(Math.round(diff))}{label === 'Cal' ? 'cal' : 'g'}
+          </span>
+        )}
       </div>
     </div>
   );

@@ -983,10 +983,14 @@ function SmallMacroRing({
         </span>
         {/* Difference indicator */}
         {diff !== 0 && (
-          <span className={`text-[8px] font-medium flex items-center gap-0.5 ${
-            isOver ? 'text-red-600 dark:text-red-400' : 'text-neutral-500 dark:text-neutral-400'
-          }`}>
-            {isOver ? '↑' : '↓'} {Math.abs(Math.round(diff))}
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold gap-0.5"
+            style={{
+              backgroundColor: color,
+              color: '#000'
+            }}
+          >
+            {isOver ? '↑' : '↓'} {Math.abs(Math.round(diff))}{label === 'Cal' ? 'cal' : 'g'}
           </span>
         )}
       </div>
