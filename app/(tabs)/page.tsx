@@ -244,8 +244,8 @@ export default function HomePage() {
         <div className="p-3">
           <label className="block text-sm font-medium mb-2">Weight</label>
 
-          {savedWeight === null || parseFloat(weightValue) !== savedWeight || isEditingWeight ? (
-            // Edit mode - show plus/minus buttons with clickable weight in center
+          {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
+            // Edit mode - show plus/minus buttons with weight in center
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
@@ -259,26 +259,27 @@ export default function HomePage() {
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                     onClick={() => {
-                       setIsEditingWeight(true);
-                       setTimeout(() => {
-                         const input = document.getElementById('weight-input') as HTMLInputElement;
-                         if (input) {
-                           input.focus();
-                           input.select();
-                         }
-                       }, 0);
-                     }}>
+                <div
+                  className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                  onClick={() => {
+                    const input = document.getElementById("weight-input") as HTMLInputElement;
+                    if (input) {
+                      input.focus();
+                      input.select();
+                      setIsEditingWeight(true);
+                    }
+                  }}
+                >
                   <input
                     id="weight-input"
                     type="number"
                     inputMode="decimal"
+                    step="0.5"
                     value={weightValue}
                     onChange={(e) => setWeightValue(e.target.value)}
                     onBlur={() => setIsEditingWeight(false)}
                     className="text-xl font-bold text-center bg-transparent border-none outline-none w-16 text-neutral-900 dark:text-neutral-100"
-                    style={{ appearance: 'textfield' }}
+                    style={{ WebkitAppearance: "none", MozAppearance: "textfield" }}
                   />
                   <span className="text-xs text-neutral-500 dark:text-neutral-400">{weightUnit}</span>
                 </div>
@@ -314,10 +315,7 @@ export default function HomePage() {
               </div>
 
               <button
-                onClick={() => {
-                  setSavedWeight(null);
-                  setIsEditingWeight(true);
-                }}
+                onClick={() => setSavedWeight(null)}
                 className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 aria-label="Edit weight"
               >
@@ -329,7 +327,7 @@ export default function HomePage() {
           )}
 
           {/* Save button below weight display when in edit mode */}
-          {(savedWeight === null || parseFloat(weightValue) !== savedWeight || isEditingWeight) && (
+          {(savedWeight === null || parseFloat(weightValue) !== savedWeight) && (
             <div className="mt-2">
               <button
                 onClick={saveWeight}
