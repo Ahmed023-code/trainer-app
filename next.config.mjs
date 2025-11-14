@@ -25,8 +25,8 @@ const nextConfig = {
   // Reduce source map size in production
   productionBrowserSourceMaps: false,
 
-  // Webpack config for sql.js
-  webpack: (config, { isServer }) => {
+  // Webpack config for sql.js and Capacitor plugins
+  webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
       // Don't resolve 'fs' module on the client to prevent this error on build
       config.resolve.fallback = {
@@ -35,6 +35,14 @@ const nextConfig = {
         path: false,
         crypto: false,
       };
+
+      // Ignore Capacitor plugins during web build
+      // They will be dynamically imported only on native platforms
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /@capacitor-mlkit\/barcode-scanning/,
+        })
+      );
     }
     return config;
   },
