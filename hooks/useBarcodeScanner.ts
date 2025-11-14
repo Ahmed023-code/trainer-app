@@ -10,7 +10,6 @@ import type {
   BarcodeScannerError,
   BarcodeScannerHook,
 } from '@/lib/barcode-scanner/types';
-import * as mobileScanner from '@/lib/barcode-scanner/mobile-scanner';
 import * as webScanner from '@/lib/barcode-scanner/web-scanner';
 
 interface UseBarcodeScanner extends BarcodeScannerHook {
@@ -39,8 +38,18 @@ export function useBarcodeScanner(): UseBarcodeScanner {
   useEffect(() => {
     const checkSupport = async () => {
       if (isMobile) {
-        const supported = await mobileScanner.isSupported();
-        setIsSupported(supported);
+        try {
+          // Dynamically import mobile scanner only on native platforms
+          const mobileScanner = await import(
+            /* webpackIgnore: true */
+            '@/lib/barcode-scanner/mobile-scanner'
+          );
+          const supported = await mobileScanner.isSupported();
+          setIsSupported(supported);
+        } catch (err) {
+          console.error('Failed to load mobile scanner:', err);
+          setIsSupported(false);
+        }
       } else {
         // Web is always supported if getUserMedia is available
         const supported =
@@ -58,6 +67,10 @@ export function useBarcodeScanner(): UseBarcodeScanner {
   const checkPermission = useCallback(async (): Promise<boolean> => {
     try {
       if (isMobile) {
+        const mobileScanner = await import(
+          /* webpackIgnore: true */
+          '@/lib/barcode-scanner/mobile-scanner'
+        );
         return await mobileScanner.checkPermission();
       } else {
         return await webScanner.checkPermission();
@@ -74,6 +87,10 @@ export function useBarcodeScanner(): UseBarcodeScanner {
   const requestPermission = useCallback(async (): Promise<boolean> => {
     try {
       if (isMobile) {
+        const mobileScanner = await import(
+          /* webpackIgnore: true */
+          '@/lib/barcode-scanner/mobile-scanner'
+        );
         return await mobileScanner.requestPermission();
       } else {
         return await webScanner.requestPermission();
@@ -95,6 +112,10 @@ export function useBarcodeScanner(): UseBarcodeScanner {
       try {
         if (isMobile) {
           // Mobile: Use Capacitor ML Kit
+          const mobileScanner = await import(
+            /* webpackIgnore: true */
+            '@/lib/barcode-scanner/mobile-scanner'
+          );
           const result = await mobileScanner.startScan(config);
           setIsScanning(false);
           return result;
@@ -119,6 +140,10 @@ export function useBarcodeScanner(): UseBarcodeScanner {
   const stopScan = useCallback(async (): Promise<void> => {
     try {
       if (isMobile) {
+        const mobileScanner = await import(
+          /* webpackIgnore: true */
+          '@/lib/barcode-scanner/mobile-scanner'
+        );
         await mobileScanner.stopScan();
       } else {
         await webScanner.stopScan();
