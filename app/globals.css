@@ -65,6 +65,27 @@ input[type="number"] {
   }
 }
 
+/* Barcode scanner styles */
+.barcode-scanner-active {
+  background: transparent !important;
+}
+
+/* Scanning animation */
+.animate-scan {
+  animation: scan 2s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0%, 100% {
+    transform: translateY(-50%);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(50%);
+    opacity: 1;
+  }
+}
+
 /* Theme tokens */
 :root {
   /* Light mode (default) */

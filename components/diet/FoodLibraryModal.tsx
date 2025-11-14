@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import { searchFoods, getFoodDetails, preloadEssentials, type USDAFood, type FoodDetails, type USDANutrient } from "@/lib/usda-db-v2";
 import { cacheFood, getLoggedFoods, type CachedFood } from "@/lib/food-cache";
 import MicronutrientsModal from './MicronutrientsModal';
-import BarcodeScanner from './BarcodeScanner';
+import BarcodeScannerV2 from '@/components/barcode/BarcodeScannerV2';
+import type { BarcodeScanResult } from '@/lib/barcode-scanner/types';
 import { Barcode, Info } from 'lucide-react';
 
 // Props contract updated to include unit and USDA metadata
@@ -234,13 +235,20 @@ export default function FoodLibraryModal({
   };
 
   // Handle barcode scan
-  const handleBarcodeScan = async (barcode: string) => {
+  const handleBarcodeScan = async (result: BarcodeScanResult) => {
     setShowBarcodeScanner(false);
     setDbLoading(true);
 
+    // Log the scan result
+    console.log('Barcode scanned:', {
+      value: result.value,
+      format: result.format,
+      timestamp: new Date(result.timestamp).toISOString(),
+    });
+
     try {
       const { lookupByBarcode } = await import('@/lib/usda-db-v2');
-      const details = await lookupByBarcode(barcode);
+      const details = await lookupByBarcode(result.value);
 
       if (details) {
         // Add to loaded details and search results
@@ -253,7 +261,7 @@ export default function FoodLibraryModal({
         setSearchResults([]);
         setShowQuickAdd(true);
         setQuickAddForm({
-          name: `Product (UPC: ${barcode})`,
+          name: `Product (UPC: ${result.value}) - ${result.format}`,
           calories: '',
           protein: '',
           carbs: '',
@@ -1750,11 +1758,13 @@ export default function FoodLibraryModal({
         />
       )}
 
-      {/* Barcode Scanner */}
-      <BarcodeScanner
+      {/* Barcode Scanner V2 - Production-ready with full-screen camera */}
+      <BarcodeScannerV2
         isOpen={showBarcodeScanner}
         onClose={() => setShowBarcodeScanner(false)}
         onScan={handleBarcodeScan}
+        title="Scan Food Barcode"
+        instructions="Position the barcode within the frame for automatic detection"
       />
     </>
   );
