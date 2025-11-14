@@ -1,8 +1,9 @@
 /**
  * Web barcode scanner implementation using html5-qrcode
+ *
+ * Note: This module uses dynamic imports to prevent SSR issues.
  */
 
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import type {
   BarcodeScanResult,
   BarcodeScannerConfig,
@@ -10,8 +11,17 @@ import type {
   BarcodeFormat,
 } from './types';
 
-let scannerInstance: Html5Qrcode | null = null;
+// Lazy load the html5-qrcode library
+let Html5QrcodeModule: any = null;
+let scannerInstance: any = null;
 let isScanning = false;
+
+async function loadLibrary() {
+  if (!Html5QrcodeModule) {
+    Html5QrcodeModule = await import('html5-qrcode');
+  }
+  return Html5QrcodeModule;
+}
 
 /**
  * Map html5-qrcode format to our standard format
@@ -19,19 +29,19 @@ let isScanning = false;
 function mapBarcodeFormat(html5Format: number): BarcodeFormat {
   // html5-qrcode uses Html5QrcodeSupportedFormats enum
   const formatMap: Record<number, BarcodeFormat> = {
-    [Html5QrcodeSupportedFormats.QR_CODE]: 'QR_CODE',
-    [Html5QrcodeSupportedFormats.AZTEC]: 'AZTEC',
-    [Html5QrcodeSupportedFormats.CODABAR]: 'CODABAR',
-    [Html5QrcodeSupportedFormats.CODE_39]: 'CODE_39',
-    [Html5QrcodeSupportedFormats.CODE_93]: 'CODE_93',
-    [Html5QrcodeSupportedFormats.CODE_128]: 'CODE_128',
-    [Html5QrcodeSupportedFormats.DATA_MATRIX]: 'DATA_MATRIX',
-    [Html5QrcodeSupportedFormats.EAN_8]: 'EAN_8',
-    [Html5QrcodeSupportedFormats.EAN_13]: 'EAN_13',
-    [Html5QrcodeSupportedFormats.ITF]: 'ITF',
-    [Html5QrcodeSupportedFormats.PDF_417]: 'PDF_417',
-    [Html5QrcodeSupportedFormats.UPC_A]: 'UPC_A',
-    [Html5QrcodeSupportedFormats.UPC_E]: 'UPC_E',
+    0: 'QR_CODE',
+    1: 'AZTEC',
+    2: 'CODABAR',
+    4: 'CODE_39',
+    8: 'CODE_93',
+    16: 'CODE_128',
+    32: 'DATA_MATRIX',
+    64: 'EAN_8',
+    128: 'EAN_13',
+    256: 'ITF',
+    512: 'PDF_417',
+    1024: 'UPC_A',
+    2048: 'UPC_E',
   };
 
   return formatMap[html5Format] || 'UNKNOWN';
@@ -40,25 +50,26 @@ function mapBarcodeFormat(html5Format: number): BarcodeFormat {
 /**
  * Map our standard format to html5-qrcode format
  */
-function mapToHtml5Format(format: BarcodeFormat): Html5QrcodeSupportedFormats | undefined {
-  const formatMap: Record<BarcodeFormat, Html5QrcodeSupportedFormats> = {
-    QR_CODE: Html5QrcodeSupportedFormats.QR_CODE,
-    AZTEC: Html5QrcodeSupportedFormats.AZTEC,
-    CODABAR: Html5QrcodeSupportedFormats.CODABAR,
-    CODE_39: Html5QrcodeSupportedFormats.CODE_39,
-    CODE_93: Html5QrcodeSupportedFormats.CODE_93,
-    CODE_128: Html5QrcodeSupportedFormats.CODE_128,
-    DATA_MATRIX: Html5QrcodeSupportedFormats.DATA_MATRIX,
-    EAN_8: Html5QrcodeSupportedFormats.EAN_8,
-    EAN_13: Html5QrcodeSupportedFormats.EAN_13,
-    ITF: Html5QrcodeSupportedFormats.ITF,
-    PDF_417: Html5QrcodeSupportedFormats.PDF_417,
-    UPC_A: Html5QrcodeSupportedFormats.UPC_A,
-    UPC_E: Html5QrcodeSupportedFormats.UPC_E,
-    UNKNOWN: Html5QrcodeSupportedFormats.QR_CODE, // Default fallback
+function mapToHtml5Format(format: BarcodeFormat, Html5QrcodeSupportedFormats: any): number | undefined {
+  const formatMap: Record<BarcodeFormat, string> = {
+    QR_CODE: 'QR_CODE',
+    AZTEC: 'AZTEC',
+    CODABAR: 'CODABAR',
+    CODE_39: 'CODE_39',
+    CODE_93: 'CODE_93',
+    CODE_128: 'CODE_128',
+    DATA_MATRIX: 'DATA_MATRIX',
+    EAN_8: 'EAN_8',
+    EAN_13: 'EAN_13',
+    ITF: 'ITF',
+    PDF_417: 'PDF_417',
+    UPC_A: 'UPC_A',
+    UPC_E: 'UPC_E',
+    UNKNOWN: 'QR_CODE',
   };
 
-  return formatMap[format];
+  const formatName = formatMap[format];
+  return formatName ? Html5QrcodeSupportedFormats[formatName] : undefined;
 }
 
 /**
@@ -126,6 +137,9 @@ export async function startScan(
       }
     }
 
+    // Load the library
+    const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadLibrary();
+
     // Initialize scanner if not already done
     if (!scannerInstance) {
       scannerInstance = new Html5Qrcode(elementId);
@@ -138,7 +152,7 @@ export async function startScan(
 
     // Prepare formats
     const formats = config.formats
-      ? config.formats.map(mapToHtml5Format).filter(Boolean) as Html5QrcodeSupportedFormats[]
+      ? config.formats.map(f => mapToHtml5Format(f, Html5QrcodeSupportedFormats)).filter(Boolean) as number[]
       : [
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.UPC_A,

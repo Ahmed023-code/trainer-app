@@ -10,7 +10,6 @@ import type {
   BarcodeScannerError,
   BarcodeScannerHook,
 } from '@/lib/barcode-scanner/types';
-import * as webScanner from '@/lib/barcode-scanner/web-scanner';
 
 interface UseBarcodeScanner extends BarcodeScannerHook {
   /**
@@ -53,7 +52,9 @@ export function useBarcodeScanner(): UseBarcodeScanner {
       } else {
         // Web is always supported if getUserMedia is available
         const supported =
-          !!navigator.mediaDevices && !!navigator.mediaDevices.getUserMedia;
+          typeof navigator !== 'undefined' &&
+          !!navigator.mediaDevices &&
+          !!navigator.mediaDevices.getUserMedia;
         setIsSupported(supported);
       }
     };
@@ -73,6 +74,7 @@ export function useBarcodeScanner(): UseBarcodeScanner {
         );
         return await mobileScanner.checkPermission();
       } else {
+        const webScanner = await import('@/lib/barcode-scanner/web-scanner');
         return await webScanner.checkPermission();
       }
     } catch (err) {
@@ -93,6 +95,7 @@ export function useBarcodeScanner(): UseBarcodeScanner {
         );
         return await mobileScanner.requestPermission();
       } else {
+        const webScanner = await import('@/lib/barcode-scanner/web-scanner');
         return await webScanner.requestPermission();
       }
     } catch (err) {
@@ -146,6 +149,7 @@ export function useBarcodeScanner(): UseBarcodeScanner {
         );
         await mobileScanner.stopScan();
       } else {
+        const webScanner = await import('@/lib/barcode-scanner/web-scanner');
         await webScanner.stopScan();
       }
       setIsScanning(false);

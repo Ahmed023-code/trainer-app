@@ -7,7 +7,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
-import * as webScanner from '@/lib/barcode-scanner/web-scanner';
 import type {
   BarcodeScanResult,
   BarcodeScannerConfig,
@@ -125,6 +124,7 @@ export function BarcodeScannerV2({
       } else {
         // Web: Start web scanner
         try {
+          const webScanner = await import('@/lib/barcode-scanner/web-scanner');
           const result = await webScanner.startScan(scannerId.current, config);
 
           // Log the result
@@ -168,6 +168,7 @@ export function BarcodeScannerV2({
     setIsInitializing(false);
 
     if (!isMobile) {
+      const webScanner = await import('@/lib/barcode-scanner/web-scanner');
       await webScanner.cleanup();
     } else {
       await stopScan();
