@@ -1,0 +1,67 @@
+﻿# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+.env
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+next-env.d.ts
+
+# Data directories and files
+# Large datasets should be loaded from external storage, not version controlled
+data/
+public/data/
+public/db/
+offline-data/
+foods/
+nutrition/
+exercise/
+usda/
+wordcat/
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-shm
+*.sqlite-wal
+*.shm
+*.wal
+
+# Large data files (CSV/JSON datasets)
+# Note: Small config JSON files are still tracked
+*.csv
+public/**/*.json
+!public/**/package.json
+!public/**/tsconfig.json
+
+# Keep small config files in data directory
+!data/**/*.sql
+!data/**/*.md

@@ -1,0 +1,2170 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { searchFoods, getFoodDetails, preloadEssentials, lookupByBarcode, type USDAFood, type FoodDetails, type USDANutrient } from "@/lib/usda-db-v2";
+import { cacheFood, getLoggedFoods, type CachedFood } from "@/lib/food-cache";
+import MicronutrientsModal from './MicronutrientsModal';
+import { Barcode, Info, Plus, ChevronLeft, Zap } from 'lucide-react';
+import { BrowserMultiFormatReader, NotFoundException, BarcodeFormat, DecodeHintType } from '@zxing/library';
+
+// Props contract updated to include unit and USDA metadata
+export default function FoodLibraryModal({
+  isOpen,
+  onClose,
+  onPick,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onPick: (item: {
+    name: string;
+    quantity: number;
+    unit?: string;
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fdcId?: number;
+    gramsPerUnit?: number;
+  }) => void;
+}) {
+  // ---------- helpers ----------
+  const safeNum = (v: any): number => {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === "string" && v.trim() === "") return 0;
+    const s = String(v).replace(/,/g, ""); // strip thousands separators
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // Convert text to title case (first letter of each word capitalized)
+  const toTitleCase = (str: string): string => {
+    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+  };
+
+  // ---------- data state ----------
+  const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
+  const [displayedCount, setDisplayedCount] = useState(10); // Start with 10 results
+  const [loadedDetails, setLoadedDetails] = useState<Record<number, FoodDetails>>({});
+  const [loading, setLoading] = useState(false);
+  const [dbLoading, setDbLoading] = useState(false);
+
+  // ---------- search state ----------
+  const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchSource, setSearchSource] = useState<'cache' | 'offline' | 'hybrid' | 'online' | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+
+  // ---------- recent foods state ----------
+  const [recentFoods, setRecentFoods] = useState<CachedFood[]>([]);
+  const [filteredRecentFoods, setFilteredRecentFoods] = useState<CachedFood[]>([]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auto-focus search input when modal opens
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
+
+  // Fetch recent foods when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      getLoggedFoods(50).then(foods => {
+        setRecentFoods(foods);
+        setFilteredRecentFoods(foods);
+      }).catch(err => {
+        console.error('Error loading recent foods:', err);
+      });
+    }
+  }, [isOpen]);
+
+  // Filter recent foods based on query
+  useEffect(() => {
+    if (!query.trim()) {
+      setFilteredRecentFoods(recentFoods);
+      return;
+    }
+
+    const lowerQuery = query.trim().toLowerCase();
+    const filtered = recentFoods.filter(food => {
+      const desc = food.description.toLowerCase();
+      const brand = (food.brand_name || '').toLowerCase();
+      return desc.includes(lowerQuery) || brand.includes(lowerQuery);
+    });
+    setFilteredRecentFoods(filtered);
+  }, [query, recentFoods]);
+
+  // Search foods via database
+  useEffect(() => {
+    if (!isOpen || !debounced) {
+      setSearchResults([]);
+      setDisplayedCount(10);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      try {
+        // Show database loading on first search
+        if (!dbLoading && searchResults.length === 0) {
+          setDbLoading(true);
+        }
+
+        const result = await searchFoods(debounced, { limit: 100, includeCache: true, offlineOnly: !isOnline });
+
+        if (!cancelled) {
+          // Capture the search source
+          setSearchSource(result.source);
+
+          // Sort results: prioritize foundation > legacy > branded
+          const sortedResults = result.offlineResults.sort((a, b) => {
+            const queryLower = debounced.toLowerCase();
+            const aDesc = a.description.toLowerCase();
+            const bDesc = b.description.toLowerCase();
+
+            // Assign priority scores for data types
+            const getTypePriority = (dataType: string) => {
+              if (dataType === 'foundation_food') return 1;
+              if (dataType === 'sr_legacy_food') return 2;
+              if (dataType === 'branded_food') return 3;
+              return 4; // survey_food or other
+            };
+
+            const aPriority = getTypePriority(a.data_type);
+            const bPriority = getTypePriority(b.data_type);
+
+            // 1. Exact match (singular or plural)
+            const aExact = aDesc === queryLower || aDesc === queryLower + 's' || aDesc === queryLower.slice(0, -1);
+            const bExact = bDesc === queryLower || bDesc === queryLower + 's' || bDesc === queryLower.slice(0, -1);
+            if (aExact && !bExact) return -1;
+            if (!aExact && bExact) return 1;
+
+            // 2. Prioritize by data type: foundation > legacy > branded
+            if (aPriority !== bPriority) return aPriority - bPriority;
+
+            // 3. For items of same type, prioritize starts with query
+            const aStarts = aDesc.startsWith(queryLower);
+            const bStarts = bDesc.startsWith(queryLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+
+            // 4. Prioritize simple modifiers (ends with comma or 's') before other modifiers
+            // e.g., "apple, raw" or "apples" before "apple pie" or "apple juice"
+            const getSimpleModifier = (desc: string, query: string) => {
+              // Remove the query from start to see what remains
+              if (desc.startsWith(query)) {
+                const remainder = desc.slice(query.length).trim();
+                // Check if it's just plural 's' or starts with a comma (simple modifiers)
+                if (remainder === '' || remainder === 's' || remainder.startsWith(',')) {
+                  return true;
+                }
+              }
+              return false;
+            };
+
+            const aSimple = getSimpleModifier(aDesc, queryLower);
+            const bSimple = getSimpleModifier(bDesc, queryLower);
+            if (aSimple && !bSimple) return -1;
+            if (!aSimple && bSimple) return 1;
+
+            // 5. Word starts with query (e.g., "egg" matches "hard boiled egg")
+            const aWordStart = aDesc.split(' ').some(word => word.startsWith(queryLower));
+            const bWordStart = bDesc.split(' ').some(word => word.startsWith(queryLower));
+            if (aWordStart && !bWordStart) return -1;
+            if (!aWordStart && bWordStart) return 1;
+
+            // 6. Shorter descriptions (simpler foods) first
+            const aLen = aDesc.length;
+            const bLen = bDesc.length;
+            if (Math.abs(aLen - bLen) > 10) { // Only consider if significant difference
+              return aLen - bLen;
+            }
+
+            // 7. Keep original Fuse.js order
+            return 0;
+          });
+
+          setSearchResults(sortedResults);
+          setDisplayedCount(10); // Reset to 10 on new search
+          setLoading(false);
+          setDbLoading(false);
+
+          // Preload nutrition data for first 10 results
+          const preloadFoods = sortedResults.slice(0, 10);
+          for (const food of preloadFoods) {
+            if (!loadedDetails[food.fdc_id]) {
+              loadFoodDetails(food.fdc_id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Search error:', err);
+        if (!cancelled) {
+          setSearchResults([]);
+          setDisplayedCount(10);
+          setLoading(false);
+          setDbLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, debounced]);
+
+  // Load full food details (nutrients + portions) when needed
+  const loadFoodDetails = async (fdcId: number, cacheReason: 'viewed' | 'logged' = 'viewed') => {
+    if (loadedDetails[fdcId]) return; // Already loaded
+
+    try {
+      const data = await getFoodDetails(fdcId, { cacheReason });
+      if (data) {
+        setLoadedDetails(prev => ({ ...prev, [fdcId]: data }));
+      }
+    } catch (err) {
+      console.error('Error loading food details:', err);
+    }
+  };
+
+  // reset all on close
+  useEffect(() => {
+    if (!isOpen) {
+      setQuery("");
+      setDebounced("");
+      setDisplayedCount(10);
+      setActiveIdx(null);
+      setMode("servings");
+      setSelPortionIdx(0);
+      setServings("1");
+      setGrams("100");
+      setShowQuickAdd(false);
+      setShowCamera(false);
+      setScanningStatus("");
+      setIsScanning(false);
+      setFlashOn(false);
+      setQuickAddForm({
+        name: "",
+        calories: "",
+        protein: "",
+        carbs: "",
+        fat: "",
+        quantity: "1",
+      });
+    }
+  }, [isOpen]);
+
+  // ---------- per-row quantity bubble state ----------
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [mode, setMode] = useState<"servings" | "weight">("servings");
+  const [selPortionIdx, setSelPortionIdx] = useState(0);
+  const [servings, setServings] = useState("1");
+  const [grams, setGrams] = useState("100");
+
+  // ---------- quick add state ----------
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddForm, setQuickAddForm] = useState({
+    name: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: "",
+    quantity: "1",
+  });
+
+  // ---------- new modal states ----------
+  const [showMicronutrients, setShowMicronutrients] = useState(false);
+  const [selectedFoodForMicros, setSelectedFoodForMicros] = useState<{ name: string; nutrients: USDANutrient[]; servingGrams: number } | null>(null);
+
+  // ---------- camera state ----------
+  const [showCamera, setShowCamera] = useState(false);
+  const [scanningStatus, setScanningStatus] = useState<string>("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Start camera and barcode scanner when showCamera becomes true
+  useEffect(() => {
+    if (showCamera && videoRef.current) {
+      setScanningStatus("Starting camera...");
+      setIsScanning(false);
+
+      const videoElement = videoRef.current;
+
+      // Handler for when video is playing
+      const handleVideoPlaying = () => {
+        console.log('Video is playing, starting barcode scanner...');
+        setScanningStatus("Initializing scanner...");
+
+        // Small delay to ensure video is fully ready
+        setTimeout(() => {
+          startBarcodeScanning();
+        }, 500);
+      };
+
+      // Add event listener
+      videoElement.addEventListener('playing', handleVideoPlaying);
+
+      navigator.mediaDevices
+        .getUserMedia({
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        })
+        .then((stream) => {
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            console.log('Camera stream set, waiting for video to play...');
+          }
+        })
+        .catch((err) => {
+          console.error('Error accessing camera:', err);
+          alert('Could not access camera. Please check permissions.');
+          setShowCamera(false);
+        });
+
+      // Cleanup
+      return () => {
+        videoElement.removeEventListener('playing', handleVideoPlaying);
+      };
+    }
+
+    // Cleanup: stop camera and scanner when component unmounts or camera is closed
+    return () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+        codeReaderRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+      setScanningStatus("");
+      setIsScanning(false);
+      setFlashOn(false);
+    };
+  }, [showCamera]);
+
+  // Barcode scanning function using canvas-based frame capture
+  const startBarcodeScanning = async () => {
+    if (!videoRef.current) {
+      console.error('Video ref not available');
+      return;
+    }
+
+    if (isScanning) {
+      console.log('Scanner already running');
+      return;
+    }
+
+    try {
+      console.log('🎥 Setting up barcode scanner...');
+
+      // Create canvas for frame capture
+      const canvas = document.createElement('canvas');
+      canvasRef.current = canvas;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        console.error('Could not get canvas context');
+        return;
+      }
+
+      // Set up hints for better barcode detection
+      const hints = new Map();
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.QR_CODE,
+      ]);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+
+      const codeReader = new BrowserMultiFormatReader(hints);
+      codeReaderRef.current = codeReader;
+
+      setScanningStatus("Ready to scan");
+      setIsScanning(true);
+
+      console.log('📱 Supported formats:', [
+        'EAN-13', 'EAN-8', 'UPC-A', 'UPC-E', 'CODE-128', 'CODE-39', 'QR-Code'
+      ]);
+
+      // Scan function that captures a frame and tries to decode it
+      const scanFrame = async () => {
+        if (!videoRef.current || !canvasRef.current || !codeReaderRef.current) {
+          return;
+        }
+
+        const video = videoRef.current;
+
+        // Make sure video is ready
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+          return;
+        }
+
+        // Set canvas size to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw current video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        try {
+          // Convert canvas to data URL and create an image element
+          const dataUrl = canvas.toDataURL('image/png');
+          const img = new Image();
+          img.src = dataUrl;
+
+          await new Promise((resolve) => {
+            img.onload = resolve;
+          });
+
+          // Try to decode barcode from the image element
+          const result = await codeReaderRef.current.decodeFromImageElement(img);
+
+          if (result) {
+            const barcode = result.getText();
+            const format = result.getBarcodeFormat();
+            console.log('✅ BARCODE DETECTED!');
+            console.log('  📊 Code:', barcode);
+            console.log('  📝 Format:', BarcodeFormat[format]);
+
+            // Stop scanning while we process
+            if (scanIntervalRef.current) {
+              clearInterval(scanIntervalRef.current);
+              scanIntervalRef.current = null;
+            }
+            setIsScanning(false);
+            setScanningStatus(`Found: ${barcode}`);
+
+            // Look up the food by barcode
+            handleBarcodeDetected(barcode);
+          }
+        } catch (error) {
+          // NotFoundException is normal when no barcode is in frame - ignore it
+          // All other errors are also expected when no barcode is present
+          // Only log if it's a completely unexpected error
+        }
+      };
+
+      // Start scanning at 10 FPS (every 100ms)
+      console.log('🔄 Starting continuous frame capture (10 FPS)...');
+      scanIntervalRef.current = setInterval(scanFrame, 100);
+
+      console.log('✅ Barcode scanner started successfully!');
+      console.log('📸 Capturing and analyzing frames every 100ms');
+      console.log('🎯 Point camera at ANY barcode on screen - detection works everywhere!');
+    } catch (error) {
+      console.error('❌ Error starting barcode scanner:', error);
+      setScanningStatus("Scanner error - see console");
+      setIsScanning(false);
+    }
+  };
+
+  // Handle barcode detection
+  const handleBarcodeDetected = async (barcode: string) => {
+    try {
+      console.log(`Looking up barcode in database: ${barcode}`);
+      setScanningStatus("Looking up product...");
+
+      const foodDetails = await lookupByBarcode(barcode);
+
+      if (foodDetails) {
+        console.log('✓ Product found:', foodDetails.food.description);
+        setScanningStatus("Product found! Adding...");
+
+        // Extract macros from nutrients
+        const macros = getMacrosFromNutrients(foodDetails.nutrients);
+        console.log('Macros:', macros);
+
+        // Get default portion (first portion or 100g)
+        const defaultPortion = foodDetails.portions && foodDetails.portions.length > 0
+          ? foodDetails.portions[0]
+          : { gram_weight: 100, portion_description: '100 g' };
+
+        console.log('Adding food to meal log...');
+
+        // Add the food
+        onPick({
+          name: foodDetails.food.description,
+          quantity: 1,
+          unit: defaultPortion.portion_description || `${defaultPortion.gram_weight} g`,
+          calories: macros.calories,
+          protein: macros.protein,
+          fat: macros.fat,
+          carbs: macros.carbs,
+          fdcId: foodDetails.food.fdc_id,
+          gramsPerUnit: defaultPortion.gram_weight,
+        });
+
+        // Cache the food as logged
+        await cacheFood({
+          fdc_id: foodDetails.food.fdc_id,
+          description: foodDetails.food.description,
+          data_type: foodDetails.food.data_type,
+          brand_name: foodDetails.food.brand_name,
+          upc: foodDetails.food.upc,
+          nutrients: foodDetails.nutrients,
+          portions: foodDetails.portions,
+          cached_at: Date.now(),
+          cached_reason: 'logged',
+          expires_at: null,
+        });
+
+        console.log('✓ Food added successfully!');
+
+        // Close camera and modal
+        setShowCamera(false);
+        onClose();
+      } else {
+        // Barcode not found in database
+        console.warn(`Product not found for barcode: ${barcode}`);
+        setScanningStatus("Product not found in database");
+
+        // Show error for 2 seconds then close
+        setTimeout(() => {
+          setShowCamera(false);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error looking up barcode:', error);
+      setScanningStatus("Error looking up product");
+
+      // Show error for 2 seconds then close
+      setTimeout(() => {
+        setShowCamera(false);
+      }, 2000);
+    }
+  };
+
+  // Toggle flashlight on/off
+  const toggleFlash = async () => {
+    if (!streamRef.current) return;
+
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+
+      // Check if torch is supported
+      if (capabilities.torch) {
+        await track.applyConstraints({
+          advanced: [{ torch: !flashOn } as any]
+        });
+        setFlashOn(!flashOn);
+      } else {
+        console.log('Torch not supported on this device');
+      }
+    } catch (error) {
+      console.error('Error toggling flash:', error);
+    }
+  };
+
+  // Preload essential bundles on mount
+  useEffect(() => {
+    if (isOpen) {
+      preloadEssentials().catch(err => console.error('Error preloading:', err));
+    }
+  }, [isOpen]);
+
+  // Extract macros from nutrients array
+  const getMacrosFromNutrients = (nutrients: USDANutrient[]) => {
+    const getAmount = (names: string[]) => {
+      const nutrient = nutrients.find(n => names.some(name =>
+        n.name.toLowerCase().includes(name.toLowerCase())
+      ));
+      return nutrient ? safeNum(nutrient.amount) : 0;
+    };
+
+    const protein = getAmount(['Protein']);
+    const fat = getAmount(['Total lipid', 'fat']);
+    const carbs = getAmount(['Carbohydrate, by difference', 'carbohydrate']);
+    let calories = getAmount(['Energy']);
+
+    // If calories is in kJ, look for kcal specifically
+    const kcalNutrient = nutrients.find(n =>
+      n.name.toLowerCase() === 'energy' && n.unit_name.toUpperCase() === 'KCAL'
+    );
+    if (kcalNutrient) {
+      calories = safeNum(kcalNutrient.amount);
+    }
+
+    // Fallback: calculate from macros (Atwater factors)
+    if (calories === 0 && (protein > 0 || fat > 0 || carbs > 0)) {
+      calories = Math.round(protein * 4 + fat * 9 + carbs * 4);
+    }
+
+    return { calories, protein, fat, carbs };
+  };
+
+  // Build portions array from food details
+  const buildPortions = (fdcId: number): { label: string; grams: number }[] => {
+    const details = loadedDetails[fdcId];
+    if (!details || !details.portions || details.portions.length === 0) {
+      return [{ label: '100 g', grams: 100 }];
+    }
+
+    return details.portions.map(p => ({
+      label: p.portion_description || `${p.gram_weight} g`,
+      grams: p.gram_weight
+    }));
+  };
+
+  // Get per-100g macros for a food
+  const per100gFor = (fdcId: number) => {
+    const details = loadedDetails[fdcId];
+    if (!details || !details.nutrients) {
+      return { calories: 0, protein: 0, fat: 0, carbs: 0 };
+    }
+
+    return getMacrosFromNutrients(details.nutrients);
+  };
+
+  // ---------- chips UI ----------
+  const ChipRow = ({ fdcId }: { fdcId: number }) => {
+    const details = loadedDetails[fdcId];
+    if (!details) return <div className="text-xs text-neutral-400">Loading nutrition...</div>;
+
+    const base = per100gFor(fdcId);
+    const portions = buildPortions(fdcId);
+    const g = safeNum(portions[0]?.grams || 100);
+
+    const cal = Math.round(base.calories * (g / 100));
+    const p = Math.round(base.protein * (g / 100));
+    const fat = Math.round(base.fat * (g / 100));
+    const c = Math.round(base.carbs * (g / 100));
+
+    return (
+      <div className="mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto tabular-nums">
+        {/* Cal */}
+        <span
+          className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap"
+          style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
+        >
+          <span
+            className="inline-flex items-center justify-center w-5 h-5 rounded-full mr-1 leading-none text-center text-[9px]"
+            style={{ backgroundColor: "#34D399", color: "#000" }}
+          >
+            Cal
+          </span>
+          {cal}
+        </span>
+        {/* P */}
+        <span
+          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+          style={{ color: "#F87171", backgroundColor: "#F871711F" }}
+        >
+          <span
+            className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+            style={{ backgroundColor: "#F87171", color: "#000" }}
+          >
+            P
+          </span>
+          {p}
+        </span>
+        {/* F */}
+        <span
+          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+          style={{ color: "#FACC15", backgroundColor: "#FACC151F" }}
+        >
+          <span
+            className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+            style={{ backgroundColor: "#FACC15", color: "#000" }}
+          >
+            F
+          </span>
+          {fat}
+        </span>
+        {/* C */}
+        <span
+          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+          style={{ color: "#60A5FA", backgroundColor: "#60A5FA1F" }}
+        >
+          <span
+            className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+            style={{ backgroundColor: "#60A5FA", color: "#000" }}
+          >
+            C
+          </span>
+          {c}
+        </span>
+      </div>
+    );
+  };
+
+  // compute live preview for quantity bubble
+  const computePreview = (fdcId: number) => {
+    const base = per100gFor(fdcId);
+    const portions = buildPortions(fdcId);
+
+    if (mode === "servings") {
+      const idx = Math.min(Math.max(selPortionIdx, 0), portions.length - 1);
+      const gramsEach = safeNum(portions[idx]?.grams);
+      const s = safeNum(servings);
+      const gramsTotal = gramsEach * s;
+      return {
+        gramsTotal,
+        cal: Math.round(base.calories * (gramsTotal / 100)),
+        p: Math.round(base.protein * (gramsTotal / 100)),
+        fat: Math.round(base.fat * (gramsTotal / 100)),
+        c: Math.round(base.carbs * (gramsTotal / 100)),
+      };
+    }
+
+    if (mode === "weight") {
+      const g = safeNum(grams);
+      return {
+        gramsTotal: g,
+        cal: Math.round(base.calories * (g / 100)),
+        p: Math.round(base.protein * (g / 100)),
+        fat: Math.round(base.fat * (g / 100)),
+        c: Math.round(base.carbs * (g / 100)),
+      };
+    }
+
+    return { gramsTotal: 100, cal: 0, p: 0, fat: 0, c: 0 };
+  };
+
+  // row ref map for anchoring (ensures bubble sits within each row)
+  const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const setRowRef = (i: number) => (el: HTMLDivElement | null) => {
+    rowRefs.current[i] = el;
+  };
+
+  // Quick Add helper functions
+  const parseQty = (s: string) => {
+    const v = Number((s ?? "").toString());
+    return isFinite(v) ? v : 0;
+  };
+  const clampQty = (v: number) => Math.max(0, v);
+  const incQty = (step = 1) => {
+    setQuickAddForm((f) => ({ ...f, quantity: String(clampQty(parseQty(f.quantity ?? "0") + step)) }));
+  };
+  const decQty = (step = 1) => {
+    setQuickAddForm((f) => ({ ...f, quantity: String(clampQty(parseQty(f.quantity ?? "0") - step)) }));
+  };
+
+  const handleQuickAddSave = async () => {
+    const name = quickAddForm.name.trim() || "Unnamed";
+    const quantity = Number(quickAddForm.quantity) || 1;
+    const cal = Number(quickAddForm.calories) || 0;
+    const p = Number(quickAddForm.protein) || 0;
+    const c = Number(quickAddForm.carbs) || 0;
+    const f = Number(quickAddForm.fat) || 0;
+
+    // Generate unique FDC ID for custom food (negative to avoid conflicts)
+    const customFdcId = -Date.now();
+
+    // Save custom food to cache for future searches
+    try {
+      const customFood: CachedFood = {
+        fdc_id: customFdcId,
+        description: name,
+        data_type: 'custom',
+        brand_name: 'Custom Food',
+        nutrients: [
+          { nutrient_id: 1008, name: 'Energy', amount: cal, unit_name: 'kcal' },
+          { nutrient_id: 1003, name: 'Protein', amount: p, unit_name: 'g' },
+          { nutrient_id: 1004, name: 'Total lipid (fat)', amount: f, unit_name: 'g' },
+          { nutrient_id: 1005, name: 'Carbohydrate, by difference', amount: c, unit_name: 'g' },
+        ],
+        portions: [
+          { id: 1, portion_description: 'serving', gram_weight: 100 }
+        ],
+        cached_at: Date.now(),
+        cached_reason: 'logged',
+        expires_at: null, // Never expires
+      };
+      await cacheFood(customFood);
+      console.log('Custom food saved to cache:', name);
+    } catch (error) {
+      console.error('Failed to save custom food:', error);
+    }
+
+    onPick({
+      name,
+      quantity,
+      calories: cal,
+      protein: p,
+      fat: f,
+      carbs: c,
+      fdcId: customFdcId,
+    });
+
+    setShowQuickAdd(false);
+    setQuickAddForm({
+      name: "",
+      calories: "",
+      protein: "",
+      carbs: "",
+      fat: "",
+      quantity: "1",
+    });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Full-screen sheet */}
+      <div className="fixed inset-0 z-[100002] bg-white dark:bg-neutral-900">
+        {/* Sticky header with Back + search + Barcode + Quick Add */}
+        <div className="sticky top-0 p-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+          <button
+            className="p-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            onClick={onClose}
+            title="Close"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <input
+            ref={searchInputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search 863K+ foods..."
+            className="flex-1 rounded-full border px-3 py-2 bg-white dark:bg-neutral-900"
+          />
+          <button
+            className="p-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            onClick={() => setShowCamera(true)}
+            title="Scan Barcode"
+          >
+            <Barcode className="w-5 h-5" />
+          </button>
+          <button
+            className="p-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            onClick={() => setShowQuickAdd(!showQuickAdd)}
+            title="Add Custom Food"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Status Indicator */}
+        {searchSource && query && (
+          <div className="px-4 py-2 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+              {/* Online/Offline indicator */}
+              <div className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="font-medium">{isOnline ? 'Online' : 'Offline'}</span>
+              </div>
+
+              <span className="text-neutral-300 dark:text-neutral-600">•</span>
+
+              {/* Search source indicator */}
+              <div className="flex items-center gap-1.5">
+                {searchSource === 'cache' && (
+                  <>
+                    <Zap className="w-3 h-3 text-green-500" />
+                    <span>Recent foods</span>
+                  </>
+                )}
+                {searchSource === 'offline' && (
+                  <>
+                    <span className="text-blue-500">📦</span>
+                    <span>Offline database (13K foods)</span>
+                  </>
+                )}
+                {searchSource === 'hybrid' && (
+                  <>
+                    <span className="text-purple-500">🌐</span>
+                    <span>Hybrid (Offline + Online)</span>
+                  </>
+                )}
+                {searchSource === 'online' && (
+                  <>
+                    <span className="text-green-500">☁️</span>
+                    <span>Full database (863K foods)</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Add Form */}
+        {showQuickAdd && (
+          <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+            <div className="max-w-2xl mx-auto">
+              <h3 className="font-semibold mb-3">Quick Add</h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-sm col-span-2">
+                  Name
+                  <input
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    value={quickAddForm.name}
+                    onChange={(e) => setQuickAddForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </label>
+
+                <label className="text-sm">
+                  Calories
+                  <input
+                    inputMode="decimal"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    value={quickAddForm.calories}
+                    onChange={(e) =>
+                      setQuickAddForm((f) => ({
+                        ...f,
+                        calories: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
+                      }))
+                    }
+                  />
+                </label>
+                <label className="text-sm">
+                  Protein
+                  <input
+                    inputMode="decimal"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    value={quickAddForm.protein}
+                    onChange={(e) =>
+                      setQuickAddForm((f) => ({
+                        ...f,
+                        protein: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
+                      }))
+                    }
+                  />
+                </label>
+                <label className="text-sm">
+                  Carbs
+                  <input
+                    inputMode="decimal"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    value={quickAddForm.carbs}
+                    onChange={(e) =>
+                      setQuickAddForm((f) => ({
+                        ...f,
+                        carbs: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
+                      }))
+                    }
+                  />
+                </label>
+                <label className="text-sm">
+                  Fat
+                  <input
+                    inputMode="decimal"
+                    className="mt-1 w-full rounded-full border border-neutral-300 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
+                    value={quickAddForm.fat}
+                    onChange={(e) =>
+                      setQuickAddForm((f) => ({
+                        ...f,
+                        fat: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* Quantity control */}
+              <div className="pt-3">
+                <label className="block text-sm mb-1">Quantity</label>
+                <div className="flex items-center gap-2 justify-center">
+                  <button
+                    type="button"
+                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
+                    onClick={() => decQty(1)}
+                    aria-label="Decrease quantity"
+                  >
+                    –
+                  </button>
+
+                  <input
+                    inputMode="decimal"
+                    className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                    value={quickAddForm.quantity ?? "1"}
+                    onChange={(e) =>
+                      setQuickAddForm((f) => ({
+                        ...f,
+                        quantity: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
+                      }))
+                    }
+                    placeholder="1"
+                  />
+
+                  <button
+                    type="button"
+                    className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 grid place-items-center text-xl"
+                    onClick={() => incQty(1)}
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
+                  onClick={() => {
+                    setShowQuickAdd(false);
+                    setQuickAddForm({
+                      name: "",
+                      calories: "",
+                      protein: "",
+                      carbs: "",
+                      fat: "",
+                      quantity: "1",
+                    });
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="px-3 py-2 rounded-full bg-accent-diet text-black" onClick={handleQuickAddSave}>
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Results */}
+        <ul className="p-3 space-y-2 overflow-y-auto max-h-[calc(100vh-80px)] relative">
+          {dbLoading && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              <div className="font-semibold mb-2">Loading nutrition database...</div>
+              <div className="text-xs">First load may take a moment (2.1 GB)</div>
+            </li>
+          )}
+
+          {!dbLoading && loading && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              Searching...
+            </li>
+          )}
+
+          {!dbLoading && !loading && debounced && searchResults.length === 0 && filteredRecentFoods.length === 0 && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              No matches. Try a different search.
+            </li>
+          )}
+
+          {!dbLoading && !loading && !debounced && filteredRecentFoods.length === 0 && (
+            <li className="text-center text-sm text-neutral-500 dark:text-neutral-400 py-8">
+              Search for foods by name or use the barcode scanner
+            </li>
+          )}
+
+          {/* Show filtered recent foods when typing */}
+          {!dbLoading && !loading && debounced && filteredRecentFoods.length > 0 && (
+            <>
+              <li className="px-4 py-2 text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+                Recently Logged
+              </li>
+              {filteredRecentFoods.slice(0, 5).map((food, i) => {
+                const isActive = activeIdx === -1000 - i;
+                const hasDetails = !!loadedDetails[food.fdc_id];
+
+                const usdaFood: USDAFood = {
+                  fdc_id: food.fdc_id,
+                  description: food.description,
+                  data_type: food.data_type,
+                  brand_name: food.brand_name,
+                };
+
+                return (
+                  <li key={`recent-search-${food.fdc_id}-${i}`}>
+                    <div
+                      ref={setRowRef(-1000 - i)}
+                      className="relative rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-4 py-3 shadow-sm"
+                    >
+                      <button
+                        className="block text-left w-full"
+                        onClick={async () => {
+                          if (!hasDetails) {
+                            await loadFoodDetails(food.fdc_id);
+                          }
+
+                          if (!loadedDetails[food.fdc_id]) {
+                            const foodDetails: FoodDetails = {
+                              food: usdaFood,
+                              nutrients: food.nutrients,
+                              portions: food.portions
+                            };
+                            setLoadedDetails(prev => ({ ...prev, [food.fdc_id]: foodDetails }));
+                          }
+
+                          const portions = buildPortions(food.fdc_id);
+                          setActiveIdx(-1000 - i);
+                          setMode("servings");
+                          setSelPortionIdx(0);
+                          setServings("1");
+                          setGrams(String(portions[0]?.grams || 100));
+                        }}
+                      >
+                        <div className="font-semibold leading-tight break-words">{toTitleCase(food.description)}</div>
+                        {food.brand_name && (
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">{toTitleCase(food.brand_name)}</div>
+                        )}
+                        {!food.brand_name && food.data_type !== 'branded_food' && food.data_type !== 'custom' && (
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">Generic</div>
+                        )}
+                        {food.data_type === 'custom' && (
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">Custom Food</div>
+                        )}
+                        {(hasDetails || loadedDetails[food.fdc_id]) && <ChipRow fdcId={food.fdc_id} />}
+                      </button>
+                    </div>
+
+                    {isActive && (hasDetails || loadedDetails[food.fdc_id]) && typeof document !== "undefined" && createPortal(
+                      <>
+                        <button
+                          className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
+                          aria-label="Close quantity"
+                          onClick={() => setActiveIdx(null)}
+                        />
+                        <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
+                          <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
+                            <h3 className="font-semibold text-lg mb-3">{toTitleCase(food.description)}</h3>
+                            {food.brand_name && (
+                              <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                                {toTitleCase(food.brand_name)}
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+                              {(["servings", "weight"] as const).map((m) => (
+                                <button
+                                  key={m}
+                                  className={
+                                    "px-2 py-1 rounded-md border " +
+                                    (mode === m
+                                      ? "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700"
+                                      : "border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800")
+                                  }
+                                  onClick={() => setMode(m)}
+                                >
+                                  {m === "servings" ? "Servings" : "Weight (g)"}
+                                </button>
+                              ))}
+                            </div>
+
+                            {mode === "servings" && (
+                              <div className="space-y-2">
+                                <label className="block text-sm">
+                                  Portion
+                                  <select
+                                    className="mt-1 w-full rounded-full border px-2 py-2 bg-white dark:bg-neutral-900"
+                                    value={selPortionIdx}
+                                    onChange={(e) => setSelPortionIdx(Number(e.target.value))}
+                                  >
+                                    {buildPortions(food.fdc_id).map((p, idx) => (
+                                      <option key={idx} value={idx}>
+                                        {p.label} ({p.grams} g)
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+
+                                <label className="block text-sm">
+                                  Servings
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() =>
+                                        setServings((s) => {
+                                          const v = safeNum(s) - 1;
+                                          return String(v < 0 ? 0 : v);
+                                        })
+                                      }
+                                    >
+                                      –
+                                    </button>
+                                    <input
+                                      inputMode="decimal"
+                                      className="w-16 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                                      value={servings}
+                                      onChange={(e) =>
+                                        setServings(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() => setServings((s) => String(safeNum(s) + 1))}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </label>
+                              </div>
+                            )}
+
+                            {mode === "weight" && (
+                              <div className="space-y-2">
+                                <label className="block text-sm">
+                                  Grams
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() =>
+                                        setGrams((g) => {
+                                          const v = safeNum(g) - 10;
+                                          return String(v < 0 ? 0 : v);
+                                        })
+                                      }
+                                    >
+                                      –
+                                    </button>
+                                    <input
+                                      inputMode="decimal"
+                                      className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                                      value={grams}
+                                      onChange={(e) =>
+                                        setGrams(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() => setGrams((g) => String(safeNum(g) + 10))}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </label>
+                              </div>
+                            )}
+
+                            {(() => {
+                              const pv = computePreview(food.fdc_id);
+                              return (
+                                <>
+                                  <div className="mt-3">
+                                    <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                                      {`Preview • ${Math.round(pv.gramsTotal)} g`}
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto tabular-nums">
+                                      <span
+                                        className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-5 h-5 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#34D399", color: "#000" }}
+                                        >
+                                          Cal
+                                        </span>
+                                        {pv.cal}
+                                      </span>
+                                      <span
+                                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#F87171", backgroundColor: "#F871711F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#F87171", color: "#000" }}
+                                        >
+                                          P
+                                        </span>
+                                        {pv.p}
+                                      </span>
+                                      <span
+                                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#FACC15", backgroundColor: "#FACC151F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#FACC15", color: "#000" }}
+                                        >
+                                          F
+                                        </span>
+                                        {pv.fat}
+                                      </span>
+                                      <span
+                                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#60A5FA", backgroundColor: "#60A5FA1F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#60A5FA", color: "#000" }}
+                                        >
+                                          C
+                                        </span>
+                                        {pv.c}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-3 flex justify-between gap-2">
+                                    <button
+                                      className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1"
+                                      onClick={() => {
+                                        const details = loadedDetails[food.fdc_id];
+                                        const pv = computePreview(food.fdc_id);
+                                        if (details) {
+                                          setSelectedFoodForMicros({
+                                            name: toTitleCase(food.description),
+                                            nutrients: details.nutrients,
+                                            servingGrams: pv.gramsTotal
+                                          });
+                                          setShowMicronutrients(true);
+                                        }
+                                      }}
+                                      title="View All Nutrients"
+                                    >
+                                      <Info className="w-4 h-4" />
+                                      Details
+                                    </button>
+                                    <div className="flex gap-2">
+                                      <button
+                                        className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
+                                        onClick={() => setActiveIdx(null)}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        className="px-3 py-2 rounded-full bg-[#34D399] text-black"
+                                        onClick={() => {
+                                          loadFoodDetails(food.fdc_id, 'logged');
+
+                                          const portions = buildPortions(food.fdc_id);
+                                          let unit = "g";
+                                          let gramsPerUnit = pv.gramsTotal;
+
+                                          if (mode === "servings" && portions.length > 0) {
+                                            const selectedPortion = portions[selPortionIdx];
+                                            unit = selectedPortion.label;
+                                            gramsPerUnit = selectedPortion.grams;
+                                          }
+
+                                          onPick({
+                                            name: food.description,
+                                            quantity: 1,
+                                            unit,
+                                            calories: pv.cal,
+                                            protein: pv.p,
+                                            fat: pv.fat,
+                                            carbs: pv.c,
+                                            fdcId: food.fdc_id,
+                                            gramsPerUnit,
+                                          });
+                                          setActiveIdx(null);
+                                          onClose();
+                                        }}
+                                      >
+                                        Add
+                                      </button>
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </>,
+                      document.body
+                    )}
+                  </li>
+                );
+              })}
+              {/* Show divider if there are also search results */}
+              {searchResults.length > 0 && (
+                <li className="px-4 py-2 text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+                  All Results
+                </li>
+              )}
+            </>
+          )}
+
+          {/* Show recent foods section when search is empty or filtered by query */}
+          {!dbLoading && !loading && filteredRecentFoods.length > 0 && !debounced && (
+            <>
+              <li className="px-4 py-2 text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+                Recently Logged
+              </li>
+              {filteredRecentFoods.slice(0, 10).map((food, i) => {
+                const isActive = activeIdx === -1000 - i; // Use negative indices for recent foods
+                const hasDetails = !!loadedDetails[food.fdc_id];
+
+                // Convert CachedFood to match USDAFood structure for rendering
+                const usdaFood: USDAFood = {
+                  fdc_id: food.fdc_id,
+                  description: food.description,
+                  data_type: food.data_type,
+                  brand_name: food.brand_name,
+                };
+
+                return (
+                  <li key={`recent-${food.fdc_id}-${i}`}>
+                    <div
+                      ref={setRowRef(-1000 - i)}
+                      className="relative rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-4 py-3 shadow-sm"
+                    >
+                      <button
+                        className="block text-left w-full"
+                        onClick={async () => {
+                          // Load details if not already loaded
+                          if (!hasDetails) {
+                            await loadFoodDetails(food.fdc_id);
+                          }
+
+                          // Set loaded details from cached food if not already loaded
+                          if (!loadedDetails[food.fdc_id]) {
+                            const foodDetails: FoodDetails = {
+                              food: usdaFood,
+                              nutrients: food.nutrients,
+                              portions: food.portions
+                            };
+                            setLoadedDetails(prev => ({ ...prev, [food.fdc_id]: foodDetails }));
+                          }
+
+                          // Open bubble for this row
+                          const portions = buildPortions(food.fdc_id);
+                          setActiveIdx(-1000 - i);
+                          setMode("servings");
+                          setSelPortionIdx(0);
+                          setServings("1");
+                          setGrams(String(portions[0]?.grams || 100));
+                        }}
+                      >
+                        <div className="font-semibold leading-tight break-words">{toTitleCase(food.description)}</div>
+                        {food.brand_name && (
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">{toTitleCase(food.brand_name)}</div>
+                        )}
+                        {!food.brand_name && food.data_type !== 'branded_food' && food.data_type !== 'custom' && (
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">Generic</div>
+                        )}
+                        {food.data_type === 'custom' && (
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">Custom Food</div>
+                        )}
+                        {(hasDetails || loadedDetails[food.fdc_id]) && <ChipRow fdcId={food.fdc_id} />}
+                      </button>
+                    </div>
+
+                    {/* Portal quantity bubble */}
+                    {isActive && (hasDetails || loadedDetails[food.fdc_id]) && typeof document !== "undefined" && createPortal(
+                      <>
+                        <button
+                          className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
+                          aria-label="Close quantity"
+                          onClick={() => setActiveIdx(null)}
+                        />
+                        <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
+                          <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
+                            <h3 className="font-semibold text-lg mb-3">{toTitleCase(food.description)}</h3>
+                            {food.brand_name && (
+                              <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                                {toTitleCase(food.brand_name)}
+                              </div>
+                            )}
+
+                            {/* Segmented control */}
+                            <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+                              {(["servings", "weight"] as const).map((m) => (
+                                <button
+                                  key={m}
+                                  className={
+                                    "px-2 py-1 rounded-md border " +
+                                    (mode === m
+                                      ? "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700"
+                                      : "border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800")
+                                  }
+                                  onClick={() => setMode(m)}
+                                >
+                                  {m === "servings" ? "Servings" : "Weight (g)"}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Mode content */}
+                            {mode === "servings" && (
+                              <div className="space-y-2">
+                                <label className="block text-sm">
+                                  Portion
+                                  <select
+                                    className="mt-1 w-full rounded-full border px-2 py-2 bg-white dark:bg-neutral-900"
+                                    value={selPortionIdx}
+                                    onChange={(e) => setSelPortionIdx(Number(e.target.value))}
+                                  >
+                                    {buildPortions(food.fdc_id).map((p, idx) => (
+                                      <option key={idx} value={idx}>
+                                        {p.label} ({p.grams} g)
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+
+                                <label className="block text-sm">
+                                  Servings
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() =>
+                                        setServings((s) => {
+                                          const v = safeNum(s) - 1;
+                                          return String(v < 0 ? 0 : v);
+                                        })
+                                      }
+                                    >
+                                      –
+                                    </button>
+                                    <input
+                                      inputMode="decimal"
+                                      className="w-16 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                                      value={servings}
+                                      onChange={(e) =>
+                                        setServings(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() => setServings((s) => String(safeNum(s) + 1))}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </label>
+                              </div>
+                            )}
+
+                            {mode === "weight" && (
+                              <div className="space-y-2">
+                                <label className="block text-sm">
+                                  Grams
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() =>
+                                        setGrams((g) => {
+                                          const v = safeNum(g) - 10;
+                                          return String(v < 0 ? 0 : v);
+                                        })
+                                      }
+                                    >
+                                      –
+                                    </button>
+                                    <input
+                                      inputMode="decimal"
+                                      className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                                      value={grams}
+                                      onChange={(e) =>
+                                        setGrams(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                      onClick={() => setGrams((g) => String(safeNum(g) + 10))}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </label>
+                              </div>
+                            )}
+
+                            {/* Live macro preview + actions */}
+                            {(() => {
+                              const pv = computePreview(food.fdc_id);
+                              return (
+                                <>
+                                  <div className="mt-3">
+                                    <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                                      {`Preview • ${Math.round(pv.gramsTotal)} g`}
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto tabular-nums">
+                                      <span
+                                        className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-5 h-5 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#34D399", color: "#000" }}
+                                        >
+                                          Cal
+                                        </span>
+                                        {pv.cal}
+                                      </span>
+                                      <span
+                                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#F87171", backgroundColor: "#F871711F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#F87171", color: "#000" }}
+                                        >
+                                          P
+                                        </span>
+                                        {pv.p}
+                                      </span>
+                                      <span
+                                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#FACC15", backgroundColor: "#FACC151F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#FACC15", color: "#000" }}
+                                        >
+                                          F
+                                        </span>
+                                        {pv.fat}
+                                      </span>
+                                      <span
+                                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                        style={{ color: "#60A5FA", backgroundColor: "#60A5FA1F" }}
+                                      >
+                                        <span
+                                          className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                          style={{ backgroundColor: "#60A5FA", color: "#000" }}
+                                        >
+                                          C
+                                        </span>
+                                        {pv.c}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-3 flex justify-between gap-2">
+                                    <button
+                                      className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1"
+                                      onClick={() => {
+                                        const details = loadedDetails[food.fdc_id];
+                                        const pv = computePreview(food.fdc_id);
+                                        if (details) {
+                                          setSelectedFoodForMicros({
+                                            name: toTitleCase(food.description),
+                                            nutrients: details.nutrients,
+                                            servingGrams: pv.gramsTotal
+                                          });
+                                          setShowMicronutrients(true);
+                                        }
+                                      }}
+                                      title="View All Nutrients"
+                                    >
+                                      <Info className="w-4 h-4" />
+                                      Details
+                                    </button>
+                                    <div className="flex gap-2">
+                                      <button
+                                        className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
+                                        onClick={() => setActiveIdx(null)}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        className="px-3 py-2 rounded-full bg-[#34D399] text-black"
+                                        onClick={() => {
+                                          loadFoodDetails(food.fdc_id, 'logged');
+
+                                          const portions = buildPortions(food.fdc_id);
+                                          let unit = "g";
+                                          let gramsPerUnit = pv.gramsTotal;
+
+                                          if (mode === "servings" && portions.length > 0) {
+                                            const selectedPortion = portions[selPortionIdx];
+                                            unit = selectedPortion.label;
+                                            gramsPerUnit = selectedPortion.grams;
+                                          }
+
+                                          onPick({
+                                            name: food.description,
+                                            quantity: 1,
+                                            unit,
+                                            calories: pv.cal,
+                                            protein: pv.p,
+                                            fat: pv.fat,
+                                            carbs: pv.c,
+                                            fdcId: food.fdc_id,
+                                            gramsPerUnit,
+                                          });
+                                          setActiveIdx(null);
+                                          onClose();
+                                        }}
+                                      >
+                                        Add
+                                      </button>
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </>,
+                      document.body
+                    )}
+                  </li>
+                );
+              })}
+            </>
+          )}
+
+          {searchResults.slice(0, displayedCount).map((food, i) => {
+            const isActive = activeIdx === i;
+            const hasDetails = !!loadedDetails[food.fdc_id];
+
+            return (
+              <li key={`${food.fdc_id}-${i}`}>
+                <div
+                  ref={setRowRef(i)}
+                  className="relative rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur px-4 py-3 shadow-sm"
+                >
+                  <button
+                    className="block text-left w-full"
+                    onClick={async () => {
+                      // Load details if not already loaded
+                      if (!hasDetails) {
+                        await loadFoodDetails(food.fdc_id);
+                      }
+
+                      // Open bubble for this row, reset controls to default serving
+                      const portions = buildPortions(food.fdc_id);
+                      setActiveIdx(i);
+                      setMode("servings");
+                      setSelPortionIdx(0);
+                      setServings("1");
+                      setGrams(String(portions[0]?.grams || 100));
+                    }}
+                  >
+                    <div className="font-semibold leading-tight break-words">{toTitleCase(food.description)}</div>
+                    {food.brand_name && (
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">{toTitleCase(food.brand_name)}</div>
+                    )}
+                    {!food.brand_name && food.data_type !== 'branded_food' && (
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">Generic</div>
+                    )}
+                    {hasDetails && <ChipRow fdcId={food.fdc_id} />}
+                  </button>
+                </div>
+
+                {/* Portal quantity bubble + local backdrop with blur */}
+                {isActive && hasDetails && typeof document !== "undefined" && createPortal(
+                  <>
+                    {/* Backdrop that closes only the quantity bubble, not the whole search - with blur */}
+                    <button
+                      className="fixed inset-0 z-[100009] bg-black/20 dark:bg-black/40 backdrop-blur-sm"
+                      aria-label="Close quantity"
+                      onClick={() => setActiveIdx(null)}
+                    />
+                    {/* Centered modal with food name at top */}
+                    <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
+                      <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl p-4">
+                        {/* Food name prominently at top */}
+                        <h3 className="font-semibold text-lg mb-3">{toTitleCase(food.description)}</h3>
+                        {food.brand_name && (
+                          <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                            {toTitleCase(food.brand_name)}
+                          </div>
+                        )}
+
+                        {/* Segmented control */}
+                        <div className="grid grid-cols-2 gap-1 text-sm mb-3">
+                          {(["servings", "weight"] as const).map((m) => (
+                            <button
+                              key={m}
+                              className={
+                                "px-2 py-1 rounded-md border " +
+                                (mode === m
+                                  ? "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700"
+                                  : "border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800")
+                              }
+                              onClick={() => setMode(m)}
+                            >
+                              {m === "servings" ? "Servings" : "Weight (g)"}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Mode content */}
+                        {mode === "servings" && (
+                          <div className="space-y-2">
+                            <label className="block text-sm">
+                              Portion
+                              <select
+                                className="mt-1 w-full rounded-full border px-2 py-2 bg-white dark:bg-neutral-900"
+                                value={selPortionIdx}
+                                onChange={(e) => setSelPortionIdx(Number(e.target.value))}
+                              >
+                                {buildPortions(food.fdc_id).map((p, idx) => (
+                                  <option key={idx} value={idx}>
+                                    {p.label} ({p.grams} g)
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="block text-sm">
+                              Servings
+                              <div className="mt-1 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                  onClick={() =>
+                                    setServings((s) => {
+                                      const v = safeNum(s) - 1;
+                                      return String(v < 0 ? 0 : v);
+                                    })
+                                  }
+                                >
+                                  –
+                                </button>
+                                <input
+                                  inputMode="decimal"
+                                  className="w-16 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                                  value={servings}
+                                  onChange={(e) =>
+                                    setServings(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                  onClick={() => setServings((s) => String(safeNum(s) + 1))}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </label>
+                          </div>
+                        )}
+
+                        {mode === "weight" && (
+                          <div className="space-y-2">
+                            <label className="block text-sm">
+                              Grams
+                              <div className="mt-1 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                  onClick={() =>
+                                    setGrams((g) => {
+                                      const v = safeNum(g) - 10;
+                                      return String(v < 0 ? 0 : v);
+                                    })
+                                  }
+                                >
+                                  –
+                                </button>
+                                <input
+                                  inputMode="decimal"
+                                  className="w-20 text-center h-10 rounded-full border border-neutral-300 dark:border-neutral-700 px-2 bg-white dark:bg-neutral-900"
+                                  value={grams}
+                                  onChange={(e) =>
+                                    setGrams(e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 grid place-items-center text-xl"
+                                  onClick={() => setGrams((g) => String(safeNum(g) + 10))}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </label>
+                          </div>
+                        )}
+
+                        {/* Live macro preview + actions */}
+                        {(() => {
+                          const pv = computePreview(food.fdc_id);
+                          return (
+                            <>
+                              <div className="mt-3">
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                                  {`Preview • ${Math.round(pv.gramsTotal)} g`}
+                                </div>
+                                <div className="mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto tabular-nums">
+                                  <span
+                                    className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap"
+                                    style={{ color: "#34D399", backgroundColor: "#34D3991F" }}
+                                  >
+                                    <span
+                                      className="inline-flex items-center justify-center w-5 h-5 rounded-full mr-1 leading-none text-center text-[9px]"
+                                      style={{ backgroundColor: "#34D399", color: "#000" }}
+                                    >
+                                      Cal
+                                    </span>
+                                    {pv.cal}
+                                  </span>
+                                  <span
+                                    className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                    style={{ color: "#F87171", backgroundColor: "#F871711F" }}
+                                  >
+                                    <span
+                                      className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                      style={{ backgroundColor: "#F87171", color: "#000" }}
+                                    >
+                                      P
+                                    </span>
+                                    {pv.p}
+                                  </span>
+                                  <span
+                                    className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                    style={{ color: "#FACC15", backgroundColor: "#FACC151F" }}
+                                  >
+                                    <span
+                                      className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                      style={{ backgroundColor: "#FACC15", color: "#000" }}
+                                    >
+                                      F
+                                    </span>
+                                    {pv.fat}
+                                  </span>
+                                  <span
+                                    className="inline-flex items-center rounded-full px-1.5 py-0.5 text-sm font-semibold whitespace-nowrap"
+                                    style={{ color: "#60A5FA", backgroundColor: "#60A5FA1F" }}
+                                  >
+                                    <span
+                                      className="inline-flex items-center justify-center w-4 h-4 rounded-full mr-1 leading-none text-center text-[9px]"
+                                      style={{ backgroundColor: "#60A5FA", color: "#000" }}
+                                    >
+                                      C
+                                    </span>
+                                    {pv.c}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 flex justify-between gap-2">
+                                <button
+                                  className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1"
+                                  onClick={() => {
+                                    const details = loadedDetails[food.fdc_id];
+                                    const pv = computePreview(food.fdc_id);
+                                    if (details) {
+                                      setSelectedFoodForMicros({
+                                        name: toTitleCase(food.description),
+                                        nutrients: details.nutrients,
+                                        servingGrams: pv.gramsTotal
+                                      });
+                                      setShowMicronutrients(true);
+                                    }
+                                  }}
+                                  title="View All Nutrients"
+                                >
+                                  <Info className="w-4 h-4" />
+                                  Details
+                                </button>
+                                <div className="flex gap-2">
+                                  <button
+                                    className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700"
+                                    onClick={() => setActiveIdx(null)}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    className="px-3 py-2 rounded-full bg-[#34D399] text-black"
+                                    onClick={() => {
+                                      // Cache as logged when user adds food
+                                      loadFoodDetails(food.fdc_id, 'logged');
+
+                                      // Determine unit based on mode
+                                      const portions = buildPortions(food.fdc_id);
+                                      let unit = "g";
+                                      let gramsPerUnit = pv.gramsTotal;
+
+                                      if (mode === "servings" && portions.length > 0) {
+                                        const selectedPortion = portions[selPortionIdx];
+                                        unit = selectedPortion.label;
+                                        gramsPerUnit = selectedPortion.grams;
+                                      }
+
+                                      onPick({
+                                        name: food.description,
+                                        quantity: 1,
+                                        unit,
+                                        calories: pv.cal,
+                                        protein: pv.p,
+                                        fat: pv.fat,
+                                        carbs: pv.c,
+                                        fdcId: food.fdc_id,
+                                        gramsPerUnit,
+                                      });
+                                      setActiveIdx(null);
+                                      onClose();
+                                    }}
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </>,
+                  document.body
+                )}
+              </li>
+            );
+          })}
+
+          {/* Load More button */}
+          {!loading && searchResults.length > displayedCount && (
+            <li className="py-3">
+              <button
+                className="w-full px-4 py-3 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium transition-colors"
+                onClick={async () => {
+                  const nextCount = displayedCount + 10;
+                  setDisplayedCount(nextCount);
+
+                  // Preload nutrition data for next 10 results
+                  const nextFoods = searchResults.slice(displayedCount, nextCount);
+                  for (const food of nextFoods) {
+                    if (!loadedDetails[food.fdc_id]) {
+                      await loadFoodDetails(food.fdc_id);
+                    }
+                  }
+                }}
+              >
+                Load More
+              </button>
+            </li>
+          )}
+        </ul>
+      </div>
+
+      {/* Micronutrients Modal */}
+      {selectedFoodForMicros && (
+        <MicronutrientsModal
+          isOpen={showMicronutrients}
+          onClose={() => {
+            setShowMicronutrients(false);
+            setSelectedFoodForMicros(null);
+          }}
+          foodName={selectedFoodForMicros.name}
+          nutrients={selectedFoodForMicros.nutrients}
+          servingGrams={selectedFoodForMicros.servingGrams}
+        />
+      )}
+
+      {/* Full-Screen Camera View */}
+      {showCamera && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100020] bg-black">
+          {/* Camera Video */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+
+          {/* Scanning Frame Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Semi-transparent overlay with cutout effect */}
+            <div className="absolute inset-0 bg-black/50" />
+
+            {/* Centered scanning frame */}
+            <div className="relative z-10 w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] md:w-[360px] md:h-[360px]">
+              {/* Corner brackets - Top Left */}
+              <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-white" />
+
+              {/* Corner brackets - Top Right */}
+              <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-white" />
+
+              {/* Corner brackets - Bottom Left */}
+              <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-white" />
+
+              {/* Corner brackets - Bottom Right */}
+              <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-white" />
+
+              {/* Optional: scanning line animation */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent opacity-75 animate-scan" />
+            </div>
+
+            {/* Instruction/Status text */}
+            <div className="absolute bottom-20 left-0 right-0 text-center px-4">
+              <p className="text-white text-lg font-medium drop-shadow-lg">
+                {scanningStatus || "Position barcode within frame"}
+              </p>
+              {isScanning && (
+                <p className="text-white/80 text-sm mt-2 drop-shadow-lg">
+                  Scanning...
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Flash Toggle Button */}
+          <button
+            className={`absolute top-4 left-4 z-10 w-12 h-12 rounded-full backdrop-blur-sm border border-white/20 text-white flex items-center justify-center transition-colors ${
+              flashOn
+                ? 'bg-yellow-500/80 hover:bg-yellow-600/80'
+                : 'bg-black/50 hover:bg-black/70'
+            }`}
+            onClick={toggleFlash}
+            aria-label={flashOn ? "Turn flash off" : "Turn flash on"}
+          >
+            <Zap className={`w-6 h-6 ${flashOn ? 'fill-current' : ''}`} />
+          </button>
+
+          {/* Close Button */}
+          <button
+            className="absolute top-4 right-4 z-10 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            onClick={() => setShowCamera(false)}
+            aria-label="Close camera"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}

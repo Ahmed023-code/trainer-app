@@ -1,0 +1,4 @@
+@echo off
+set TURSO_DATABASE_URL=libsql://usda-core-vercel-icfg-z5bel7rjytllgcmbrzaliggh.aws-us-east-1.turso.io
+set TURSO_AUTH_TOKEN=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NjM0MDI1NTcsImlkIjoiZTY0MTk5OWItZjI5ZC00MTY4LTg2MGMtMDlkMTgzZDEyYmJmIiwicmlkIjoiZmMwZmVkMjEtOTAyNy00OGJkLTk2MGUtODMzNGRlZjdmZTk3In0.kDcADsnb4Q2diY71Kz4Ni-hw9I2HaPoGeNN4ogZRfq-j0yOrNgp89XX2RAqISAi3b9Pd3OOHN-fy1yvC_ruPBA
+node scripts\upload-to-turso.js

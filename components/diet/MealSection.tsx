@@ -1,0 +1,415 @@
+"use client";
+
+import { useMemo, useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import type { FoodItem, Meal } from "@/components/diet/types";
+
+type Props = {
+  meal: Meal;
+  onChange: (updated: Meal) => void;
+  onRequestEdit?: (mealName: string, index: number, item: FoodItem) => void;
+  onAddFood?: (mealName: string) => void;
+  onOpenDetail?: () => void;
+  onDelete?: () => void;
+};
+
+export default function MealSection({ meal, onChange, onRequestEdit, onAddFood, onOpenDetail, onDelete }: Props) {
+  // Collapsed/expanded state for food items
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Kebab state + fixed menu coordinates
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  // Deletion confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Stable ref map for kebab buttons
+  const btnRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const setBtnRef = (i: number) => (el: HTMLButtonElement | null) => {
+    btnRefs.current[i] = el;
+  };
+
+  // Meal totals (tabular-nums, no units)
+  const totals = useMemo(() => {
+    const sum = (key: keyof FoodItem) =>
+      (meal.items || []).reduce((a, it) => a + (Number(it[key]) || 0) * (Number(it.quantity ?? 1) || 1), 0);
+    return {
+      calories: Math.round(sum("calories")),
+      protein: Math.round(sum("protein")),
+      fat: Math.round(sum("fat")),
+      carbs: Math.round(sum("carbs")),
+    };
+  }, [meal]);
+
+  function openMenu(i: number) {
+    const r = btnRefs.current[i]?.getBoundingClientRect();
+    if (!r) return;
+
+    const menuWidth = 160;
+    const menuHeight = 100; // approximate
+    const spacing = 8;
+
+    // Position below and to the right of button
+    let top = r.bottom + spacing;
+    let left = r.right - menuWidth;
+
+    // Keep on screen
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (left < spacing) left = spacing;
+    if (left + menuWidth > viewportWidth - spacing) left = viewportWidth - menuWidth - spacing;
+    if (top + menuHeight > viewportHeight - spacing) top = r.top - menuHeight - spacing;
+    if (top < spacing) top = spacing;
+
+    setPos({ top, left });
+    setOpenIdx(i);
+  }
+  function closeMenu() {
+    setOpenIdx(null);
+  }
+
+  function onDeleteFood(i: number) {
+    const next: Meal = { ...meal, items: (meal.items || []).filter((_, idx) => idx !== i) };
+    onChange(next);
+    closeMenu();
+  }
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDelete?.();
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  // Escape key and scroll handler for 3-dot menu
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openIdx !== null) {
+        closeMenu();
+      }
+    };
+    const handleScroll = () => {
+      if (openIdx !== null) {
+        closeMenu();
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    window.addEventListener("scroll", handleScroll, true); // Use capture phase
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [openIdx]);
+
+  return (
+    <section className="space-y-3 overflow-visible">
+      {/* Improved layout: meal name on top, macros below, icons on right */}
+      <div className="w-full flex items-start gap-3">
+        {/* Left: Meal info (name + food count + macros) */}
+        <div className="text-left flex-1 min-w-0">
+          {/* Meal name */}
+          <h2 className="font-semibold text-base">{meal.name}</h2>
+
+          {/* Food count */}
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">
+            {meal.items?.length || 0} food{(meal.items?.length || 0) !== 1 ? 's' : ''}
+          </p>
+
+          {/* Macro summary - always on same row with optimized sizing for narrow screens */}
+          <div className="flex items-center gap-1.5 tabular-nums">
+            {/* Cal */}
+            <span
+              className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+              style={{ color: "#34D399" }}
+            >
+              <span
+                className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px] shadow-[1px_1px_2px_rgba(0,0,0,0.1),-1px_-1px_2px_rgba(255,255,255,0.7)] dark:shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.05)]"
+                style={{ backgroundColor: "#34D399", color: "#000" }}
+              >
+                Cal
+              </span>
+              {totals.calories}
+            </span>
+            {/* P/F/C */}
+            {[
+              { label: "P", col: "#F87171", bg: "#F871711F", v: `${totals.protein}g` },
+              { label: "F", col: "#FACC15", bg: "#FACC151F", v: `${totals.fat}g` },
+              { label: "C", col: "#60A5FA", bg: "#60A5FA1F", v: `${totals.carbs}g` },
+            ].map(({ label, col, bg, v }) => (
+              <span
+                key={label}
+                className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                style={{ color: col }}
+              >
+                <span
+                  className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px] shadow-[1px_1px_2px_rgba(0,0,0,0.1),-1px_-1px_2px_rgba(255,255,255,0.7)] dark:shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.05)]"
+                  style={{ backgroundColor: col, color: "#000" }}
+                >
+                  {label}
+                </span>
+                {v}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: Chevron, Plus icon and trash icon */}
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+          {/* Chevron button for expand/collapse */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="tap-target w-9 h-9 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] transition-all duration-200 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)]"
+            aria-label={isExpanded ? `Collapse ${meal.name}` : `Expand ${meal.name}`}
+            aria-expanded={isExpanded}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+            >
+              <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {onAddFood && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddFood(meal.name);
+              }}
+              className="tap-target w-9 h-9 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] text-accent-diet transition-all duration-200 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)]"
+              aria-label={`Add food to ${meal.name}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5">
+                <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteClick();
+              }}
+              className="tap-target w-9 h-9 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] text-red-600 dark:text-red-400 transition-all duration-200 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)]"
+              aria-label={`Delete ${meal.name}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5">
+                <path d="M2 4h12M5.5 4V2.5A1.5 1.5 0 0 1 7 1h2a1.5 1.5 0 0 1 1.5 1.5V4m2 0v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Expanded food items */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'
+        }`}
+      >
+        {meal.items && meal.items.length > 0 ? (
+          <div className="space-y-2">
+            {meal.items.map((item, idx) => {
+              const qty = Number(item.quantity ?? 1) || 1;
+              const displayCal = Math.round((Number(item.calories) || 0) * qty);
+              const displayP = Math.round((Number(item.protein) || 0) * qty);
+              const displayF = Math.round((Number(item.fat) || 0) * qty);
+              const displayC = Math.round((Number(item.carbs) || 0) * qty);
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.08),inset_-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.02)]"
+                >
+                  {/* Left: Food name with quantity and macros */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm truncate">
+                      {item.name}
+                    </h3>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {qty} serving{qty !== 1 ? 's' : ''}{item.unit || item.gramsPerUnit ? `: ${item.unit || `${item.gramsPerUnit}g`}` : ''}
+                    </div>
+                    {/* Macros on single line */}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span
+                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                        style={{ color: "#34D399" }}
+                      >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px] shadow-[1px_1px_2px_rgba(0,0,0,0.1),-1px_-1px_2px_rgba(255,255,255,0.7)] dark:shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.05)]"
+                          style={{ backgroundColor: "#34D399", color: "#000" }}
+                        >
+                          C
+                        </span>
+                        {displayCal}
+                      </span>
+                      <span
+                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                        style={{ color: "#F87171" }}
+                      >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px] shadow-[1px_1px_2px_rgba(0,0,0,0.1),-1px_-1px_2px_rgba(255,255,255,0.7)] dark:shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.05)]"
+                          style={{ backgroundColor: "#F87171", color: "#000" }}
+                        >
+                          P
+                        </span>
+                        {displayP}g
+                      </span>
+                      <span
+                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                        style={{ color: "#FACC15" }}
+                      >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px] shadow-[1px_1px_2px_rgba(0,0,0,0.1),-1px_-1px_2px_rgba(255,255,255,0.7)] dark:shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.05)]"
+                          style={{ backgroundColor: "#FACC15", color: "#000" }}
+                        >
+                          F
+                        </span>
+                        {displayF}g
+                      </span>
+                      <span
+                        className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                        style={{ color: "#60A5FA" }}
+                      >
+                        <span
+                          className="inline-flex items-center justify-center w-3 h-3 rounded-full mr-0.5 leading-none text-center text-[7px] shadow-[1px_1px_2px_rgba(0,0,0,0.1),-1px_-1px_2px_rgba(255,255,255,0.7)] dark:shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.05)]"
+                          style={{ backgroundColor: "#60A5FA", color: "#000" }}
+                        >
+                          C
+                        </span>
+                        {displayC}g
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: 3-dot menu */}
+                  <button
+                    ref={setBtnRef(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openMenu(idx);
+                    }}
+                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)] transition-all duration-200 active:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.15)]"
+                    aria-label={`Food options for ${item.name}`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="w-4 h-4">
+                      <circle cx="8" cy="3" r="1.5" fill="currentColor"/>
+                      <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                      <circle cx="8" cy="13" r="1.5" fill="currentColor"/>
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-sm text-neutral-400 dark:text-neutral-500">
+            No foods added yet
+          </div>
+        )}
+      </div>
+
+      {/* Food item context menu - rectangular box with pill buttons positioned near button */}
+      {openIdx !== null && typeof document !== "undefined" && createPortal(
+        <>
+          <button
+            className="fixed inset-0 z-[9996]"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeMenu();
+            }}
+            aria-label="Close menu"
+          />
+          {/* Menu positioned near trigger button */}
+          <div
+            className="fixed z-[9997] rounded-2xl bg-neutral-200 dark:bg-neutral-700 shadow-[6px_6px_12px_rgba(0,0,0,0.15),-6px_-6px_12px_rgba(255,255,255,0.7)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] p-3 min-w-[160px] space-y-2"
+            style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onRequestEdit) {
+                    onRequestEdit(meal.name, openIdx, meal.items[openIdx]);
+                  }
+                  closeMenu();
+                }}
+                className="w-full px-4 py-2 rounded-full text-sm font-medium bg-neutral-100 dark:bg-neutral-800 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.02)] transition-all duration-200 hover:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.08),inset_-3px_-3px_6px_rgba(255,255,255,0.6)]"
+              >
+                Edit Food
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteFood(openIdx);
+                }}
+                className="w-full px-4 py-2 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.02)] transition-all duration-200 hover:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.08),inset_-3px_-3px_6px_rgba(255,255,255,0.6)]"
+              >
+                Delete Food
+              </button>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && typeof document !== "undefined" && createPortal(
+        <>
+          {/* Backdrop */}
+          <button
+            className="fixed inset-0 z-[9998] bg-black/20 dark:bg-black/40"
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelDelete();
+            }}
+            aria-label="Cancel"
+          />
+          {/* Dialog */}
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-neutral-100 dark:bg-neutral-800 rounded-3xl shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.7)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.05)] p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-semibold text-lg mb-2">Delete Meal?</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                Are you sure you want to delete "{meal.name}"? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelDelete();
+                  }}
+                  className="px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] font-semibold transition-all duration-200 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    confirmDelete();
+                  }}
+                  className="px-4 py-2 rounded-full bg-red-600 dark:bg-red-700 shadow-[4px_4px_8px_rgba(0,0,0,0.2),-4px_-4px_8px_rgba(255,255,255,0.3)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.05)] text-white font-semibold transition-all duration-200 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3),inset_-2px_-2px_4px_rgba(255,255,255,0.2)]"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+    </section>
+  );
+}
