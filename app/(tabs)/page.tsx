@@ -664,6 +664,7 @@ export default function HomePage() {
             </div>
           )}
         </GlassCard>
+      </div>
 
       {/* New Reminder Modal */}
       {showReminderModal && (
@@ -742,6 +743,7 @@ export default function HomePage() {
           </GlassCard>
         </div>
       )}
+
       {/* Nutrition Overview Modal */}
       <NutritionOverview
         isOpen={showNutritionOverview}
