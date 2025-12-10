@@ -1,6 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import {
+  useState,
+  useEffect,
+  useMemo,
+  type PropsWithChildren,
+  type ButtonHTMLAttributes,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import { getTodayISO } from '@/utils/completion'
 import {
@@ -59,6 +65,37 @@ function getWorkoutBodyParts(exerciseNames: string[]): string {
   return bodyParts.slice(0, 2).join(', ') + ` +${bodyParts.length - 2}`
 }
 
+const glassPanelBase =
+  'relative overflow-hidden rounded-3xl border border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-950/50 backdrop-blur-2xl shadow-[0_20px_70px_rgba(15,23,42,0.25)]'
+
+function GlassCard({ children, className }: PropsWithChildren<{ className?: string }>) {
+  return (
+    <div className={`${glassPanelBase} ${className ?? ''}`}>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/80 via-white/30 to-white/10 dark:from-white/10 dark:via-white/5 dark:to-transparent" />
+      <div className="pointer-events-none absolute inset-x-6 inset-y-0 opacity-[0.08] bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.9),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(52,211,153,0.65),transparent_30%),radial-gradient(circle_at_60%_80%,rgba(248,113,113,0.75),transparent_30%)]" />
+      <div className="relative">{children}</div>
+    </div>
+  )
+}
+
+function GlassButton({
+  children,
+  className,
+  type = 'button',
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={`relative isolate overflow-hidden rounded-full border border-white/50 dark:border-white/10 bg-white/50 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-slate-900 dark:text-white shadow-[0_8px_30px_rgba(15,23,42,0.25)] transition hover:shadow-[0_10px_40px_rgba(15,23,42,0.35)] active:scale-[0.99] backdrop-blur-xl ${className ?? ''}`}
+      type={type}
+      {...props}
+    >
+      <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/60 via-white/20 to-transparent opacity-80" />
+      <span className="relative flex items-center justify-center gap-1.5">{children}</span>
+    </button>
+  )
+}
+
 export default function HomePage() {
   const router = useRouter()
   const todayISO = getTodayISO()
@@ -75,9 +112,6 @@ export default function HomePage() {
 
   const { reminders, addReminder, toggleReminder, removeReminder } =
     useInboxStore()
-
-  // Weight editing state
-  const [isEditingWeight, setIsEditingWeight] = useState(false)
 
   // Weight state
   const [weightValue, setWeightValue] = useState<string>('')
@@ -267,7 +301,6 @@ export default function HomePage() {
       writeWeight(todayISO, value)
       setSavedWeight(value)
       setWeightValue(value.toFixed(1))
-      setIsEditingWeight(false)
     }
   }
 
@@ -292,45 +325,66 @@ export default function HomePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] space-y-4">
-      {/* Header with date display */}
-      <header className="pt-4">
-        <DaySelector
-          dateISO={todayISO}
-          dateObj={todayObj}
-          onPrev={() => {}}
-          onNext={() => {}}
-          onSelect={() => {}}
-          isToday={true}
-          showNavigation={false}
-          onGoToToday={goToToday}
-          accentColor="var(--accent-home)"
-          neomorphic={true}
-        />
-      </header>
+    <main className="relative mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_10%_20%,rgba(94,234,212,0.2),transparent_30%),radial-gradient(circle_at_90%_10%,rgba(129,140,248,0.25),transparent_32%),radial-gradient(circle_at_30%_80%,rgba(248,113,113,0.2),transparent_30%)]" />
+      <div className="relative space-y-5">
+        {/* Header with date display */}
+        <header className="pt-4">
+          <GlassCard className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200/70">
+                  Today
+                </p>
+              </div>
+              <GlassButton onClick={goToToday} className="px-3 py-1 text-xs">
+                Refresh
+              </GlassButton>
+            </div>
+            <div className="mt-2">
+              <DaySelector
+                dateISO={todayISO}
+                dateObj={todayObj}
+                onPrev={() => {}}
+                onNext={() => {}}
+                onSelect={() => {}}
+                isToday={true}
+                showNavigation={false}
+                onGoToToday={goToToday}
+                accentColor="var(--accent-home)"
+                neomorphic={true}
+              />
+            </div>
+          </GlassCard>
+        </header>
 
-      {/* Weight card */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)]">
-        <div className="p-3">
-          <label className="block text-sm font-medium mb-2">Weight</label>
+        {/* Weight card */}
+        <GlassCard className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200/70">Body</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Weight</h2>
+            </div>
+            <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 shadow-[0_10px_30px_rgba(15,23,42,0.15)] dark:bg-white/10 dark:text-white">{weightUnit}</span>
+          </div>
 
           {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
-            // Edit mode - show plus/minus buttons with weight in center
-            <div className="flex items-center gap-2">
-              <button
+            <div className="mt-4 flex items-center gap-3">
+              <GlassButton
+                aria-label="Decrease weight"
+                className="h-10 w-10 rounded-2xl px-0 text-lg text-[var(--accent-home)]"
                 onClick={() => {
                   const current = parseFloat(weightValue) || 0
                   const newValue = Math.max(0, current - 0.5)
                   setWeightValue(newValue.toFixed(1))
                 }}
-                className="w-8 h-8 flex-shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] text-accent-home flex items-center justify-center active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] transition-all duration-200 font-bold text-lg"
               >
                 −
-              </button>
+              </GlassButton>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1">
                 <div
-                  className="rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-1.5 flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                  className="group rounded-2xl border border-white/40 bg-white/70 px-4 py-2 text-center shadow-inner shadow-white/30 backdrop-blur-xl transition focus-within:border-[var(--accent-home)]/70 dark:border-white/10 dark:bg-white/5 dark:shadow-black/40"
                   onClick={() => {
                     const input = document.getElementById(
                       'weight-input',
@@ -338,7 +392,6 @@ export default function HomePage() {
                     if (input) {
                       input.focus()
                       input.select()
-                      setIsEditingWeight(true)
                     }
                   }}
                 >
@@ -349,41 +402,40 @@ export default function HomePage() {
                     step="0.5"
                     value={weightValue}
                     onChange={(e) => setWeightValue(e.target.value)}
-                    onBlur={() => setIsEditingWeight(false)}
-                    className="text-xl font-bold text-center bg-transparent border-none outline-none w-16 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-accent-home/30 rounded-full"
+                    className="w-20 border-none bg-transparent text-2xl font-bold text-slate-900 outline-none selection:bg-[var(--accent-home)]/20 dark:text-white"
                     style={{
                       WebkitAppearance: 'none',
                       MozAppearance: 'textfield',
                     }}
                   />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {weightUnit}
-                  </span>
+                  <p className="text-xs text-slate-600 transition group-focus-within:text-[var(--accent-home)] dark:text-slate-300/80">
+                    Tap to edit
+                  </p>
                 </div>
               </div>
 
-              <button
+              <GlassButton
+                aria-label="Increase weight"
+                className="h-10 w-10 rounded-2xl px-0 text-lg text-[var(--accent-home)]"
                 onClick={() => {
                   const current = parseFloat(weightValue) || 0
                   const newValue = current + 0.5
                   setWeightValue(newValue.toFixed(1))
                 }}
-                className="w-8 h-8 flex-shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] text-accent-home flex items-center justify-center active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] transition-all duration-200 font-bold text-lg"
               >
                 +
-              </button>
+              </GlassButton>
             </div>
           ) : (
-            // Saved mode - show weight with checkmark and edit button
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.3),-2px_-2px_4px_rgba(255,255,255,0.05)]">
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300/80 to-emerald-500/60 text-white shadow-[0_15px_40px_rgba(16,185,129,0.35)]">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={3}
                   stroke="currentColor"
-                  className="w-4 h-4 text-green-600 dark:text-green-400"
+                  className="h-6 w-6"
                 >
                   <path
                     strokeLinecap="round"
@@ -393,271 +445,277 @@ export default function HomePage() {
                 </svg>
               </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-1.5 flex items-center justify-center gap-2">
-                  <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                    {savedWeight.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {weightUnit}
-                  </span>
+              <div className="flex-1 rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-center shadow-inner shadow-white/30 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-black/40">
+                <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                  {savedWeight.toFixed(1)}
+                </div>
+                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300/70">
+                  Logged
                 </div>
               </div>
 
-              <button
-                onClick={() => setSavedWeight(null)}
-                className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] transition-all duration-200"
+              <GlassButton
                 aria-label="Edit weight"
+                className="h-10 w-10 rounded-2xl px-0 text-base"
+                onClick={() => setSavedWeight(null)}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                  />
-                </svg>
-              </button>
+                Edit
+              </GlassButton>
             </div>
           )}
 
-          {/* Save button below weight display when in edit mode */}
-          {(savedWeight === null ||
-            parseFloat(weightValue) !== savedWeight) && (
-            <div className="mt-2">
-              <button
+          {(savedWeight === null || parseFloat(weightValue) !== savedWeight) && (
+            <div className="mt-4">
+              <GlassButton
+                className="w-full justify-center bg-gradient-to-r from-[var(--accent-home)]/90 via-white/40 to-[var(--accent-home)]/70 text-white shadow-[0_15px_45px_rgba(147,197,253,0.35)]"
                 onClick={saveWeight}
-                className="w-full py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-home text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
               >
-                Save Weight
-              </button>
+                Save weight
+              </GlassButton>
             </div>
           )}
-        </div>
-      </div>
+        </GlassCard>
 
-      {/* Diet summary */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4 relative">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Diet Summary</h2>
-          <button
-            onClick={openDiet}
-            className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-diet text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-          >
-            Open Diet
-          </button>
-        </div>
-
-        {/* Layout: Large calorie ring on left, smaller macro rings in 2x2 grid on right */}
-        <div className="flex gap-4 items-center">
-          {/* Large calorie ring on left */}
-          <div className="flex-shrink-0">
-            <CalorieRing
-              current={Math.round(dietSummary.calories)}
-              target={dietSummary.goals.cal}
-              protein={Math.round(dietSummary.protein)}
-              carbs={Math.round(dietSummary.carbs)}
-              fat={Math.round(dietSummary.fat)}
-              proteinTarget={dietSummary.goals.p}
-              carbsTarget={dietSummary.goals.c}
-              fatTarget={dietSummary.goals.f}
-            />
-          </div>
-
-          {/* Smaller macro rings in 2x2 grid on right */}
-          <div className="flex-1 grid grid-cols-2 gap-3">
-            <SmallMacroRing
-              label="Cal"
-              current={Math.round(dietSummary.calories)}
-              target={dietSummary.goals.cal}
-              color="var(--accent-diet)"
-            />
-            <SmallMacroRing
-              label="P"
-              current={Math.round(dietSummary.protein)}
-              target={dietSummary.goals.p}
-              color="#F87171"
-            />
-            <SmallMacroRing
-              label="F"
-              current={Math.round(dietSummary.fat)}
-              target={dietSummary.goals.f}
-              color="#FACC15"
-            />
-            <SmallMacroRing
-              label="C"
-              current={Math.round(dietSummary.carbs)}
-              target={dietSummary.goals.c}
-              color="#60A5FA"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Workout summary */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Workout Summary</h2>
-          <button
-            onClick={openWorkout}
-            className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-          >
-            Open Workout
-          </button>
-        </div>
-        {workoutSummary.exerciseCount > 0 ? (
-          <>
-            <div className="grid grid-cols-2 gap-4 text-center mb-3">
-              <div>
-                <div className="text-2xl font-bold">
-                  {workoutSummary.exerciseCount}
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Exercises
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {workoutSummary.setCount}
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Sets
-                </div>
-              </div>
+        {/* Diet summary */}
+        <GlassCard className="relative p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200/70">Nutrition</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Diet Summary</h2>
             </div>
-            {(() => {
-              const bodyParts = getWorkoutBodyParts(
-                workoutSummary.exerciseNames,
-              )
-              return bodyParts ? (
-                <div className="pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                    Body Parts
-                  </div>
-                  <div className="text-sm font-medium">{bodyParts}</div>
-                </div>
-              ) : null
-            })()}
-          </>
-        ) : (
-          <div className="text-center py-4 text-sm text-neutral-500 dark:text-neutral-400">
-            No workout logged
+            <GlassButton
+              className="bg-gradient-to-r from-[var(--accent-diet)]/80 to-white/70 text-slate-900 shadow-[0_12px_35px_rgba(248,113,113,0.35)]"
+              onClick={openDiet}
+            >
+              Open Diet
+            </GlassButton>
           </div>
-        )}
-      </div>
+
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <CalorieRing
+                current={Math.round(dietSummary.calories)}
+                target={dietSummary.goals.cal}
+                protein={Math.round(dietSummary.protein)}
+                carbs={Math.round(dietSummary.carbs)}
+                fat={Math.round(dietSummary.fat)}
+                proteinTarget={dietSummary.goals.p}
+                carbsTarget={dietSummary.goals.c}
+                fatTarget={dietSummary.goals.f}
+              />
+            </div>
+
+            <div className="flex-1 grid grid-cols-2 gap-3">
+              <SmallMacroRing
+                label="Cal"
+                current={Math.round(dietSummary.calories)}
+                target={dietSummary.goals.cal}
+                color="var(--accent-diet)"
+              />
+              <SmallMacroRing
+                label="P"
+                current={Math.round(dietSummary.protein)}
+                target={dietSummary.goals.p}
+                color="#F87171"
+              />
+              <SmallMacroRing
+                label="F"
+                current={Math.round(dietSummary.fat)}
+                target={dietSummary.goals.f}
+                color="#FACC15"
+              />
+              <SmallMacroRing
+                label="C"
+                current={Math.round(dietSummary.carbs)}
+                target={dietSummary.goals.c}
+                color="#60A5FA"
+              />
+            </div>
+          </div>
+        </GlassCard>
+      {/* Workout summary */}
+        <GlassCard className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200/70">Training</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Workout Summary</h2>
+            </div>
+            <GlassButton
+              className="bg-gradient-to-r from-[var(--accent-workout)]/80 to-white/70 text-slate-900 shadow-[0_12px_35px_rgba(94,234,212,0.3)]"
+              onClick={openWorkout}
+            >
+              Open Workout
+            </GlassButton>
+          </div>
+
+          {workoutSummary.exerciseCount > 0 ? (
+            <>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="flex-1 grid grid-cols-2 gap-3 rounded-2xl border border-white/40 bg-white/60 p-3 text-center shadow-inner shadow-white/30 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-black/40">
+                  <div>
+                    <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {workoutSummary.exerciseCount}
+                    </div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300/70">
+                      Exercises
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {workoutSummary.setCount}
+                    </div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300/70">
+                      Sets
+                    </div>
+                  </div>
+                </div>
+                <GlassButton
+                  className="h-full min-w-[120px] flex-1 justify-center bg-gradient-to-br from-[var(--accent-home)]/90 via-white/40 to-[var(--accent-diet)]/80 text-white shadow-[0_15px_40px_rgba(59,130,246,0.35)]"
+                  onClick={() => setShowNutritionOverview(true)}
+                >
+                  View Meals
+                </GlassButton>
+              </div>
+              {(() => {
+                const bodyParts = getWorkoutBodyParts(workoutSummary.exerciseNames)
+                return bodyParts ? (
+                  <div className="mt-4 rounded-2xl border border-white/40 bg-white/70 px-4 py-3 shadow-inner shadow-white/30 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-black/40">
+                    <div className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300/70">
+                      Body Parts
+                    </div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">{bodyParts}</div>
+                  </div>
+                ) : null
+              })()}
+            </>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-white/30 bg-white/50 px-4 py-6 text-center text-sm text-slate-600 shadow-inner shadow-white/30 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:text-slate-200/80">
+              No workout logged
+            </div>
+          )}
+        </GlassCard>
 
       {/* Reminders inbox */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Inbox</h2>
-          <button
-            onClick={() => setShowReminderModal(true)}
-            className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-          >
-            + New Reminder
-          </button>
-        </div>
-
-        {reminders.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-4">
-            No reminders yet
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {reminders.map((reminder) => (
-              <div
-                key={reminder.id}
-                className="flex items-start gap-3 p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.08),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)]"
-              >
-                <input
-                  type="checkbox"
-                  checked={reminder.done}
-                  onChange={() => toggleReminder(reminder.id)}
-                  className="mt-0.5 w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)] border-none text-accent-home dark:text-accent-home focus:ring-2 focus:ring-neutral-500 cursor-pointer checked:bg-accent-home checked:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)]"
-                />
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-medium ${
-                      reminder.done
-                        ? 'line-through text-neutral-400 dark:text-neutral-500'
-                        : 'text-neutral-900 dark:text-neutral-100'
-                    }`}
-                  >
-                    {reminder.title}
-                  </p>
-                  {reminder.dueISO && (
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      Due: {new Date(reminder.dueISO).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => removeReminder(reminder.id)}
-                  className="text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  aria-label="Delete reminder"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))}
+        <GlassCard className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200/70">Focus</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Inbox</h2>
+            </div>
+            <GlassButton
+              className="bg-gradient-to-r from-white/80 to-[var(--accent-home)]/70 text-slate-900 shadow-[0_12px_35px_rgba(14,165,233,0.25)] dark:text-white"
+              onClick={() => setShowReminderModal(true)}
+            >
+              + New Reminder
+            </GlassButton>
           </div>
-        )}
-      </div>
+
+          {reminders.length === 0 ? (
+            <p className="py-5 text-center text-sm text-slate-600 dark:text-slate-200/80">
+              No reminders yet
+            </p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {reminders.map((reminder) => (
+                <div
+                  key={reminder.id}
+                  className="group flex items-start gap-3 rounded-2xl border border-white/40 bg-white/70 p-3 shadow-inner shadow-white/30 backdrop-blur-xl transition dark:border-white/10 dark:bg-white/5 dark:shadow-black/40"
+                >
+                  <input
+                    type="checkbox"
+                    checked={reminder.done}
+                    onChange={() => toggleReminder(reminder.id)}
+                    className="mt-1 h-5 w-5 rounded border-white/60 bg-white/70 text-[var(--accent-home)] shadow-inner shadow-white/40 focus:ring-2 focus:ring-[var(--accent-home)]/40 dark:border-white/20 dark:bg-white/5"
+                  />
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <p
+                      className={`text-sm font-semibold ${
+                        reminder.done
+                          ? 'line-through text-slate-400 dark:text-slate-500'
+                          : 'text-slate-900 dark:text-white'
+                      }`}
+                    >
+                      {reminder.title}
+                    </p>
+                    {reminder.dueISO && (
+                      <p className="text-xs text-slate-600 dark:text-slate-300/80">
+                        Due: {new Date(reminder.dueISO).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => removeReminder(reminder.id)}
+                    className="text-slate-400 transition hover:text-red-500 dark:hover:text-red-400"
+                    aria-label="Delete reminder"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="h-4 w-4"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </GlassCard>
 
       {/* New Reminder Modal */}
       {showReminderModal && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur"
           onClick={() => setShowReminderModal(false)}
         >
-          <div
-            className="bg-neutral-100 dark:bg-neutral-800 rounded-3xl p-6 max-w-md w-full shadow-[8px_8px_24px_rgba(0,0,0,0.15),-8px_-8px_24px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_24px_rgba(0,0,0,0.6),-8px_-8px_24px_rgba(255,255,255,0.05)]"
+          <GlassCard
+            className="w-full max-w-md p-6 shadow-[0_30px_80px_rgba(15,23,42,0.45)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-4">New Reminder</h3>
-            <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
-                <input
-                  type="text"
-                  value={reminderTitle}
-                  onChange={(e) => setReminderTitle(e.target.value)}
-                  placeholder="What do you need to remember?"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-accent-home/30 border-none transition-all duration-200"
-                />
+                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200/70">Reminder</p>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">New Reminder</h3>
+              </div>
+              <GlassButton onClick={() => setShowReminderModal(false)} className="h-9 w-9 px-0 text-base">
+                ✕
+              </GlassButton>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-200/80">
+                  Title
+                </label>
+                <div className="rounded-2xl border border-white/40 bg-white/70 px-3 py-2 shadow-inner shadow-white/30 backdrop-blur-xl focus-within:border-[var(--accent-home)]/70 dark:border-white/10 dark:bg-white/5 dark:shadow-black/40">
+                  <input
+                    type="text"
+                    value={reminderTitle}
+                    onChange={(e) => setReminderTitle(e.target.value)}
+                    className="w-full border-none bg-transparent text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:outline-none dark:text-white"
+                    placeholder="What should we remind you of?"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-200/80">
                   Due Date (Optional)
                 </label>
-                <input
-                  type="date"
-                  value={reminderDue}
-                  onChange={(e) => setReminderDue(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-accent-home/30 border-none transition-all duration-200"
-                />
+                <div className="rounded-2xl border border-white/40 bg-white/70 px-3 py-2 shadow-inner shadow-white/30 backdrop-blur-xl focus-within:border-[var(--accent-home)]/70 dark:border-white/10 dark:bg-white/5 dark:shadow-black/40">
+                  <input
+                    type="date"
+                    value={reminderDue}
+                    onChange={(e) => setReminderDue(e.target.value)}
+                    className="w-full border-none bg-transparent text-sm font-medium text-slate-900 focus:outline-none dark:text-white"
+                  />
+                </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <button
+                <GlassButton
+                  className="flex-1 justify-center bg-gradient-to-r from-[var(--accent-home)]/90 via-white/40 to-[var(--accent-diet)]/80 text-white shadow-[0_15px_45px_rgba(14,165,233,0.35)]"
                   onClick={() => {
                     if (reminderTitle.trim()) {
                       addReminder(reminderTitle, reminderDue || undefined)
@@ -666,26 +724,24 @@ export default function HomePage() {
                       setShowReminderModal(false)
                     }
                   }}
-                  className="flex-1 px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
                 >
                   Add Reminder
-                </button>
-                <button
+                </GlassButton>
+                <GlassButton
+                  className="justify-center text-slate-700 dark:text-white"
                   onClick={() => {
                     setShowReminderModal(false)
                     setReminderTitle('')
                     setReminderDue('')
                   }}
-                  className="px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
                 >
                   Cancel
-                </button>
+                </GlassButton>
               </div>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
-
       {/* Nutrition Overview Modal */}
       <NutritionOverview
         isOpen={showNutritionOverview}
