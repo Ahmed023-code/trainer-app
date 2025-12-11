@@ -21,6 +21,10 @@
  * - No changes required; storage system was already fully implemented
  * - All features verified against requirements
  *
+ * UI SANDBOX MODE:
+ * - Set UI_SANDBOX=true to use in-memory mock data instead of localStorage
+ * - Perfect for UI experiments without touching real data
+ *
  * Unified, date-scoped persistence layer for Diet and Workout data.
  *
  * Key Features:
@@ -29,6 +33,17 @@
  * - IndexedDB (via idb-keyval) for media blobs
  * - Automatic migration from legacy undated keys
  */
+
+// UI SANDBOX MODE - Use mock data instead of real localStorage
+const UI_SANDBOX = true; // Set to false to use real localStorage
+let mockStorage: any = null;
+
+if (UI_SANDBOX && typeof window !== 'undefined') {
+  import('./mockStorage').then(mod => {
+    mockStorage = mod;
+    console.log('[Storage V2] UI SANDBOX MODE ENABLED - Using mock in-memory data');
+  });
+}
 
 // Types for diet data
 export type FoodItem = {
@@ -142,7 +157,9 @@ type MediaIndexByDay = Record<string, MediaItem[]>;
 // Generic read/write helpers
 const readJSON = <T>(key: string, defaultValue: T): T => {
   try {
-    const raw = localStorage.getItem(key);
+    // Use mock storage in UI sandbox mode
+    const storage = UI_SANDBOX && mockStorage ? mockStorage.mockLocalStorageAPI : localStorage;
+    const raw = storage.getItem(key);
     if (!raw) return defaultValue;
     return JSON.parse(raw);
   } catch {
@@ -152,7 +169,9 @@ const readJSON = <T>(key: string, defaultValue: T): T => {
 
 const writeJSON = <T>(key: string, value: T): void => {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    // Use mock storage in UI sandbox mode
+    const storage = UI_SANDBOX && mockStorage ? mockStorage.mockLocalStorageAPI : localStorage;
+    storage.setItem(key, JSON.stringify(value));
   } catch {
     // Ignore storage errors
   }
@@ -269,6 +288,11 @@ export const writeWeight = (dateISO: string, value: number): void => {
 let _idb: typeof import("idb-keyval") | null = null;
 
 const getIdb = async () => {
+  // Use mock IndexedDB in UI sandbox mode
+  if (UI_SANDBOX && mockStorage) {
+    return mockStorage.mockIdbKeyval;
+  }
+
   if (!_idb) {
     _idb = await import("idb-keyval");
   }
@@ -396,7 +420,8 @@ export const migrateLegacyData = (): void => {
 };
 
 // Initialize on module load (run migration once)
-if (typeof window !== "undefined") {
+// Skip migration in UI sandbox mode - we use fresh mock data
+if (typeof window !== "undefined" && !UI_SANDBOX) {
   migrateLegacyData();
 }
 

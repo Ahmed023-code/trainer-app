@@ -1,11 +1,43 @@
 /**
- * USDA Food Search API
- * Searches the Neon Postgres database (13K core foods)
- * Used as fallback when offline database doesn't have enough results
+ * USDA Food Search API - UI SANDBOX MODE
+ * Returns mock food data for UI experiments
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query as pgQuery, type USDAFood } from '@/lib/usda-postgres';
+
+// Mock food database for UI sandbox
+const MOCK_FOODS = [
+  { fdc_id: 173904, description: 'Oatmeal, Rolled Oats, Dry', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 173944, description: 'Banana, Medium', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 174802, description: 'Whey Protein Isolate', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170567, description: 'Almond Butter', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171711, description: 'Blueberries, Fresh', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171287, description: 'Egg Whites, Liquid', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 168874, description: 'Whole Wheat Toast', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171705, description: 'Avocado', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171477, description: 'Grilled Chicken Breast', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 168876, description: 'Brown Rice', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170393, description: 'Mixed Vegetables', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171286, description: 'Whole Eggs', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 173410, description: 'Turkey Sandwich', data_type: 'branded_food', brand_name: 'Generic', upc: null },
+  { fdc_id: 170895, description: 'Greek Yogurt', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 175167, description: 'Salmon Fillet', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170026, description: 'Sweet Potato', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170379, description: 'Broccoli', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 174032, description: 'Lean Beef', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 169736, description: 'Pasta', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170900, description: 'Marinara Sauce', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 174803, description: 'Protein Shake', data_type: 'branded_food', brand_name: 'Generic', upc: null },
+  { fdc_id: 171688, description: 'Apple', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170581, description: 'Mixed Nuts', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 173096, description: 'White Rice', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171706, description: 'Strawberries', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 171284, description: 'Cheddar Cheese', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 170450, description: 'Spinach', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 173420, description: 'Peanut Butter', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 175174, description: 'Tilapia', data_type: 'foundation_food', brand_name: null, upc: null },
+  { fdc_id: 173745, description: 'Ground Turkey', data_type: 'foundation_food', brand_name: null, upc: null },
+];
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,59 +53,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Searching for: "${query}" (limit: ${limit}, offset: ${offset})`);
+    console.log(`[API - UI SANDBOX] Searching for: "${query}" (limit: ${limit}, offset: ${offset})`);
     const startTime = Date.now();
 
-    // Search query with fuzzy matching
-    const searchPattern = `%${query.toLowerCase()}%`;
+    // Filter mock foods by query
+    const queryLower = query.toLowerCase();
+    const allResults = MOCK_FOODS.filter(food =>
+      food.description.toLowerCase().includes(queryLower) ||
+      (food.brand_name && food.brand_name.toLowerCase().includes(queryLower))
+    );
 
-    const results = await pgQuery<USDAFood>(`
-      SELECT
-        f.fdc_id,
-        f.description,
-        f.data_type,
-        bf.brand_name,
-        bf.gtin_upc as upc
-      FROM foods f
-      LEFT JOIN branded_foods bf ON f.fdc_id = bf.fdc_id
-      WHERE LOWER(f.description) LIKE $1
-         OR LOWER(bf.brand_name) LIKE $2
-      ORDER BY
-        CASE
-          -- Exact matches first
-          WHEN LOWER(f.description) = LOWER($3) THEN 1
-          -- Starts with query
-          WHEN LOWER(f.description) LIKE $4 THEN 2
-          -- Brand name matches
-          WHEN LOWER(bf.brand_name) LIKE $5 THEN 3
-          -- Contains query
-          ELSE 4
-        END,
-        f.description
-      LIMIT $6 OFFSET $7
-    `, [
-      searchPattern,
-      searchPattern,
-      query.toLowerCase(),
-      `${query.toLowerCase()}%`,
-      `${query.toLowerCase()}%`,
-      limit,
-      offset
-    ]);
+    // Sort by relevance (exact matches first, then starts with, then contains)
+    allResults.sort((a, b) => {
+      const aDesc = a.description.toLowerCase();
+      const bDesc = b.description.toLowerCase();
+      if (aDesc === queryLower) return -1;
+      if (bDesc === queryLower) return 1;
+      if (aDesc.startsWith(queryLower)) return -1;
+      if (bDesc.startsWith(queryLower)) return 1;
+      return 0;
+    });
 
-    // Get total count for pagination
-    const countResult = await pgQuery<{ total: string }>(`
-      SELECT COUNT(*) as total
-      FROM foods f
-      LEFT JOIN branded_foods bf ON f.fdc_id = bf.fdc_id
-      WHERE LOWER(f.description) LIKE $1
-         OR LOWER(bf.brand_name) LIKE $2
-    `, [searchPattern, searchPattern]);
-
-    const total = parseInt(countResult[0].total, 10);
+    // Paginate results
+    const results = allResults.slice(offset, offset + limit);
+    const total = allResults.length;
 
     const duration = Date.now() - startTime;
-    console.log(`[API] Found ${results.length}/${total} results in ${duration}ms`);
+    console.log(`[API - UI SANDBOX] Found ${results.length}/${total} results in ${duration}ms`);
 
     return NextResponse.json({
       results,
@@ -85,10 +91,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[API] Search error:', error);
+    console.error('[API - UI SANDBOX] Search error:', error);
     return NextResponse.json(
       {
-        error: 'Database search failed',
+        error: 'Mock search failed',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

@@ -1,10 +1,52 @@
 /**
- * USDA Food Details API
- * Gets full nutrition details for a specific food by FDC ID from Neon Postgres
+ * USDA Food Details API - UI SANDBOX MODE
+ * Returns mock nutrition details for UI experiments
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query, type USDAFood, type USDANutrient, type USDAFoodPortion, type FoodDetails } from '@/lib/usda-postgres';
+
+// Mock food database with full nutrition details
+const MOCK_FOOD_DETAILS: Record<number, any> = {
+  173904: {
+    food: { fdc_id: 173904, description: 'Oatmeal, Rolled Oats, Dry', data_type: 'foundation_food', brand_name: null, upc: null },
+    nutrients: [
+      { id: 1003, name: 'Protein', unit_name: 'g', amount: 13.15 },
+      { id: 1004, name: 'Total lipid (fat)', unit_name: 'g', amount: 6.52 },
+      { id: 1005, name: 'Carbohydrate, by difference', unit_name: 'g', amount: 67.7 },
+      { id: 1008, name: 'Energy', unit_name: 'kcal', amount: 379 },
+    ],
+    portions: [
+      { id: 1, portion_description: '100g', gram_weight: 100 },
+      { id: 2, portion_description: '1 cup', gram_weight: 81 },
+    ],
+  },
+  173944: {
+    food: { fdc_id: 173944, description: 'Banana, Medium', data_type: 'foundation_food', brand_name: null, upc: null },
+    nutrients: [
+      { id: 1003, name: 'Protein', unit_name: 'g', amount: 1.09 },
+      { id: 1004, name: 'Total lipid (fat)', unit_name: 'g', amount: 0.33 },
+      { id: 1005, name: 'Carbohydrate, by difference', unit_name: 'g', amount: 22.84 },
+      { id: 1008, name: 'Energy', unit_name: 'kcal', amount: 89 },
+    ],
+    portions: [
+      { id: 1, portion_description: '100g', gram_weight: 100 },
+      { id: 2, portion_description: '1 medium (118g)', gram_weight: 118 },
+    ],
+  },
+  171477: {
+    food: { fdc_id: 171477, description: 'Grilled Chicken Breast', data_type: 'foundation_food', brand_name: null, upc: null },
+    nutrients: [
+      { id: 1003, name: 'Protein', unit_name: 'g', amount: 31 },
+      { id: 1004, name: 'Total lipid (fat)', unit_name: 'g', amount: 3.6 },
+      { id: 1005, name: 'Carbohydrate, by difference', unit_name: 'g', amount: 0 },
+      { id: 1008, name: 'Energy', unit_name: 'kcal', amount: 165 },
+    ],
+    portions: [
+      { id: 1, portion_description: '100g', gram_weight: 100 },
+      { id: 2, portion_description: '1 breast (172g)', gram_weight: 172 },
+    ],
+  },
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,65 +68,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Getting details for FDC ID: ${fdcIdNum}`);
+    console.log(`[API - UI SANDBOX] Getting details for FDC ID: ${fdcIdNum}`);
     const startTime = Date.now();
 
-    // Get food details
-    const foodResult = await query<USDAFood>(`
-      SELECT
-        f.fdc_id,
-        f.description,
-        f.data_type,
-        bf.brand_name,
-        bf.gtin_upc as upc,
-        bf.ingredients
-      FROM foods f
-      LEFT JOIN branded_foods bf ON f.fdc_id = bf.fdc_id
-      WHERE f.fdc_id = $1
-    `, [fdcIdNum]);
+    // Get mock details or generate generic ones
+    let details = MOCK_FOOD_DETAILS[fdcIdNum];
 
-    const food = foodResult[0];
-
-    if (!food) {
-      return NextResponse.json(
-        { error: 'Food not found' },
-        { status: 404 }
-      );
+    if (!details) {
+      // Generate generic mock data for any FDC ID not in our database
+      details = {
+        food: {
+          fdc_id: fdcIdNum,
+          description: `Mock Food ${fdcIdNum}`,
+          data_type: 'foundation_food',
+          brand_name: null,
+          upc: null
+        },
+        nutrients: [
+          { id: 1003, name: 'Protein', unit_name: 'g', amount: 20 },
+          { id: 1004, name: 'Total lipid (fat)', unit_name: 'g', amount: 5 },
+          { id: 1005, name: 'Carbohydrate, by difference', unit_name: 'g', amount: 30 },
+          { id: 1008, name: 'Energy', unit_name: 'kcal', amount: 250 },
+        ],
+        portions: [
+          { id: 1, portion_description: '100g', gram_weight: 100 },
+          { id: 2, portion_description: '1 serving', gram_weight: 150 },
+        ],
+      };
     }
 
-    // Get nutrients
-    const nutrients = await query<USDANutrient>(`
-      SELECT
-        n.id,
-        n.name,
-        n.unit_name,
-        fn.amount
-      FROM food_nutrients fn
-      JOIN nutrients n ON fn.nutrient_id = n.id
-      WHERE fn.fdc_id = $1
-      ORDER BY n.name
-    `, [fdcIdNum]);
-
-    // Get portions
-    const portions = await query<USDAFoodPortion>(`
-      SELECT
-        id,
-        portion_description,
-        gram_weight
-      FROM food_portions
-      WHERE fdc_id = $1
-      AND gram_weight IS NOT NULL
-      ORDER BY gram_weight
-    `, [fdcIdNum]);
-
-    const details: FoodDetails = {
-      food,
-      nutrients,
-      portions
-    };
-
     const duration = Date.now() - startTime;
-    console.log(`[API] Retrieved ${nutrients.length} nutrients and ${portions.length} portions in ${duration}ms`);
+    console.log(`[API - UI SANDBOX] Retrieved ${details.nutrients.length} nutrients and ${details.portions.length} portions in ${duration}ms`);
 
     return NextResponse.json({
       ...details,
@@ -92,10 +106,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[API] Details error:', error);
+    console.error('[API - UI SANDBOX] Details error:', error);
     return NextResponse.json(
       {
-        error: 'Failed to retrieve food details',
+        error: 'Failed to retrieve mock food details',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
