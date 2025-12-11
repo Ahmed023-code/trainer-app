@@ -1,457 +1,201 @@
 'use client'
 
-import { useEffect, useMemo, useState, useRef } from 'react'
-import type { Exercise, Routine, SetItem } from '@/components/workout/types'
-import ExerciseSection from '@/components/workout/ExerciseSection'
-import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal'
-import ExerciseLibraryModal from '@/components/workout/ExerciseLibraryModal'
-import RoutinesModal from '@/components/workout/RoutinesModal'
-import ExerciseHistoryModal from '@/components/workout/ExerciseHistoryModal'
-import ClockModal from '@/components/workout/ClockModal'
-import BodyPartPills from '@/components/workout/BodyPartPills'
-import DaySelector from '@/components/ui/DaySelector'
-import { useDaySelector } from '@/hooks/useDaySelector'
-import { useDragAndDrop } from '@/hooks/useDragAndDrop'
-import { readWorkout, writeWorkout, getTodayISO } from '@/stores/storageV2'
+import { useMemo } from 'react'
 
-const num = (v: any) => {
-  const n = parseFloat(String(v))
-  return Number.isFinite(n) ? n : 0
-}
-
-// Map arbitrary bodyPart strings to our groups
-const mapBodyPartToGroup = (s: string): string | null => {
-  const x = s.trim().toLowerCase()
-  if (!x) return null
-  if (/(quad|thigh)/.test(x)) return 'Quads'
-  if (/(glute|glutes|butt)/.test(x)) return 'Glutes'
-  if (/(hamstring|posterior chain)/.test(x)) return 'Hamstrings'
-  if (/(calf|calves|gastrocnemius|soleus)/.test(x)) return 'Calves'
-  if (/(chest|pec)/.test(x)) return 'Chest'
-  if (/(back|lat|trap|rear delt|upper back|lats|traps)/.test(x)) return 'Back'
-  if (/(shoulder|delts?)/.test(x)) return 'Shoulders'
-  if (/(bicep)/.test(x)) return 'Biceps'
-  if (/(tricep)/.test(x)) return 'Triceps'
-  if (/(abs|core|oblique)/.test(x)) return 'Core'
-  return null
-}
-
-const MUSCLE_ORDER = [
-  'Quads',
-  'Glutes',
-  'Hamstrings',
-  'Calves',
-  'Chest',
-  'Back',
-  'Shoulders',
-  'Biceps',
-  'Triceps',
-  'Core',
-] as const
-
-// Deep-copy a routine into exercises for today
-const deepCopyRoutine = (r: Routine): Exercise[] =>
-  r.exercises.map((e) => ({
-    name: e.name,
-    notes: (e as any).notes || '',
-    sets: e.sets.map((s: any) => ({
-      weight: num(s?.weight),
-      repsMin:
-        typeof s?.repsMin === 'number'
-          ? s.repsMin
-          : typeof s?.reps === 'number'
-          ? s.reps
-          : 10,
-      repsMax:
-        typeof s?.repsMax === 'number'
-          ? s.repsMax
-          : typeof s?.reps === 'number'
-          ? s.reps
-          : 10,
-      rpe: typeof s?.rpe === 'number' ? s.rpe : 8,
-      type: s?.type || 'Working',
-      note: s?.note ?? '',
-    })),
-  }))
+// Mock data constants
+const MOCK_TODAY = new Date().toISOString().split('T')[0]
+const MOCK_EXERCISES = [
+  {
+    name: 'Bench Press',
+    sets: [
+      { weight: 185, repsMin: 8, repsMax: 10, rpe: 8, type: 'Working', repsPerformed: 10 },
+      { weight: 185, repsMin: 8, repsMax: 10, rpe: 8, type: 'Working', repsPerformed: 9 },
+      { weight: 185, repsMin: 8, repsMax: 10, rpe: 8, type: 'Working', repsPerformed: 8 },
+      { weight: 155, repsMin: 10, repsMax: 12, rpe: 7, type: 'Working', repsPerformed: 12 },
+    ],
+    notes: 'Felt strong today',
+  },
+  {
+    name: 'Incline Dumbbell Press',
+    sets: [
+      { weight: 70, repsMin: 10, repsMax: 12, rpe: 8, type: 'Working', repsPerformed: 12 },
+      { weight: 70, repsMin: 10, repsMax: 12, rpe: 8, type: 'Working', repsPerformed: 11 },
+      { weight: 70, repsMin: 10, repsMax: 12, rpe: 8, type: 'Working', repsPerformed: 10 },
+    ],
+    notes: '',
+  },
+  {
+    name: 'Cable Flyes',
+    sets: [
+      { weight: 40, repsMin: 12, repsMax: 15, rpe: 7, type: 'Working', repsPerformed: 15 },
+      { weight: 40, repsMin: 12, repsMax: 15, rpe: 7, type: 'Working', repsPerformed: 14 },
+      { weight: 40, repsMin: 12, repsMax: 15, rpe: 7, type: 'Working', repsPerformed: 13 },
+    ],
+    notes: '',
+  },
+  {
+    name: 'Tricep Pushdown',
+    sets: [
+      { weight: 60, repsMin: 10, repsMax: 12, rpe: 8, type: 'Working', repsPerformed: 12 },
+      { weight: 60, repsMin: 10, repsMax: 12, rpe: 8, type: 'Working', repsPerformed: 11 },
+      { weight: 60, repsMin: 10, repsMax: 12, rpe: 8, type: 'Working', repsPerformed: 10 },
+    ],
+    notes: '',
+  },
+  {
+    name: 'Overhead Tricep Extension',
+    sets: [
+      { weight: 50, repsMin: 12, repsMax: 15, rpe: 7, type: 'Working', repsPerformed: 14 },
+      { weight: 50, repsMin: 12, repsMax: 15, rpe: 7, type: 'Working', repsPerformed: 13 },
+    ],
+    notes: '',
+  },
+]
+const MOCK_BODY_PARTS = { 'Chest': 10, 'Triceps': 8 }
+const MOCK_WORKOUT_NOTES = 'Great chest and triceps session today. Feeling stronger on bench press.'
 
 export default function WorkoutPage() {
-  // Date selector
-  const { dateISO, dateObj, goPrevDay, goNextDay, setDateISO, isToday } =
-    useDaySelector('ui-last-date-workout')
-
-  // Go to Today function
-  const goToToday = () => {
-    const today = getTodayISO()
-    setDateISO(today)
-    localStorage.setItem('ui-last-date-workout', today)
-  }
-
-  const [exercises, setExercises] = useState<Exercise[]>([])
-  const [workoutNotes, setWorkoutNotes] = useState<string>('')
-
-  // FAB + modals - unified workout log modal with tabs
-  const [showWorkoutLog, setShowWorkoutLog] = useState(false)
-  const [workoutLogTab, setWorkoutLogTab] = useState<'quick-add' | 'routines'>(
-    'quick-add',
-  )
-  const [showHistory, setShowHistory] = useState(false)
-  const [historyExerciseName, setHistoryExerciseName] = useState('')
-
-  // Exercise detail modal
-  const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<
-    number | null
-  >(null)
-
-  // Clock modal
-  const [showClock, setShowClock] = useState(false)
-
-  // Library index: exercise name -> groups[]
-  const [libIndex, setLibIndex] = useState<Record<string, string[]>>({})
-
-  // Refs for scrolling to exercises
-  const exerciseRefs = useRef<Record<string, HTMLDivElement | null>>({})
-
-  // Build library index once
-  useEffect(() => {
-    ;(async () => {
-      try {
-        // NOTE: Large datasets are now expected from external storage
-        // Set NEXT_PUBLIC_DATA_BASE_URL environment variable to point to your data hosting
-        const dataBaseUrl = process.env.NEXT_PUBLIC_DATA_BASE_URL || ''
-        const exercisesUrl = dataBaseUrl
-          ? `${dataBaseUrl}/exercisedb-exercises.json`
-          : '/data/exercisedb-exercises.json'
-
-        const res = await fetch(exercisesUrl)
-        if (!res.ok) {
-          throw new Error(
-            `Failed to load exercise data. Please configure NEXT_PUBLIC_DATA_BASE_URL environment variable.`,
-          )
-        }
-        const json = await res.json()
-        const arr: any[] = Array.isArray(json)
-          ? json
-          : Array.isArray(json?.exercises)
-          ? json.exercises
-          : []
-        const idx: Record<string, string[]> = {}
-        for (const r of arr) {
-          const name = String(r?.name || '')
-            .toLowerCase()
-            .trim()
-          if (!name) continue
-          // Use targetMuscles from the exercise data
-          const targetMuscles: string[] = Array.isArray(r?.targetMuscles)
-            ? r.targetMuscles
-            : []
-          if (targetMuscles.length) idx[name] = targetMuscles
-        }
-        setLibIndex(idx)
-      } catch {
-        setLibIndex({})
-      }
-    })()
-  }, [])
-
-  // Load data for selected date
-  useEffect(() => {
-    const state = readWorkout(dateISO)
-    setExercises(state.exercises || [])
-    setWorkoutNotes(state.notes || '')
-  }, [dateISO])
-
-  // Save data whenever exercises or notes change
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      writeWorkout(dateISO, { exercises, notes: workoutNotes })
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
-  }, [exercises, workoutNotes, dateISO])
-
-  const addExercise = (ex: Exercise) => {
-    // Mark quick-add exercises with source field
-    const exerciseWithSource: Exercise = {
-      ...ex,
-      source: 'quick-add',
-    }
-    setExercises((prev) => [...prev, exerciseWithSource])
-  }
-  const updateExercise = (idx: number, next: Exercise) => {
-    setExercises((prev) => prev.map((e, i) => (i === idx ? next : e)))
-  }
-  const deleteExercise = (idx: number) => {
-    setExercises((prev) => prev.filter((_, i) => i !== idx))
-  }
-
-  // Add a set to an exercise
-  const addSetToExercise = (exercise: Exercise) => {
-    const idx = exercises.findIndex((e) => e.name === exercise.name)
-    if (idx === -1) return
-
-    const isQuickAdd = !exercise.source || exercise.source === 'quick-add'
-    const prev = exercise.sets[exercise.sets.length - 1]
-    let newSet: SetItem
-
-    if (isQuickAdd) {
-      // Quick-add: single reps value (repsMin = repsMax)
-      newSet = prev
-        ? { ...prev, repsPerformed: undefined }
-        : { weight: 0, repsMin: 10, repsMax: 10, rpe: 8, type: 'Working' }
-    } else {
-      // Routine: clone with rep range preserved, reset repsPerformed
-      newSet = prev
-        ? { ...prev, repsPerformed: undefined }
-        : { weight: 0, repsMin: 8, repsMax: 10, rpe: 8, type: 'Working' }
-    }
-
-    const updatedExercise = {
-      ...exercise,
-      sets: [...exercise.sets, newSet],
-    }
-    updateExercise(idx, updatedExercise)
-  }
-
-  // Sets-by-muscle card data
-  const setCounts = useMemo(() => {
-    const base: Record<string, number> = {}
-
-    for (const ex of exercises) {
-      const nameKey = ex.name.toLowerCase().trim()
-
-      // Get target muscles from library index
-      const targetMuscles = libIndex[nameKey] || []
-
-      if (!targetMuscles.length) continue
-
-      const count = ex.sets.reduce((n, s: any) => {
-        const t = String(s?.type || 'Working')
-        return n + (t === 'Working' || t === 'Drop Set' ? 1 : 0)
-      }, 0)
-
-      // Only count the primary (first) target muscle
-      if (count > 0) {
-        const primaryMuscle = targetMuscles[0]
-        base[primaryMuscle] = (base[primaryMuscle] ?? 0) + count
-      }
-    }
-
-    return base
-  }, [exercises, libIndex])
-
-  // Prepare chart data for WorkoutMiniChart
-  const chartData = useMemo(() => {
-    return MUSCLE_ORDER.map((muscle) => ({
-      label: muscle,
-      value: setCounts[muscle] || 0,
-    }))
-      .filter((item) => item.value > 0)
-      .sort((a, b) => b.value - a.value)
-  }, [setCounts])
-
-  // Drag and drop for exercises
-  const {
-    draggedIndex,
-    dragOverIndex,
-    handleDragStart,
-    handleDragEnd,
-    handleDragOver,
-    handleDragEnter,
-    handleDragLeave,
-    handleDrop,
-  } = useDragAndDrop(exercises, setExercises)
+  const todayObj = useMemo(() => new Date(MOCK_TODAY + 'T00:00:00'), [])
 
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
       {/* Header */}
       <header className="pt-4 space-y-3">
-        {/* Date selector with full-width Today button */}
-        <DaySelector
-          dateISO={dateISO}
-          dateObj={dateObj}
-          onPrev={goPrevDay}
-          onNext={goNextDay}
-          onSelect={setDateISO}
-          isToday={isToday}
-          onGoToToday={goToToday}
-          accentColor="var(--accent-workout)"
-          fullWidthLayout={true}
-        />
+        {/* Date selector */}
+        <div className="flex items-center gap-2">
+          <button className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </button>
 
-        {/* Body Part Pills showing muscles trained today */}
-        <BodyPartPills setCounts={setCounts} />
+          <div className="flex-1 rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.6),-9px_-9px_16px_rgba(255,255,255,0.08)] p-5">
+            <div className="text-center">
+              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
+              </div>
+              <div className="text-lg font-semibold">
+                {todayObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </div>
+            </div>
+          </div>
 
-        {/* Settings button below Today button, right-aligned */}
+          <button className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+        </div>
+
+        <button className="w-full px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm font-medium">
+          Today
+        </button>
+
+        {/* Body Part Pills */}
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(MOCK_BODY_PARTS).map(([muscle, sets]) => (
+            <div
+              key={muscle}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--accent-workout)] text-white text-sm font-medium"
+            >
+              <span>{muscle}</span>
+              <span className="text-xs opacity-80">{sets} sets</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Settings button */}
         <div className="flex justify-end">
-          <a
-            href={`/settings/workout?returnDate=${dateISO}`}
-            className="tap-target w-10 h-10 flex items-center justify-center rounded-full bg-[var(--accent-workout)] text-white hover:opacity-90 transition-opacity shadow-sm"
-            aria-label="Workout Settings"
-          >
-            <img src="/icons/fi-sr-settings.svg" alt="" className="w-4 h-4" />
-          </a>
+          <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--accent-workout)] text-white shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      {/* Exercise list - compact summary cards */}
-      <section className="space-y-3 relative z-10 mt-4">
-        {exercises.map((ex, i) => (
+      {/* Exercise list */}
+      <section className="space-y-3 mt-4">
+        {MOCK_EXERCISES.map((exercise, i) => (
           <div
-            key={`${ex.name}-${i}`}
-            ref={(el) => {
-              exerciseRefs.current[ex.name] = el
-            }}
-            draggable
-            onDragStart={handleDragStart(i)}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDragEnter={handleDragEnter(i)}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop(i)}
-            className={`rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4 overflow-visible cursor-move transition-all duration-200 ${
-              draggedIndex === i
-                ? 'opacity-50'
-                : dragOverIndex === i
-                ? 'scale-[1.02] shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.8)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)]'
-                : ''
-            }`}
-            onClick={() => setSelectedExerciseIndex(i)}
+            key={`${exercise.name}-${i}`}
+            className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5"
           >
-            <ExerciseSection
-              exercise={ex}
-              onClick={() => setSelectedExerciseIndex(i)}
-              onDelete={() => deleteExercise(i)}
-              onAddSet={addSetToExercise}
-              onUpdateExercise={(updated) => updateExercise(i, updated)}
-              currentDate={dateISO}
-            />
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">{exercise.name}</h3>
+              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                {exercise.sets.length} sets
+              </div>
+            </div>
+
+            {/* Sets */}
+            <div className="space-y-2">
+              {exercise.sets.map((set, idx) => (
+                <div
+                  key={idx}
+                  className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.15),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] dark:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.4),inset_-3px_-3px_6px_rgba(255,255,255,0.05)]"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">Set {idx + 1}</div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400 flex gap-3">
+                      <span>{set.weight} lbs</span>
+                      <span>×</span>
+                      <span>{set.repsPerformed || set.repsMin} reps</span>
+                      <span>@</span>
+                      <span>RPE {set.rpe}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Exercise notes */}
+            {exercise.notes && (
+              <div className="mt-3 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">{exercise.notes}</div>
+              </div>
+            )}
           </div>
         ))}
 
-        {/* Log Workout button always visible */}
+        {/* Log Workout button */}
         <div className="flex items-center justify-center pt-4">
-          <button
-            onClick={() => setShowWorkoutLog(true)}
-            className="px-8 py-3 rounded-full text-base font-semibold bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] transition-all duration-200 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)]"
-          >
+          <button className="px-8 py-3 rounded-full text-base font-semibold bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-[var(--accent-workout)]">
             + Log Workout
           </button>
         </div>
       </section>
 
       {/* Workout-level notes */}
-      {exercises.length > 0 && (
-        <section className="mt-6 relative z-0">
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      {MOCK_WORKOUT_NOTES && (
+        <section className="mt-6">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <label className="block text-sm font-medium mb-2">
               Workout Notes
             </label>
-            <textarea
-              className="w-full rounded-xl bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-2 resize-none border-none focus:outline-none focus:ring-2 focus:ring-accent-workout/30 transition-all duration-200"
-              rows={3}
-              placeholder="Add notes for today's workout..."
-              value={workoutNotes}
-              onChange={(e) => setWorkoutNotes(e.target.value)}
-            />
+            <div className="w-full rounded-xl bg-neutral-100 dark:bg-neutral-900 shadow-[inset_6px_6px_12px_rgba(0,0,0,0.2),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.4),inset_-6px_-6px_12px_rgba(255,255,255,0.05)] px-3 py-2 text-sm">
+              {MOCK_WORKOUT_NOTES}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Clock launcher button */}
+      {/* Clock button */}
       <div className="fixed right-24 bottom-24 z-[9400]">
-        <button
-          className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[6px_6px_12px_rgba(0,0,0,0.15),-6px_-6px_12px_rgba(255,255,255,0.7)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] grid place-items-center transition-all duration-200 active:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.15),inset_-3px_-3px_6px_rgba(255,255,255,0.5)]"
-          aria-label="Clock"
-          onClick={() => setShowClock(true)}
-        >
-          <img
-            src="/icons/fi-sr-stopwatch.svg"
-            alt=""
-            className="w-5 h-5 dark:invert"
-          />
+        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[10px_10px_20px_rgba(0,0,0,0.25),-10px_-10px_20px_rgba(255,255,255,0.9)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.6),-10px_-10px_20px_rgba(255,255,255,0.08)] grid place-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
         </button>
       </div>
 
       {/* FAB */}
       <div className="fixed right-6 bottom-24 z-[9500]">
-        <button
-          className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[6px_6px_12px_rgba(0,0,0,0.15),-6px_-6px_12px_rgba(255,255,255,0.7)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] flex items-center justify-center transition-all duration-200 active:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.15),inset_-3px_-3px_6px_rgba(255,255,255,0.5)]"
-          aria-label="Add"
-          onClick={() => setShowWorkoutLog(true)}
-        >
-          <span
-            className="text-4xl leading-none font-bold"
-            style={{ marginTop: '-2px' }}
-          >
-            +
-          </span>
+        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[10px_10px_20px_rgba(0,0,0,0.25),-10px_-10px_20px_rgba(255,255,255,0.9)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.6),-10px_-10px_20px_rgba(255,255,255,0.08)] text-[var(--accent-workout)] flex items-center justify-center">
+          <span className="text-4xl leading-none font-bold" style={{ marginTop: '-2px' }}>+</span>
         </button>
       </div>
-
-      {/* Unified Workout Log - render appropriate modal based on tab */}
-      {showWorkoutLog && workoutLogTab === 'quick-add' && (
-        <ExerciseLibraryModal
-          isOpen={true}
-          onClose={() => setShowWorkoutLog(false)}
-          onPick={(ex) => {
-            addExercise(ex)
-            setShowWorkoutLog(false)
-          }}
-          onSwitchToRoutines={() => setWorkoutLogTab('routines')}
-        />
-      )}
-
-      {showWorkoutLog && workoutLogTab === 'routines' && (
-        <RoutinesModal
-          isOpen={true}
-          onClose={() => setShowWorkoutLog(false)}
-          onSaveRoutine={() => {}}
-          onPickRoutine={(r) => {
-            setExercises((prev) => [...prev, ...r.exercises])
-            setShowWorkoutLog(false)
-          }}
-          onSwitchToQuickAdd={() => setWorkoutLogTab('quick-add')}
-        />
-      )}
-
-      {/* Clock Modal */}
-      <ClockModal isOpen={showClock} onClose={() => setShowClock(false)} />
-
-      {/* Exercise Detail Modal */}
-      <ExerciseDetailModal
-        isOpen={selectedExerciseIndex !== null}
-        exercise={
-          selectedExerciseIndex !== null
-            ? exercises[selectedExerciseIndex]
-            : null
-        }
-        onClose={() => setSelectedExerciseIndex(null)}
-        onChange={(next) => {
-          if (selectedExerciseIndex !== null) {
-            updateExercise(selectedExerciseIndex, next)
-          }
-        }}
-        onDelete={() => {
-          if (selectedExerciseIndex !== null) {
-            deleteExercise(selectedExerciseIndex)
-            setSelectedExerciseIndex(null)
-          }
-        }}
-        onHistory={() => {
-          if (selectedExerciseIndex !== null) {
-            setHistoryExerciseName(exercises[selectedExerciseIndex].name)
-            setShowHistory(true)
-          }
-        }}
-      />
-
-      {/* Exercise History Modal */}
-      <ExerciseHistoryModal
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        exerciseName={historyExerciseName}
-        dateISO={dateISO}
-      />
     </main>
   )
 }

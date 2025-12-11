@@ -65,29 +65,164 @@ input[type="number"] {
   }
 }
 
-/* Neomorphic Shadow Utilities */
-/* Raised (extruded) elements */
+/* =================================================================================
+   MATERIAL DESIGN 3 + NEOMORPHISM DESIGN SYSTEM
+   ================================================================================= */
+
+/* Typography Scale - Material Design 3 */
+.m3-display-large { @apply text-[57px] font-normal leading-[64px]; }
+.m3-display-medium { @apply text-[45px] font-normal leading-[52px]; }
+.m3-display-small { @apply text-[36px] font-normal leading-[44px]; }
+
+.m3-headline-large { @apply text-[32px] font-normal leading-[40px]; }
+.m3-headline-medium { @apply text-[28px] font-normal leading-[36px]; }
+.m3-headline-small { @apply text-[24px] font-normal leading-[32px]; }
+
+.m3-title-large { @apply text-[22px] font-normal leading-[30px]; }
+.m3-title-medium { @apply text-[16px] font-medium leading-[24px]; }
+.m3-title-small { @apply text-[14px] font-medium leading-[20px]; }
+
+.m3-body-large { @apply text-[16px] font-normal leading-[24px]; }
+.m3-body-medium { @apply text-[14px] font-normal leading-[20px]; }
+.m3-body-small { @apply text-[12px] font-normal leading-[16px]; }
+
+.m3-label-large { @apply text-[14px] font-medium leading-[20px]; }
+.m3-label-medium { @apply text-[12px] font-medium leading-[16px] tracking-[0.1px]; }
+.m3-label-small { @apply text-[11px] font-medium leading-[16px] tracking-[0.1px]; }
+
+/* M3 Elevation Levels (blended with Neomorphism) */
+/* Level 1 - Subtle elevation for cards */
+.m3-elevation-1 {
+  box-shadow:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3),
+    0px 1px 3px 1px rgba(0, 0, 0, 0.15),
+    8px 8px 16px rgba(0, 0, 0, 0.1),
+    -8px -8px 16px rgba(255, 255, 255, 0.7);
+}
+.dark .m3-elevation-1 {
+  box-shadow:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3),
+    0px 1px 3px 1px rgba(0, 0, 0, 0.15),
+    8px 8px 16px rgba(0, 0, 0, 0.5),
+    -8px -8px 16px rgba(255, 255, 255, 0.05);
+}
+
+/* Level 2 - Medium elevation for raised elements */
+.m3-elevation-2 {
+  box-shadow:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3),
+    0px 2px 6px 2px rgba(0, 0, 0, 0.15),
+    12px 12px 24px rgba(0, 0, 0, 0.2),
+    -12px -12px 24px rgba(255, 255, 255, 0.9);
+}
+.dark .m3-elevation-2 {
+  box-shadow:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3),
+    0px 2px 6px 2px rgba(0, 0, 0, 0.15),
+    12px 12px 24px rgba(0, 0, 0, 0.6),
+    -12px -12px 24px rgba(255, 255, 255, 0.08);
+}
+
+/* Level 3 - High elevation for FABs and prominent elements */
+.m3-elevation-3 {
+  box-shadow:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.3),
+    0px 4px 8px 3px rgba(0, 0, 0, 0.15),
+    16px 16px 32px rgba(0, 0, 0, 0.25),
+    -16px -16px 32px rgba(255, 255, 255, 0.95);
+}
+.dark .m3-elevation-3 {
+  box-shadow:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.3),
+    0px 4px 8px 3px rgba(0, 0, 0, 0.15),
+    16px 16px 32px rgba(0, 0, 0, 0.7),
+    -16px -16px 32px rgba(255, 255, 255, 0.1);
+}
+
+/* Neomorphic Inset for pressed/recessed elements */
+.m3-surface-inset {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+}
+.dark .m3-surface-inset {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+}
+
+/* M3 Filled Button with Neomorphism */
+.m3-btn-filled {
+  @apply m3-label-large rounded-full px-6 py-3 transition-all duration-200 m3-elevation-1;
+}
+.m3-btn-filled:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+}
+.dark .m3-btn-filled:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+}
+
+/* M3 Outlined Button with Neomorphism */
+.m3-btn-outlined {
+  @apply m3-label-large rounded-full px-6 py-3 border-2 transition-all duration-200;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.1), -4px -4px 8px rgba(255,255,255,0.7);
+}
+.dark .m3-btn-outlined {
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.5), -4px -4px 8px rgba(255,255,255,0.05);
+}
+.m3-btn-outlined:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+}
+.dark .m3-btn-outlined:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+}
+
+/* M3 Text Button */
+.m3-btn-text {
+  @apply m3-label-large rounded-full px-6 py-3 transition-all duration-200;
+}
+.m3-btn-text:active {
+  @apply bg-black/10;
+}
+.dark .m3-btn-text:active {
+  @apply bg-white/10;
+}
+
+/* M3 FAB (Floating Action Button) */
+.m3-fab {
+  @apply m3-elevation-3 rounded-full w-14 h-14 flex items-center justify-center;
+  @apply transition-all duration-200 active:scale-95;
+}
+.m3-fab-large {
+  @apply m3-elevation-3 rounded-full w-24 h-24 flex items-center justify-center;
+  @apply transition-all duration-200 active:scale-95;
+}
+
+/* M3 Card Surface */
+.m3-card {
+  @apply m3-elevation-1 rounded-3xl;
+}
+.m3-card-filled {
+  @apply m3-elevation-2 rounded-3xl;
+}
+
+/* Legacy Neomorphic Utilities (kept for compatibility) */
 .neomorphic-raised {
-  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.1), -8px -8px 16px rgba(255, 255, 255, 0.7);
+  @apply m3-elevation-1;
 }
-.dark .neomorphic-raised {
-  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.5), -8px -8px 16px rgba(255, 255, 255, 0.05);
-}
-
-/* Inset (recessed) elements */
 .neomorphic-inset {
-  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.1), inset -4px -4px 8px rgba(255, 255, 255, 0.6);
+  @apply m3-surface-inset;
 }
-.dark .neomorphic-inset {
-  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.03);
-}
-
-/* Button pressed state */
 .neomorphic-pressed {
-  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1), inset -2px -2px 4px rgba(255, 255, 255, 0.5);
-}
-.dark .neomorphic-pressed {
-  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3), inset -2px -2px 4px rgba(255, 255, 255, 0.02);
+  @apply m3-surface-inset;
 }
 
 /* Theme tokens */
