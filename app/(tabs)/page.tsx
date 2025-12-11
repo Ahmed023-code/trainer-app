@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useMemo } from 'react'
+import { useMemo } from "react";
 
 // Mock data constants
 const MOCK_WEIGHT = 185.5
@@ -27,94 +27,53 @@ export default function HomePage() {
   const todayObj = useMemo(() => new Date(MOCK_TODAY + 'T00:00:00'), [])
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] space-y-6">
-      {/* Header with date display */}
+    <main className="mx-auto w-full max-w-[520px] px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+96px)] space-y-5">
+      {/* Header with M3 Typography */}
       <header className="pt-6">
-        <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.6),-9px_-9px_16px_rgba(255,255,255,0.08)] p-5">
-          <div className="text-center">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
-            </div>
-            <div className="text-lg font-semibold">
-              {todayObj.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </div>
-          </div>
+        <div className="m3-card bg-neutral-100 dark:bg-neutral-900 p-6">
+          <h1 className="m3-headline-small font-semibold">
+            {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
+          </h1>
+          <p className="m3-title-medium text-neutral-600 dark:text-neutral-400 mt-1">
+            {todayObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
         </div>
       </header>
 
-      {/* Weight card */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)]">
-        <div className="p-5">
-          <label className="block text-sm font-medium mb-3 text-neutral-600 dark:text-neutral-400">Weight</label>
-
-          {/* Saved mode - show weight with checkmark */}
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.3),-2px_-2px_4px_rgba(255,255,255,0.05)]">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={3}
-                stroke="currentColor"
-                className="w-4 h-4 text-green-600 dark:text-green-400"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-1.5 flex items-center justify-center gap-2">
-                <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                  {MOCK_WEIGHT.toFixed(1)}
-                </span>
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                  lbs
-                </span>
-              </div>
-            </div>
-
-            <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)]">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                />
-              </svg>
-            </div>
+      {/* Weight Card - M3 Filled Card */}
+      <section className="m3-card-filled bg-neutral-100 dark:bg-neutral-900 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="m3-title-large font-semibold">Weight</h2>
+          <div className="w-10 h-10 m3-elevation-1 rounded-full bg-accent-home/20 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-accent-home">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.589-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.589-1.202L5.25 4.971z" />
+            </svg>
           </div>
         </div>
-      </div>
+        <div className="text-center">
+          <div className="m3-display-small font-bold text-accent-home">{MOCK_WEIGHT}</div>
+          <div className="m3-label-large text-neutral-600 dark:text-neutral-400">lbs</div>
+        </div>
+        <div className="mt-4 m3-surface-inset rounded-3xl bg-neutral-100 dark:bg-neutral-900 p-3">
+          <div className="m3-label-medium text-neutral-500 dark:text-neutral-400 text-center">
+            Last logged: Today at 8:30 AM
+          </div>
+        </div>
+      </section>
 
-      {/* Diet summary */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5 relative">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Diet Summary</h2>
-          <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-diet text-xs font-semibold">
-            Open Diet
+      {/* Diet Summary - M3 Card with Rings */}
+      <section className="m3-card-filled bg-neutral-100 dark:bg-neutral-900 p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="m3-title-large font-semibold">Diet Summary</h2>
+          <button className="m3-btn-text px-4 py-2 text-accent-diet">
+            Open →
           </button>
         </div>
 
-        {/* Layout: Large calorie ring on left, smaller macro rings in 2x2 grid on right */}
-        <div className="flex gap-4 items-center">
-          {/* Large calorie ring on left */}
+        <div className="flex gap-5 items-center">
+          {/* Large M3 Calorie Ring */}
           <div className="flex-shrink-0">
-            <CalorieRing
+            <M3CalorieRing
               current={Math.round(MOCK_DIET.calories)}
               target={MOCK_DIET.goals.cal}
               protein={Math.round(MOCK_DIET.protein)}
@@ -126,27 +85,27 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Smaller macro rings in 2x2 grid on right */}
+          {/* M3 Macro Grid */}
           <div className="flex-1 grid grid-cols-2 gap-3">
-            <SmallMacroRing
+            <M3MacroCard
               label="Cal"
               current={Math.round(MOCK_DIET.calories)}
               target={MOCK_DIET.goals.cal}
               color="var(--accent-diet)"
             />
-            <SmallMacroRing
+            <M3MacroCard
               label="P"
               current={Math.round(MOCK_DIET.protein)}
               target={MOCK_DIET.goals.p}
               color="#F87171"
             />
-            <SmallMacroRing
+            <M3MacroCard
               label="F"
               current={Math.round(MOCK_DIET.fat)}
               target={MOCK_DIET.goals.f}
               color="#FACC15"
             />
-            <SmallMacroRing
+            <M3MacroCard
               label="C"
               current={Math.round(MOCK_DIET.carbs)}
               target={MOCK_DIET.goals.c}
@@ -154,101 +113,82 @@ export default function HomePage() {
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Workout summary */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Workout Summary</h2>
-          <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] text-xs font-semibold">
-            Open Workout
+      {/* Workout Summary - M3 Card */}
+      <section className="m3-card-filled bg-neutral-100 dark:bg-neutral-900 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="m3-title-large font-semibold">Workout Summary</h2>
+          <button className="m3-btn-text px-4 py-2 text-[var(--accent-workout)]">
+            Open →
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-4 text-center mb-3">
-          <div>
-            <div className="text-2xl font-bold">{MOCK_WORKOUT.exerciseCount}</div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              Exercises
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="m3-surface-inset rounded-3xl bg-neutral-100 dark:bg-neutral-900 p-5 text-center">
+            <div className="m3-display-small font-bold text-[var(--accent-workout)]">{MOCK_WORKOUT.exerciseCount}</div>
+            <div className="m3-label-large text-neutral-600 dark:text-neutral-400 mt-1">Exercises</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold">{MOCK_WORKOUT.setCount}</div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              Sets
-            </div>
+          <div className="m3-surface-inset rounded-3xl bg-neutral-100 dark:bg-neutral-900 p-5 text-center">
+            <div className="m3-display-small font-bold text-[var(--accent-workout)]">{MOCK_WORKOUT.setCount}</div>
+            <div className="m3-label-large text-neutral-600 dark:text-neutral-400 mt-1">Sets</div>
           </div>
         </div>
-        <div className="pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
-          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-            Body Parts
-          </div>
-          <div className="text-sm font-medium">{MOCK_WORKOUT.bodyParts}</div>
+        <div className="mt-4 pt-4 border-t border-neutral-300/30 dark:border-neutral-700/30">
+          <div className="m3-label-medium text-neutral-500 dark:text-neutral-400 mb-1">Body Parts</div>
+          <div className="m3-body-large font-medium">{MOCK_WORKOUT.bodyParts}</div>
         </div>
-      </div>
+      </section>
 
-      {/* Reminders inbox */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium">Inbox</h2>
-          <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 text-xs font-semibold">
-            + New Reminder
+      {/* Reminders - M3 Card */}
+      <section className="m3-card-filled bg-neutral-100 dark:bg-neutral-900 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="m3-title-large font-semibold">Inbox</h2>
+          <button className="m3-btn-filled bg-neutral-200 dark:bg-neutral-800 px-4 py-2">
+            <span className="m3-label-large">+ New</span>
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {MOCK_REMINDERS.map((reminder) => (
             <div
               key={reminder.id}
-              className="flex items-start gap-3 p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.08),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)]"
+              className="m3-surface-inset rounded-2xl bg-neutral-100 dark:bg-neutral-900 p-4 flex items-start gap-3"
             >
               <input
                 type="checkbox"
                 checked={reminder.done}
                 readOnly
-                className="mt-0.5 w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)] border-none text-accent-home dark:text-accent-home checked:bg-accent-home checked:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)]"
+                className="mt-0.5 w-5 h-5 rounded-md m3-elevation-1 border-none text-accent-home checked:bg-accent-home"
               />
-              <div className="flex-1 min-w-0">
-                <p
-                  className={`text-sm font-medium ${
-                    reminder.done
-                      ? 'line-through text-neutral-400 dark:text-neutral-500'
-                      : 'text-neutral-900 dark:text-neutral-100'
-                  }`}
-                >
+              <div className="flex-1">
+                <p className={`m3-body-medium font-medium ${reminder.done ? 'line-through text-neutral-400' : ''}`}>
                   {reminder.title}
                 </p>
                 {reminder.dueISO && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  <p className="m3-label-small text-neutral-500 dark:text-neutral-400 mt-0.5">
                     Due: {new Date(reminder.dueISO).toLocaleDateString()}
                   </p>
                 )}
               </div>
-              <button className="text-neutral-400 transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-4 h-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
             </div>
           ))}
         </div>
+      </section>
+
+      {/* M3 FAB */}
+      <div className="fixed right-6 bottom-24 z-[9500]">
+        <button className="m3-fab bg-accent-home text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </button>
       </div>
     </main>
-  )
+  );
 }
 
-// Large calorie ring component
-function CalorieRing({
+// M3 Calorie Ring with Neomorphism
+function M3CalorieRing({
   current,
   target,
   protein,
@@ -268,113 +208,29 @@ function CalorieRing({
   fatTarget: number
 }) {
   const size = 140
-  const stroke = 16
+  const stroke = 14
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
 
-  // Calculate calories from each macro
   const proteinCals = protein * 4
   const carbsCals = carbs * 4
   const fatCals = fat * 9
   const totalCals = proteinCals + carbsCals + fatCals
 
-  // Calculate percentages of the ring based on caloric contribution
   const proteinPct = totalCals > 0 ? proteinCals / totalCals : 0.33
   const fatPct = totalCals > 0 ? fatCals / totalCals : 0.33
   const carbsPct = totalCals > 0 ? carbsCals / totalCals : 0.34
 
-  // Ring circumference represents consumption relative to goal
   const fillPct = target > 0 ? current / target : 0
   const totalFill = fillPct <= 1 ? circumference * fillPct : circumference
 
-  // Calculate dash lengths for each segment
   const proteinDash = totalFill * proteinPct
   const fatDash = totalFill * fatPct
   const carbsDash = totalFill * carbsPct
 
-  // Check if each macro is over its target
-  const proteinOver = protein > proteinTarget
-  const carbsOver = carbs > carbsTarget
-  const fatOver = fat > fatTarget
-
-  // Calculate segment portions (normal vs overage)
-  const getSegmentPortions = (
-    curr: number,
-    targ: number,
-    totalDash: number,
-  ) => {
-    if (curr <= targ) {
-      return { normalDash: totalDash, overageDash: 0 }
-    }
-    const normalPortion = targ / curr
-    const normalDash = totalDash * normalPortion
-    const overageDash = totalDash - normalDash
-    return { normalDash, overageDash }
-  }
-
-  const proteinPortions = getSegmentPortions(
-    protein,
-    proteinTarget,
-    proteinDash,
-  )
-  const fatPortions = getSegmentPortions(fat, fatTarget, fatDash)
-  const carbsPortions = getSegmentPortions(carbs, carbsTarget, carbsDash)
-
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        className="rotate-[-90deg] w-full h-full"
-      >
-        {/* Define stripe patterns for overage */}
-        <defs>
-          <pattern
-            id="stripe-protein-home"
-            patternUnits="userSpaceOnUse"
-            width="3"
-            height="3"
-            patternTransform="rotate(45)"
-          >
-            <rect
-              width="1.5"
-              height="3"
-              fill="currentColor"
-              className="text-white dark:text-black"
-              opacity="0.5"
-            />
-          </pattern>
-          <pattern
-            id="stripe-fat-home"
-            patternUnits="userSpaceOnUse"
-            width="3"
-            height="3"
-            patternTransform="rotate(45)"
-          >
-            <rect
-              width="1.5"
-              height="3"
-              fill="currentColor"
-              className="text-white dark:text-black"
-              opacity="0.5"
-            />
-          </pattern>
-          <pattern
-            id="stripe-carbs-home"
-            patternUnits="userSpaceOnUse"
-            width="3"
-            height="3"
-            patternTransform="rotate(45)"
-          >
-            <rect
-              width="1.5"
-              height="3"
-              fill="currentColor"
-              className="text-white dark:text-black"
-              opacity="0.5"
-            />
-          </pattern>
-        </defs>
-
+    <div className="relative m3-elevation-1 rounded-full bg-neutral-100 dark:bg-neutral-900 p-3" style={{ width: size + 24, height: size + 24 }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg] w-full h-full">
         {/* Track */}
         <circle
           cx={size / 2}
@@ -387,170 +243,57 @@ function CalorieRing({
           className="text-neutral-400 dark:text-neutral-600"
         />
 
-        {/* Protein segment - normal portion */}
+        {/* Protein segment */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           stroke="#F87171"
           strokeWidth={stroke}
-          strokeLinecap="butt"
-          strokeDasharray={`${proteinPortions.normalDash} ${
-            circumference - proteinPortions.normalDash
-          }`}
-          strokeDashoffset="0"
+          strokeLinecap="round"
+          strokeDasharray={`${proteinDash} ${circumference - proteinDash}`}
           fill="none"
         />
-        {/* Protein segment - overage portion */}
-        {proteinOver && (
-          <g>
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="#B84444"
-              strokeWidth={stroke}
-              strokeLinecap="butt"
-              strokeDasharray={`${proteinPortions.overageDash} ${
-                circumference - proteinPortions.overageDash
-              }`}
-              strokeDashoffset={-proteinPortions.normalDash}
-              fill="none"
-            />
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="url(#stripe-protein-home)"
-              strokeWidth={stroke}
-              strokeLinecap="butt"
-              strokeDasharray={`${proteinPortions.overageDash} ${
-                circumference - proteinPortions.overageDash
-              }`}
-              strokeDashoffset={-proteinPortions.normalDash}
-              fill="none"
-              opacity="0.6"
-            />
-          </g>
-        )}
 
-        {/* Fat segment - normal portion */}
+        {/* Fat segment */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           stroke="#FACC15"
           strokeWidth={stroke}
-          strokeLinecap="butt"
-          strokeDasharray={`${fatPortions.normalDash} ${
-            circumference - fatPortions.normalDash
-          }`}
+          strokeLinecap="round"
+          strokeDasharray={`${fatDash} ${circumference - fatDash}`}
           strokeDashoffset={-proteinDash}
           fill="none"
         />
-        {/* Fat segment - overage portion */}
-        {fatOver && (
-          <g>
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="#C9A000"
-              strokeWidth={stroke}
-              strokeLinecap="butt"
-              strokeDasharray={`${fatPortions.overageDash} ${
-                circumference - fatPortions.overageDash
-              }`}
-              strokeDashoffset={-(proteinDash + fatPortions.normalDash)}
-              fill="none"
-            />
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="url(#stripe-fat-home)"
-              strokeWidth={stroke}
-              strokeLinecap="butt"
-              strokeDasharray={`${fatPortions.overageDash} ${
-                circumference - fatPortions.overageDash
-              }`}
-              strokeDashoffset={-(proteinDash + fatPortions.normalDash)}
-              fill="none"
-              opacity="0.6"
-            />
-          </g>
-        )}
 
-        {/* Carbs segment - normal portion */}
+        {/* Carbs segment */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           stroke="#60A5FA"
           strokeWidth={stroke}
-          strokeLinecap="butt"
-          strokeDasharray={`${carbsPortions.normalDash} ${
-            circumference - carbsPortions.normalDash
-          }`}
+          strokeLinecap="round"
+          strokeDasharray={`${carbsDash} ${circumference - carbsDash}`}
           strokeDashoffset={-(proteinDash + fatDash)}
           fill="none"
         />
-        {/* Carbs segment - overage portion */}
-        {carbsOver && (
-          <g>
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="#3D7BC7"
-              strokeWidth={stroke}
-              strokeLinecap="butt"
-              strokeDasharray={`${carbsPortions.overageDash} ${
-                circumference - carbsPortions.overageDash
-              }`}
-              strokeDashoffset={
-                -(proteinDash + fatDash + carbsPortions.normalDash)
-              }
-              fill="none"
-            />
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="url(#stripe-carbs-home)"
-              strokeWidth={stroke}
-              strokeLinecap="butt"
-              strokeDasharray={`${carbsPortions.overageDash} ${
-                circumference - carbsPortions.overageDash
-              }`}
-              strokeDashoffset={
-                -(proteinDash + fatDash + carbsPortions.normalDash)
-              }
-              fill="none"
-              opacity="0.6"
-            />
-          </g>
-        )}
       </svg>
 
-      {/* Center content */}
+      {/* Center content with M3 typography */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-          {current}
-        </div>
-        <div className="text-[10px] text-neutral-500 dark:text-neutral-400">
-          of {target}
-        </div>
-        <div className="text-[8px] text-neutral-400 dark:text-neutral-500">
-          kcal
-        </div>
+        <div className="m3-headline-small font-bold">{current}</div>
+        <div className="m3-label-small text-neutral-500 dark:text-neutral-400">of {target}</div>
+        <div className="m3-label-small text-neutral-400 dark:text-neutral-500">kcal</div>
       </div>
     </div>
   )
 }
 
-// Small macro ring component for the 2x2 grid
-function SmallMacroRing({
+// M3 Macro Card with Circular Progress
+function M3MacroCard({
   label,
   current,
   target,
@@ -561,69 +304,17 @@ function SmallMacroRing({
   target: number
   color: string
 }) {
-  const size = 70
-  const stroke = 6
+  const size = 60
+  const stroke = 5
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-
-  // Allow ring to go beyond 100%, cap at 150% for visual display
-  const pct = Math.max(0, Math.min(1.5, target > 0 ? current / target : 0))
+  const pct = Math.max(0, Math.min(1, target > 0 ? current / target : 0))
   const dash = circumference * pct
 
-  // Track if we're at or below 100%
-  const normalPct = Math.min(1, target > 0 ? current / target : 0)
-  const normalDash = circumference * normalPct
-
-  // Calculate difference
-  const diff = current - target
-  const isOver = diff > 0
-  const isUnder = diff < 0
-
-  // Get background color based on label
-  const getBgColor = () => {
-    if (label === 'Cal') return '#34D3991F'
-    if (label === 'P') return '#F871711F'
-    if (label === 'F') return '#FACC151F'
-    if (label === 'C') return '#60A5FA1F'
-    return `${color}22`
-  }
-
-  // Get darker color for overage
-  const getOverageColor = () => {
-    if (label === 'Cal') return '#1F9D6D'
-    if (label === 'P') return '#B84444'
-    if (label === 'F') return '#C9A000'
-    if (label === 'C') return '#3D7BC7'
-    return color
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg
-          viewBox={`0 0 ${size} ${size}`}
-          className="absolute inset-0 rotate-[-90deg] w-full h-full"
-        >
-          {/* Define stripe pattern for overage */}
-          <defs>
-            <pattern
-              id={`stripe-${label}-small`}
-              patternUnits="userSpaceOnUse"
-              width="3"
-              height="3"
-              patternTransform="rotate(45)"
-            >
-              <rect
-                width="1.5"
-                height="3"
-                fill="currentColor"
-                className="text-white dark:text-black"
-                opacity="0.5"
-              />
-            </pattern>
-          </defs>
-
-          {/* Track */}
+    <div className="m3-surface-inset rounded-2xl bg-neutral-100 dark:bg-neutral-900 p-3 flex flex-col items-center">
+      <div className="relative mb-2" style={{ width: size, height: size }}>
+        <svg viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg] w-full h-full">
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -634,95 +325,23 @@ function SmallMacroRing({
             fill="none"
             className="text-neutral-400 dark:text-neutral-600"
           />
-
-          {/* Base progress ring - shows up to 100% */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             stroke={color}
             strokeWidth={stroke}
-            strokeLinecap="butt"
-            strokeDasharray={`${normalDash} ${circumference - normalDash}`}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circumference - dash}`}
             fill="none"
           />
-
-          {/* Overage portion - shows amount beyond 100% */}
-          {current > target && (
-            <g>
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke={getOverageColor()}
-                strokeWidth={stroke}
-                strokeLinecap="butt"
-                strokeDasharray={`${dash - normalDash} ${
-                  circumference - (dash - normalDash)
-                }`}
-                strokeDashoffset={-normalDash}
-                fill="none"
-              />
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke={`url(#stripe-${label}-small)`}
-                strokeWidth={stroke}
-                strokeLinecap="butt"
-                strokeDasharray={`${dash - normalDash} ${
-                  circumference - (dash - normalDash)
-                }`}
-                strokeDashoffset={-normalDash}
-                fill="none"
-                opacity="0.6"
-              />
-            </g>
-          )}
         </svg>
-
-        {/* Center label */}
-        <div className="absolute inset-0 grid place-items-center">
-          <span
-            className="inline-grid place-items-center rounded-full font-extrabold text-[9px] leading-none"
-            style={{
-              width: 18,
-              height: 18,
-              backgroundColor: color,
-              color: '#000',
-            }}
-          >
-            {label}
-          </span>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="m3-label-large font-bold" style={{ color }}>{label}</span>
         </div>
       </div>
-
-      {/* Value bubble under ring */}
-      <div className="mt-1 flex flex-col items-center gap-0.5">
-        <span
-          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums whitespace-nowrap"
-          style={{
-            backgroundColor: getBgColor(),
-            color: color,
-          }}
-        >
-          {current}/{target}
-        </span>
-        {/* Difference indicator */}
-        {diff !== 0 && (
-          <span
-            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold gap-0.5"
-            style={{
-              backgroundColor: color,
-              color: '#000',
-            }}
-          >
-            <span className="text-[11px] font-black">{isOver ? '▲' : '▼'}</span>{' '}
-            {Math.abs(Math.round(diff))}
-            {label === 'Cal' ? 'cal' : 'g'}
-          </span>
-        )}
-      </div>
+      <div className="m3-body-medium font-bold">{current}</div>
+      <div className="m3-label-small text-neutral-500 dark:text-neutral-400">of {target}</div>
     </div>
   )
 }
