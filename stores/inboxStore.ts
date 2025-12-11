@@ -43,104 +43,59 @@ type InboxState = {
 
 const STORAGE_KEY = "inbox-v1";
 
+const MOCK_REMINDERS: Reminder[] = [
+  { id: "rem-1", title: "Grocery run for meal prep", dueISO: "2024-04-06", done: false },
+  { id: "rem-2", title: "Refill water bottle", done: true },
+  { id: "rem-3", title: "Evening mobility flow", done: false },
+];
+
+const MOCK_MESSAGES: Message[] = [
+  { id: "msg-1", from: "Coach", text: "Keep protein above 180g today!", createdAt: Date.now() - 1000 * 60 * 60 },
+];
+
+const MOCK_ALERTS: Alert[] = [
+  { id: "al-1", type: "info", text: "Demo mode — interactions are disabled.", createdAt: Date.now() - 1000 * 60 * 30 },
+];
+
 export const useInboxStore = create<InboxState>((set, get) => ({
-  reminders: [],
-  messages: [],
-  alerts: [],
+  reminders: MOCK_REMINDERS,
+  messages: MOCK_MESSAGES,
+  alerts: MOCK_ALERTS,
 
   addReminder: (title, dueISO) => {
-    const reminder: Reminder = {
-      id: Math.random().toString(36).slice(2, 11),
-      title,
-      dueISO,
-      done: false,
-    };
-    set((state) => ({ reminders: [...state.reminders, reminder] }));
-    get().saveToStorage();
+    console.info("[demo] addReminder ignored", { title, dueISO });
   },
 
   toggleReminder: (id) => {
-    set((state) => ({
-      reminders: state.reminders.map((r) =>
-        r.id === id ? { ...r, done: !r.done } : r
-      ),
-    }));
-    get().saveToStorage();
+    console.info("[demo] toggleReminder ignored", { id });
   },
 
   removeReminder: (id) => {
-    set((state) => ({
-      reminders: state.reminders.filter((r) => r.id !== id),
-    }));
-    get().saveToStorage();
+    console.info("[demo] removeReminder ignored", { id });
   },
 
   addMessage: (from, text) => {
-    const message: Message = {
-      id: Math.random().toString(36).slice(2, 11),
-      from,
-      text,
-      createdAt: Date.now(),
-    };
-    set((state) => ({ messages: [...state.messages, message] }));
-    get().saveToStorage();
+    console.info("[demo] addMessage ignored", { from, text });
   },
 
   removeMessage: (id) => {
-    set((state) => ({
-      messages: state.messages.filter((m) => m.id !== id),
-    }));
-    get().saveToStorage();
+    console.info("[demo] removeMessage ignored", { id });
   },
 
   addAlert: (type, text) => {
-    const alert: Alert = {
-      id: Math.random().toString(36).slice(2, 11),
-      type,
-      text,
-      createdAt: Date.now(),
-    };
-    set((state) => ({ alerts: [...state.alerts, alert] }));
-    get().saveToStorage();
+    console.info("[demo] addAlert ignored", { type, text });
   },
 
   removeAlert: (id) => {
-    set((state) => ({
-      alerts: state.alerts.filter((a) => a.id !== id),
-    }));
-    get().saveToStorage();
+    console.info("[demo] removeAlert ignored", { id });
   },
 
   loadFromStorage: () => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        set({
-          reminders: data.reminders || [],
-          messages: data.messages || [],
-          alerts: data.alerts || [],
-        });
-      }
-    } catch (err) {
-      console.error("[inboxStore] Failed to load from storage", err);
-    }
+    set({ reminders: MOCK_REMINDERS, messages: MOCK_MESSAGES, alerts: MOCK_ALERTS });
   },
 
   saveToStorage: () => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const { reminders, messages, alerts } = get();
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ reminders, messages, alerts })
-      );
-    } catch (err) {
-      console.error("[inboxStore] Failed to save to storage", err);
-    }
+    // no-op in demo mode
   },
 }));
 

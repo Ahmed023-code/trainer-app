@@ -123,3 +123,59 @@ input[type="number"] {
   --text: #EAEAEA;
   --text-muted: #A1A1AA;
 }
+
+:root[data-design='classic'] {
+  --bg: #e7ecf4;
+  --card: #ffffff;
+  --muted: #f8fafc;
+  --border: #e5e7eb;
+  --text: #0b1224;
+  --text-muted: #4b5563;
+  --accent-diet: #22c55e;
+  --accent-diet-fat: #facc15;
+  --accent-workout: #f59e0b;
+  --accent-progress: #3b82f6;
+  --accent-home: #2563eb;
+  --macro-calories: #0ea5e9;
+  --macro-protein: #f87171;
+  --macro-carbs: #22c55e;
+  --macro-fat: #f59e0b;
+}
+
+:root[data-design='glass'] {
+  color-scheme: dark;
+  --bg: rgba(8, 11, 24, 0.9);
+  --card: rgba(255, 255, 255, 0.08);
+  --muted: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.18);
+  --text: #f8fafc;
+  --text-muted: #c7d2fe;
+  --accent-diet: #34d399;
+  --accent-diet-fat: #fbbf24;
+  --accent-workout: #a855f7;
+  --accent-progress: #38bdf8;
+  --accent-home: #f97316;
+  --macro-calories: #22d3ee;
+  --macro-protein: #c084fc;
+  --macro-carbs: #fbbf24;
+  --macro-fat: #fb7185;
+}
+
+:root[data-design='noir'] {
+  color-scheme: dark;
+  --bg: #05070e;
+  --card: #0c1020;
+  --muted: #0b0f1a;
+  --border: #1f2937;
+  --text: #e5edff;
+  --text-muted: #94a3b8;
+  --accent-diet: #22d3ee;
+  --accent-diet-fat: #f472b6;
+  --accent-workout: #a3e635;
+  --accent-progress: #7c3aed;
+  --accent-home: #f97316;
+  --macro-calories: #f472b6;
+  --macro-protein: #22d3ee;
+  --macro-carbs: #a3e635;
+  --macro-fat: #f59e0b;
+}

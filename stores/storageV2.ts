@@ -107,18 +107,97 @@ const KEYS = {
 // Default values
 const DEFAULT_DIET: DietDayState = {
   meals: [
-    { name: "Breakfast", items: [] },
-    { name: "Lunch", items: [] },
-    { name: "Dinner", items: [] },
-    { name: "Snacks", items: [] },
+    {
+      name: "Breakfast",
+      items: [
+        { name: "Greek Yogurt", calories: 180, protein: 18, carbs: 12, fat: 4 },
+        { name: "Blueberries", calories: 80, protein: 1, carbs: 20, fat: 0 },
+      ],
+    },
+    {
+      name: "Lunch",
+      items: [
+        { name: "Chicken Rice Bowl", calories: 620, protein: 48, carbs: 65, fat: 14 },
+        { name: "Avocado", calories: 160, protein: 2, carbs: 9, fat: 15 },
+      ],
+    },
+    {
+      name: "Dinner",
+      items: [
+        { name: "Salmon", calories: 320, protein: 34, carbs: 0, fat: 18 },
+        { name: "Roasted Veggies", calories: 150, protein: 5, carbs: 22, fat: 5 },
+      ],
+    },
+    {
+      name: "Snacks",
+      items: [
+        { name: "Protein Bar", calories: 210, protein: 20, carbs: 23, fat: 6 },
+        { name: "Apple", calories: 95, protein: 0, carbs: 25, fat: 0 },
+      ],
+    },
   ],
   goals: { cal: 2400, p: 180, c: 240, f: 70 },
 };
 
 const DEFAULT_WORKOUT: WorkoutDayState = {
-  exercises: [],
-  notes: "",
+  exercises: [
+    {
+      name: "Barbell Back Squat",
+      notes: "Controlled tempo, keep core braced",
+      sets: [
+        { type: "Warmup", weight: 95, repsMin: 8, repsMax: 8, rpe: 6 },
+        { type: "Working", weight: 185, repsMin: 6, repsMax: 6, rpe: 7.5 },
+        { type: "Working", weight: 205, repsMin: 6, repsMax: 6, rpe: 8 },
+      ],
+    },
+    {
+      name: "Bench Press",
+      notes: "Tuck elbows slightly",
+      sets: [
+        { type: "Warmup", weight: 95, repsMin: 10, repsMax: 10, rpe: 6 },
+        { type: "Working", weight: 155, repsMin: 8, repsMax: 8, rpe: 8 },
+        { type: "Working", weight: 155, repsMin: 8, repsMax: 8, rpe: 8 },
+      ],
+    },
+    {
+      name: "Lat Pulldown",
+      notes: "Full stretch at top",
+      sets: [
+        { type: "Working", weight: 120, repsMin: 12, repsMax: 12, rpe: 7.5 },
+        { type: "Working", weight: 120, repsMin: 12, repsMax: 12, rpe: 7.5 },
+        { type: "Working", weight: 120, repsMin: 12, repsMax: 12, rpe: 7.5 },
+      ],
+    },
+  ],
+  notes: "Demo workout day with mock sets",
 };
+
+const MOCK_WEIGHT_BY_DAY: WeightByDay = {
+  "2024-04-01": 186.8,
+  "2024-04-02": 186.5,
+  "2024-04-03": 186.2,
+  "2024-04-04": 186.0,
+  "2024-04-05": 185.8,
+  "2024-04-06": 185.6,
+  "2024-04-07": 185.4,
+};
+
+const MOCK_MEDIA_INDEX: MediaIndexByDay = {
+  "2024-04-05": [
+    {
+      id: "demo-photo",
+      type: "image",
+      name: "Progress Photo",
+      size: 240000,
+      idbKey: "mock-photo",
+      createdAt: Date.now() - 1000 * 60 * 60 * 24,
+    },
+  ],
+};
+
+const MOCK_MODE = true;
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 // Date helpers
 export const getTodayISO = (): string => {
@@ -160,6 +239,8 @@ const writeJSON = <T>(key: string, value: T): void => {
 
 // Diet operations
 export const readDiet = (dateISO: string): DietDayState => {
+  if (MOCK_MODE) return clone(DEFAULT_DIET);
+
   const byDay = readJSON<DietByDay>(KEYS.DIET_BY_DAY, {});
   const dayData = byDay[dateISO];
 
@@ -197,6 +278,7 @@ export const readDiet = (dateISO: string): DietDayState => {
 };
 
 export const writeDiet = (dateISO: string, partial: Partial<DietDayState>): void => {
+  if (MOCK_MODE) return;
   const byDay = readJSON<DietByDay>(KEYS.DIET_BY_DAY, {});
   const current = byDay[dateISO] || DEFAULT_DIET;
   byDay[dateISO] = { ...current, ...partial };
@@ -205,6 +287,7 @@ export const writeDiet = (dateISO: string, partial: Partial<DietDayState>): void
 
 // Update goals for today and all future dates (used when saving new diet settings)
 export const updateDietGoals = (dateISO: string, goals: Goals): void => {
+  if (MOCK_MODE) return;
   console.log('[storageV2] updateDietGoals called:', { dateISO, goals });
 
   // Save as default goals for all future dates
@@ -223,11 +306,13 @@ export const updateDietGoals = (dateISO: string, goals: Goals): void => {
 
 // Workout operations
 export const readWorkout = (dateISO: string): WorkoutDayState => {
+  if (MOCK_MODE) return clone(DEFAULT_WORKOUT);
   const byDay = readJSON<WorkoutByDay>(KEYS.WORKOUT_BY_DAY, {});
   return byDay[dateISO] || DEFAULT_WORKOUT;
 };
 
 export const writeWorkout = (dateISO: string, partial: Partial<WorkoutDayState>): void => {
+  if (MOCK_MODE) return;
   const byDay = readJSON<WorkoutByDay>(KEYS.WORKOUT_BY_DAY, {});
   const current = byDay[dateISO] || DEFAULT_WORKOUT;
   byDay[dateISO] = { ...current, ...partial };
@@ -236,6 +321,7 @@ export const writeWorkout = (dateISO: string, partial: Partial<WorkoutDayState>)
 
 // Get the most recent logged workout for a specific exercise (excluding current date)
 export const getMostRecentExercise = (exerciseName: string, excludeDate: string): Exercise | null => {
+  if (MOCK_MODE) return DEFAULT_WORKOUT.exercises.find(ex => ex.name === exerciseName) || null;
   const byDay = readJSON<WorkoutByDay>(KEYS.WORKOUT_BY_DAY, {});
   const dates = Object.keys(byDay).filter(d => d !== excludeDate).sort().reverse();
 
@@ -254,12 +340,14 @@ export const getMostRecentExercise = (exerciseName: string, excludeDate: string)
 
 // Weight operations
 export const readWeight = (dateISO: string): number | null => {
+  if (MOCK_MODE) return MOCK_WEIGHT_BY_DAY[dateISO] ?? 185.0;
   const byDay = readJSON<WeightByDay>(KEYS.WEIGHT_BY_DAY, {});
   const value = byDay[dateISO];
   return typeof value === "number" ? value : null;
 };
 
 export const writeWeight = (dateISO: string, value: number): void => {
+  if (MOCK_MODE) return;
   const byDay = readJSON<WeightByDay>(KEYS.WEIGHT_BY_DAY, {});
   byDay[dateISO] = value;
   writeJSON(KEYS.WEIGHT_BY_DAY, byDay);
@@ -276,11 +364,16 @@ const getIdb = async () => {
 };
 
 export const listMedia = (dateISO: string): MediaItem[] => {
+  if (MOCK_MODE) return clone(MOCK_MEDIA_INDEX[dateISO] || []);
   const byDay = readJSON<MediaIndexByDay>(KEYS.MEDIA_INDEX, {});
   return byDay[dateISO] || [];
 };
 
 export const addMedia = async (dateISO: string, file: File): Promise<MediaItem> => {
+  if (MOCK_MODE) {
+    const fallback = clone(MOCK_MEDIA_INDEX[dateISO]?.[0] || MOCK_MEDIA_INDEX["2024-04-05"][0]);
+    return Promise.resolve(fallback);
+  }
   const id = Math.random().toString(36).slice(2, 15);
   const idbKey = `media:${id}`;
   
@@ -309,6 +402,7 @@ export const addMedia = async (dateISO: string, file: File): Promise<MediaItem> 
 };
 
 export const removeMedia = async (dateISO: string, id: string): Promise<void> => {
+  if (MOCK_MODE) return;
   // Remove from index
   const byDay = readJSON<MediaIndexByDay>(KEYS.MEDIA_INDEX, {});
   const items = byDay[dateISO] || [];
@@ -326,12 +420,14 @@ export const removeMedia = async (dateISO: string, id: string): Promise<void> =>
 
 // Get media blob
 export const getMediaBlob = async (idbKey: string): Promise<Blob | undefined> => {
+  if (MOCK_MODE) return undefined;
   const idb = await getIdb();
   return await idb.get(idbKey);
 };
 
 // Migration logic
 export const migrateLegacyData = (): void => {
+  if (MOCK_MODE) return;
   const todayISO = getTodayISO();
   
   // Check if migration is needed
