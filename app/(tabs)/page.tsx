@@ -1,312 +1,49 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { getTodayISO } from '@/utils/completion'
-import {
-  readDiet,
-  readWorkout,
-  readWeight,
-  writeWeight,
-} from '@/stores/storageV2'
-import { useInboxStore } from '@/stores/inboxStore'
-import { useSettingsStore } from '@/stores/settingsStore'
-import DaySelector from '@/components/ui/DaySelector'
-import NutritionOverview from '@/components/diet/NutritionOverview'
+import { useMemo } from 'react'
 
-// Load exercises data for body parts
-// NOTE: Large datasets are now expected from external storage
-// Set NEXT_PUBLIC_DATA_BASE_URL environment variable to point to your data hosting
-let exercisesData: Array<{ name: string; bodyParts: string[] }> = []
-if (typeof window !== 'undefined') {
-  const dataBaseUrl = process.env.NEXT_PUBLIC_DATA_BASE_URL || ''
-  const exercisesUrl = dataBaseUrl
-    ? `${dataBaseUrl}/exercises.json`
-    : '/data/exercises.json'
-
-  fetch(exercisesUrl)
-    .then((res) => {
-      if (!res.ok) {
-        console.warn(
-          `Failed to load exercises data from ${exercisesUrl}. Please configure NEXT_PUBLIC_DATA_BASE_URL environment variable.`,
-        )
-        return null
-      }
-      return res.json()
-    })
-    .then((data) => {
-      if (data) exercisesData = data
-    })
-    .catch(() => {})
+// Mock data constants
+const MOCK_WEIGHT = 185.5
+const MOCK_WEIGHT_HISTORY = [183.0, 183.5, 184.0, 184.5, 185.0, 185.2, 185.5]
+const MOCK_TODAY = new Date().toISOString().split('T')[0]
+const MOCK_DIET = {
+  calories: 1850,
+  protein: 145,
+  carbs: 180,
+  fat: 55,
+  goals: { cal: 2400, p: 180, c: 240, f: 70 },
 }
-
-// Get body parts for an exercise name
-function getBodyPartsForExercise(exerciseName: string): string[] {
-  const exercise = exercisesData.find((e) => e.name === exerciseName)
-  return exercise?.bodyParts || []
+const MOCK_WORKOUT = {
+  exerciseCount: 5,
+  setCount: 18,
+  bodyParts: 'Chest & Triceps',
 }
-
-// Aggregate body parts from workout
-function getWorkoutBodyParts(exerciseNames: string[]): string {
-  const bodyPartsSet = new Set<string>()
-  exerciseNames.forEach((name) => {
-    getBodyPartsForExercise(name).forEach((bp) => bodyPartsSet.add(bp))
-  })
-
-  const bodyParts = Array.from(bodyPartsSet)
-  if (bodyParts.length === 0) return ''
-  if (bodyParts.length <= 2) return bodyParts.join(' & ')
-  return bodyParts.slice(0, 2).join(', ') + ` +${bodyParts.length - 2}`
-}
+const MOCK_REMINDERS = [
+  { id: '1', title: 'Buy protein powder', done: false, dueISO: null },
+  { id: '2', title: 'Schedule trainer session', done: true, dueISO: '2025-12-15' },
+]
 
 export default function HomePage() {
-  const router = useRouter()
-  const todayISO = getTodayISO()
-  const { weightUnit } = useSettingsStore()
-
-  // Create Date object for today to use with DaySelector
-  const todayObj = useMemo(() => new Date(todayISO + 'T00:00:00'), [todayISO])
-
-  // Go to Today function (no-op for Home since it's always today, but needed for consistency)
-  const goToToday = () => {
-    // Home is always on today, but we reload data to ensure freshness
-    window.location.reload()
-  }
-
-  const { reminders, addReminder, toggleReminder, removeReminder } =
-    useInboxStore()
-
-  // Weight editing state
-  const [isEditingWeight, setIsEditingWeight] = useState(false)
-
-  // Weight state
-  const [weightValue, setWeightValue] = useState<string>('')
-  const [weightHistory, setWeightHistory] = useState<number[]>([])
-  const [savedWeight, setSavedWeight] = useState<number | null>(null)
-
-  // Diet/workout data
-  const [dietSummary, setDietSummary] = useState({
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    goals: { cal: 2400, p: 180, c: 240, f: 70 },
-  })
-  const [workoutSummary, setWorkoutSummary] = useState({
-    exerciseCount: 0,
-    setCount: 0,
-    exerciseNames: [] as string[],
-  })
-
-  // Reminder modal state
-  const [showReminderModal, setShowReminderModal] = useState(false)
-  const [reminderTitle, setReminderTitle] = useState('')
-  const [reminderDue, setReminderDue] = useState('')
-
-  // Nutrition overview
-  const [showNutritionOverview, setShowNutritionOverview] = useState(false)
-
-  // Load data for today
-  useEffect(() => {
-    const loadData = () => {
-      // Load weight
-      const weight = readWeight(todayISO)
-      setSavedWeight(weight)
-      setWeightValue(weight !== null ? weight.toFixed(1) : '')
-
-      // Load weight history (last 7 days)
-      const history: number[] = []
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(todayISO)
-        d.setDate(d.getDate() - i)
-        const w = readWeight(d.toISOString().split('T')[0])
-        if (w !== null) history.push(w)
-      }
-      setWeightHistory(history.reverse())
-
-      // Load diet summary
-      const diet = readDiet(todayISO)
-      const totals = diet.meals.reduce(
-        (acc, meal) => {
-          return meal.items.reduce(
-            (sum, item) => ({
-              calories: sum.calories + item.calories * (item.quantity || 1),
-              protein: sum.protein + item.protein * (item.quantity || 1),
-              carbs: sum.carbs + item.carbs * (item.quantity || 1),
-              fat: sum.fat + item.fat * (item.quantity || 1),
-            }),
-            acc,
-          )
-        },
-        { calories: 0, protein: 0, carbs: 0, fat: 0 },
-      )
-
-      setDietSummary({ ...totals, goals: diet.goals })
-
-      // Load workout summary
-      const workout = readWorkout(todayISO)
-      const setCount = workout.exercises.reduce(
-        (sum, ex) =>
-          sum +
-          ex.sets.filter((s) => s.type === 'Working' || s.type === 'Drop Set')
-            .length,
-        0,
-      )
-
-      setWorkoutSummary({
-        exerciseCount: workout.exercises.length,
-        setCount,
-        exerciseNames: workout.exercises.map((ex) => ex.name),
-      })
-    }
-
-    loadData()
-
-    // Reload diet goals when page becomes visible or storage changes
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        const diet = readDiet(todayISO)
-        const totals = diet.meals.reduce(
-          (acc, meal) => {
-            return meal.items.reduce(
-              (sum, item) => ({
-                calories: sum.calories + item.calories * (item.quantity || 1),
-                protein: sum.protein + item.protein * (item.quantity || 1),
-                carbs: sum.carbs + item.carbs * (item.quantity || 1),
-                fat: sum.fat + item.fat * (item.quantity || 1),
-              }),
-              acc,
-            )
-          },
-          { calories: 0, protein: 0, carbs: 0, fat: 0 },
-        )
-        setDietSummary({ ...totals, goals: diet.goals })
-      }
-    }
-
-    const handleFocus = () => {
-      const diet = readDiet(todayISO)
-      const totals = diet.meals.reduce(
-        (acc, meal) => {
-          return meal.items.reduce(
-            (sum, item) => ({
-              calories: sum.calories + item.calories * (item.quantity || 1),
-              protein: sum.protein + item.protein * (item.quantity || 1),
-              carbs: sum.carbs + item.carbs * (item.quantity || 1),
-              fat: sum.fat + item.fat * (item.quantity || 1),
-            }),
-            acc,
-          )
-        },
-        { calories: 0, protein: 0, carbs: 0, fat: 0 },
-      )
-      setDietSummary({ ...totals, goals: diet.goals })
-    }
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'diet-by-day-v2' || e.key === null) {
-        const diet = readDiet(todayISO)
-        const totals = diet.meals.reduce(
-          (acc, meal) => {
-            return meal.items.reduce(
-              (sum, item) => ({
-                calories: sum.calories + item.calories * (item.quantity || 1),
-                protein: sum.protein + item.protein * (item.quantity || 1),
-                carbs: sum.carbs + item.carbs * (item.quantity || 1),
-                fat: sum.fat + item.fat * (item.quantity || 1),
-              }),
-              acc,
-            )
-          },
-          { calories: 0, protein: 0, carbs: 0, fat: 0 },
-        )
-        setDietSummary({ ...totals, goals: diet.goals })
-      }
-    }
-
-    // Custom event from updateDietGoals (same tab/window updates)
-    const handleDietGoalsUpdated = (e: Event) => {
-      const customEvent = e as CustomEvent
-      if (customEvent.detail?.dateISO === todayISO) {
-        const diet = readDiet(todayISO)
-        const totals = diet.meals.reduce(
-          (acc, meal) => {
-            return meal.items.reduce(
-              (sum, item) => ({
-                calories: sum.calories + item.calories * (item.quantity || 1),
-                protein: sum.protein + item.protein * (item.quantity || 1),
-                carbs: sum.carbs + item.carbs * (item.quantity || 1),
-                fat: sum.fat + item.fat * (item.quantity || 1),
-              }),
-              acc,
-            )
-          },
-          { calories: 0, protein: 0, carbs: 0, fat: 0 },
-        )
-        setDietSummary({ ...totals, goals: diet.goals })
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('dietGoalsUpdated', handleDietGoalsUpdated)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('dietGoalsUpdated', handleDietGoalsUpdated)
-    }
-  }, [todayISO])
-
-  // Save weight
-  const saveWeight = () => {
-    const value = parseFloat(weightValue)
-    if (!isNaN(value) && value > 0) {
-      writeWeight(todayISO, value)
-      setSavedWeight(value)
-      setWeightValue(value.toFixed(1))
-      setIsEditingWeight(false)
-    }
-  }
-
-  // Navigate to diet/workout with date
-  const openDiet = () => {
-    localStorage.setItem('ui-last-date-diet', todayISO)
-    router.push(`/diet`)
-  }
-
-  const openWorkout = () => {
-    localStorage.setItem('ui-last-date-workout', todayISO)
-    router.push(`/workout`)
-  }
-
-  const handleAddReminder = () => {
-    if (reminderTitle.trim()) {
-      addReminder(reminderTitle, reminderDue || undefined)
-      setReminderTitle('')
-      setReminderDue('')
-      setShowReminderModal(false)
-    }
-  }
+  const todayObj = useMemo(() => new Date(MOCK_TODAY + 'T00:00:00'), [])
 
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] space-y-4">
       {/* Header with date display */}
       <header className="pt-4">
-        <DaySelector
-          dateISO={todayISO}
-          dateObj={todayObj}
-          onPrev={() => {}}
-          onNext={() => {}}
-          onSelect={() => {}}
-          isToday={true}
-          showNavigation={false}
-          onGoToToday={goToToday}
-          accentColor="var(--accent-home)"
-          neomorphic={true}
-        />
+        <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.05)] p-3">
+          <div className="text-center">
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
+            </div>
+            <div className="text-lg font-semibold">
+              {todayObj.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </div>
+          </div>
+        </div>
       </header>
 
       {/* Weight card */}
@@ -314,131 +51,53 @@ export default function HomePage() {
         <div className="p-3">
           <label className="block text-sm font-medium mb-2">Weight</label>
 
-          {savedWeight === null || parseFloat(weightValue) !== savedWeight ? (
-            // Edit mode - show plus/minus buttons with weight in center
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const current = parseFloat(weightValue) || 0
-                  const newValue = Math.max(0, current - 0.5)
-                  setWeightValue(newValue.toFixed(1))
-                }}
-                className="w-8 h-8 flex-shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] text-accent-home flex items-center justify-center active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] transition-all duration-200 font-bold text-lg"
+          {/* Saved mode - show weight with checkmark */}
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.3),-2px_-2px_4px_rgba(255,255,255,0.05)]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={3}
+                stroke="currentColor"
+                className="w-4 h-4 text-green-600 dark:text-green-400"
               >
-                −
-              </button>
-
-              <div className="flex-1 min-w-0">
-                <div
-                  className="rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-1.5 flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
-                  onClick={() => {
-                    const input = document.getElementById(
-                      'weight-input',
-                    ) as HTMLInputElement
-                    if (input) {
-                      input.focus()
-                      input.select()
-                      setIsEditingWeight(true)
-                    }
-                  }}
-                >
-                  <input
-                    id="weight-input"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.5"
-                    value={weightValue}
-                    onChange={(e) => setWeightValue(e.target.value)}
-                    onBlur={() => setIsEditingWeight(false)}
-                    className="text-xl font-bold text-center bg-transparent border-none outline-none w-16 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-accent-home/30 rounded-full"
-                    style={{
-                      WebkitAppearance: 'none',
-                      MozAppearance: 'textfield',
-                    }}
-                  />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {weightUnit}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  const current = parseFloat(weightValue) || 0
-                  const newValue = current + 0.5
-                  setWeightValue(newValue.toFixed(1))
-                }}
-                className="w-8 h-8 flex-shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] text-accent-home flex items-center justify-center active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] transition-all duration-200 font-bold text-lg"
-              >
-                +
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.5 12.75l6 6 9-13.5"
+                />
+              </svg>
             </div>
-          ) : (
-            // Saved mode - show weight with checkmark and edit button
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.3),-2px_-2px_4px_rgba(255,255,255,0.05)]">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={3}
-                  stroke="currentColor"
-                  className="w-4 h-4 text-green-600 dark:text-green-400"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.5 12.75l6 6 9-13.5"
-                  />
-                </svg>
+
+            <div className="flex-1 min-w-0">
+              <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-1.5 flex items-center justify-center gap-2">
+                <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
+                  {MOCK_WEIGHT.toFixed(1)}
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  lbs
+                </span>
               </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-1.5 flex items-center justify-center gap-2">
-                  <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                    {savedWeight.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {weightUnit}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSavedWeight(null)}
-                className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)] active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] transition-all duration-200"
-                aria-label="Edit weight"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                  />
-                </svg>
-              </button>
             </div>
-          )}
 
-          {/* Save button below weight display when in edit mode */}
-          {(savedWeight === null ||
-            parseFloat(weightValue) !== savedWeight) && (
-            <div className="mt-2">
-              <button
-                onClick={saveWeight}
-                className="w-full py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-home text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
+            <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[3px_3px_6px_rgba(0,0,0,0.1),-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[3px_3px_6px_rgba(0,0,0,0.4),-3px_-3px_6px_rgba(255,255,255,0.05)]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400"
               >
-                Save Weight
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                />
+              </svg>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -446,10 +105,7 @@ export default function HomePage() {
       <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4 relative">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-medium">Diet Summary</h2>
-          <button
-            onClick={openDiet}
-            className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-diet text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-          >
+          <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-diet text-xs font-semibold">
             Open Diet
           </button>
         </div>
@@ -459,14 +115,14 @@ export default function HomePage() {
           {/* Large calorie ring on left */}
           <div className="flex-shrink-0">
             <CalorieRing
-              current={Math.round(dietSummary.calories)}
-              target={dietSummary.goals.cal}
-              protein={Math.round(dietSummary.protein)}
-              carbs={Math.round(dietSummary.carbs)}
-              fat={Math.round(dietSummary.fat)}
-              proteinTarget={dietSummary.goals.p}
-              carbsTarget={dietSummary.goals.c}
-              fatTarget={dietSummary.goals.f}
+              current={Math.round(MOCK_DIET.calories)}
+              target={MOCK_DIET.goals.cal}
+              protein={Math.round(MOCK_DIET.protein)}
+              carbs={Math.round(MOCK_DIET.carbs)}
+              fat={Math.round(MOCK_DIET.fat)}
+              proteinTarget={MOCK_DIET.goals.p}
+              carbsTarget={MOCK_DIET.goals.c}
+              fatTarget={MOCK_DIET.goals.f}
             />
           </div>
 
@@ -474,26 +130,26 @@ export default function HomePage() {
           <div className="flex-1 grid grid-cols-2 gap-3">
             <SmallMacroRing
               label="Cal"
-              current={Math.round(dietSummary.calories)}
-              target={dietSummary.goals.cal}
+              current={Math.round(MOCK_DIET.calories)}
+              target={MOCK_DIET.goals.cal}
               color="var(--accent-diet)"
             />
             <SmallMacroRing
               label="P"
-              current={Math.round(dietSummary.protein)}
-              target={dietSummary.goals.p}
+              current={Math.round(MOCK_DIET.protein)}
+              target={MOCK_DIET.goals.p}
               color="#F87171"
             />
             <SmallMacroRing
               label="F"
-              current={Math.round(dietSummary.fat)}
-              target={dietSummary.goals.f}
+              current={Math.round(MOCK_DIET.fat)}
+              target={MOCK_DIET.goals.f}
               color="#FACC15"
             />
             <SmallMacroRing
               label="C"
-              current={Math.round(dietSummary.carbs)}
-              target={dietSummary.goals.c}
+              current={Math.round(MOCK_DIET.carbs)}
+              target={MOCK_DIET.goals.c}
               color="#60A5FA"
             />
           </div>
@@ -504,201 +160,94 @@ export default function HomePage() {
       <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-medium">Workout Summary</h2>
-          <button
-            onClick={openWorkout}
-            className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-          >
+          <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] text-xs font-semibold">
             Open Workout
           </button>
         </div>
-        {workoutSummary.exerciseCount > 0 ? (
-          <>
-            <div className="grid grid-cols-2 gap-4 text-center mb-3">
-              <div>
-                <div className="text-2xl font-bold">
-                  {workoutSummary.exerciseCount}
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Exercises
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {workoutSummary.setCount}
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Sets
-                </div>
-              </div>
+        <div className="grid grid-cols-2 gap-4 text-center mb-3">
+          <div>
+            <div className="text-2xl font-bold">{MOCK_WORKOUT.exerciseCount}</div>
+            <div className="text-xs text-neutral-500 dark:text-neutral-400">
+              Exercises
             </div>
-            {(() => {
-              const bodyParts = getWorkoutBodyParts(
-                workoutSummary.exerciseNames,
-              )
-              return bodyParts ? (
-                <div className="pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                    Body Parts
-                  </div>
-                  <div className="text-sm font-medium">{bodyParts}</div>
-                </div>
-              ) : null
-            })()}
-          </>
-        ) : (
-          <div className="text-center py-4 text-sm text-neutral-500 dark:text-neutral-400">
-            No workout logged
           </div>
-        )}
+          <div>
+            <div className="text-2xl font-bold">{MOCK_WORKOUT.setCount}</div>
+            <div className="text-xs text-neutral-500 dark:text-neutral-400">
+              Sets
+            </div>
+          </div>
+        </div>
+        <div className="pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
+          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+            Body Parts
+          </div>
+          <div className="text-sm font-medium">{MOCK_WORKOUT.bodyParts}</div>
+        </div>
       </div>
 
       {/* Reminders inbox */}
       <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-medium">Inbox</h2>
-          <button
-            onClick={() => setShowReminderModal(true)}
-            className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 text-xs font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-          >
+          <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 text-xs font-semibold">
             + New Reminder
           </button>
         </div>
 
-        {reminders.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-4">
-            No reminders yet
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {reminders.map((reminder) => (
-              <div
-                key={reminder.id}
-                className="flex items-start gap-3 p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.08),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)]"
-              >
-                <input
-                  type="checkbox"
-                  checked={reminder.done}
-                  onChange={() => toggleReminder(reminder.id)}
-                  className="mt-0.5 w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)] border-none text-accent-home dark:text-accent-home focus:ring-2 focus:ring-neutral-500 cursor-pointer checked:bg-accent-home checked:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)]"
-                />
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-medium ${
-                      reminder.done
-                        ? 'line-through text-neutral-400 dark:text-neutral-500'
-                        : 'text-neutral-900 dark:text-neutral-100'
-                    }`}
-                  >
-                    {reminder.title}
+        <div className="space-y-2">
+          {MOCK_REMINDERS.map((reminder) => (
+            <div
+              key={reminder.id}
+              className="flex items-start gap-3 p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.08),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)]"
+            >
+              <input
+                type="checkbox"
+                checked={reminder.done}
+                readOnly
+                className="mt-0.5 w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)] border-none text-accent-home dark:text-accent-home checked:bg-accent-home checked:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)]"
+              />
+              <div className="flex-1 min-w-0">
+                <p
+                  className={`text-sm font-medium ${
+                    reminder.done
+                      ? 'line-through text-neutral-400 dark:text-neutral-500'
+                      : 'text-neutral-900 dark:text-neutral-100'
+                  }`}
+                >
+                  {reminder.title}
+                </p>
+                {reminder.dueISO && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    Due: {new Date(reminder.dueISO).toLocaleDateString()}
                   </p>
-                  {reminder.dueISO && (
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      Due: {new Date(reminder.dueISO).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => removeReminder(reminder.id)}
-                  className="text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  aria-label="Delete reminder"
+                )}
+              </div>
+              <button className="text-neutral-400 transition-colors">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-4 h-4"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* New Reminder Modal */}
-      {showReminderModal && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setShowReminderModal(false)}
-        >
-          <div
-            className="bg-neutral-100 dark:bg-neutral-800 rounded-3xl p-6 max-w-md w-full shadow-[8px_8px_24px_rgba(0,0,0,0.15),-8px_-8px_24px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_24px_rgba(0,0,0,0.6),-8px_-8px_24px_rgba(255,255,255,0.05)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold mb-4">New Reminder</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
-                <input
-                  type="text"
-                  value={reminderTitle}
-                  onChange={(e) => setReminderTitle(e.target.value)}
-                  placeholder="What do you need to remember?"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-accent-home/30 border-none transition-all duration-200"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Due Date (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={reminderDue}
-                  onChange={(e) => setReminderDue(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-accent-home/30 border-none transition-all duration-200"
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => {
-                    if (reminderTitle.trim()) {
-                      addReminder(reminderTitle, reminderDue || undefined)
-                      setReminderTitle('')
-                      setReminderDue('')
-                      setShowReminderModal(false)
-                    }
-                  }}
-                  className="flex-1 px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-                >
-                  Add Reminder
-                </button>
-                <button
-                  onClick={() => {
-                    setShowReminderModal(false)
-                    setReminderTitle('')
-                    setReminderDue('')
-                  }}
-                  className="px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] font-semibold active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] transition-all duration-200"
-                >
-                  Cancel
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
             </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Nutrition Overview Modal */}
-      <NutritionOverview
-        isOpen={showNutritionOverview}
-        meals={readDiet(todayISO).meals}
-        goals={dietSummary.goals}
-        dateISO={todayISO}
-        onClose={() => setShowNutritionOverview(false)}
-      />
+      </div>
     </main>
   )
 }
 
-// Large calorie ring component (similar to the one in NutritionOverview but simplified)
+// Large calorie ring component
 function CalorieRing({
   current,
   target,

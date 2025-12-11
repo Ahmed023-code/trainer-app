@@ -1,97 +1,33 @@
-/*
- * AUDIT REPORT - Progress Tab (formerly Schedule)
- *
- * VERIFIED COMPLETE:
- * ✓ Date-scoped storage integration (storageV2.ts)
- * ✓ Day/Week/Month/Year view selector with segmented control
- * ✓ Period navigation with left/right arrows and formatted labels
- * ✓ Day view: weight tracking with sparkline, diet summary with macro rings, workout summary, media gallery
- * ✓ Week view: summary cards, 7-day grid with badges for workout/weight/diet adherence
- * ✓ Month view: calendar grid with day badges, monthly stats summary
- * ✓ Year view: monthly breakdown cards with workout frequency and diet adherence, progress bars
- * ✓ Deep linking: "Open Diet/Workout" buttons set target tab's date via localStorage
- * ✓ Media storage: IndexedDB for blobs via idb-keyval, metadata in localStorage
- * ✓ Object URL management: created on load, revoked on unmount
- * ✓ Accessibility: aria-labels on navigation buttons, min 40px tap targets
- * ✓ Performance: memoized period labels, transition effects on date changes
- * ✓ Component optimization: Broken down into smaller reusable components
- *
- * CHANGES MADE:
- * - Implemented Week view with 7-day grid showing workout/weight/diet badges
- * - Implemented Month view with full calendar grid and activity badges
- * - Implemented Year view with 12 monthly cards showing workout frequency and diet adherence
- * - All views use date-scoped data from storageV2, computed aggregates on the fly
- * - Lightweight CSS/Tailwind-based charts (no heavy libraries)
- * - Mobile-first responsive design with iOS-like polish
- * - Extracted view components: DayView, WeekView, MonthView, YearView
- * - Extracted date utilities to utils/dateHelpers.ts
- */
-
 "use client";
 
 import { useState, useMemo } from "react";
-import { useDaySelector } from "@/hooks/useDaySelector";
-import DayView from "@/components/progress/DayView";
-import WeekView from "@/components/progress/WeekView";
-import MonthView from "@/components/progress/MonthView";
-import YearView from "@/components/progress/YearView";
-import { shiftPeriod, formatPeriodLabel, type ViewType } from "@/utils/dateHelpers";
-import { getTodayISO } from "@/stores/storageV2";
+
+// Mock data constants
+const MOCK_TODAY = new Date().toISOString().split('T')[0]
+const MOCK_WEIGHT = 185.5
+const MOCK_DIET_SUMMARY = { calories: 1850, protein: 145, carbs: 180, fat: 55, goals: { cal: 2400, p: 180, c: 240, f: 70 } }
+const MOCK_WORKOUT_SUMMARY = { exerciseCount: 5, setCount: 18 }
 
 export default function ProgressPage() {
-  const [view, setView] = useState<ViewType>("day");
-
-  // Use a separate date selector for progress
-  const { dateISO, dateObj, setDateISO, isToday } = useDaySelector("ui-last-date-progress");
-
-  // Period navigation
-  const handlePrevPeriod = () => {
-    const newISO = shiftPeriod(view, -1, dateISO);
-    setDateISO(newISO);
-    localStorage.setItem("ui-last-date-progress", newISO);
-  };
-
-  const handleNextPeriod = () => {
-    const newISO = shiftPeriod(view, 1, dateISO);
-    setDateISO(newISO);
-    localStorage.setItem("ui-last-date-progress", newISO);
-  };
-
-  // Format period label
-  const periodLabel = useMemo(() => {
-    return formatPeriodLabel(view, dateISO, dateObj);
-  }, [view, dateISO, dateObj]);
-
-  const goToToday = () => {
-    const today = getTodayISO();
-    setDateISO(today);
-    localStorage.setItem("ui-last-date-progress", today);
-  };
+  const [view, setView] = useState<'day' | 'week' | 'month' | '3months' | 'year'>('day')
+  const todayObj = useMemo(() => new Date(MOCK_TODAY + 'T00:00:00'), [])
 
   return (
     <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
       {/* Header with period navigation */}
       <header className="pt-4">
         <div className="flex items-center gap-2 mb-3">
-          <button
-            onClick={handlePrevPeriod}
-            className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="Previous period"
-          >
+          <button className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
           </button>
 
           <div className="flex-1 text-center font-medium">
-            {periodLabel}
+            {todayObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </div>
 
-          <button
-            onClick={handleNextPeriod}
-            className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="Next period"
-          >
+          <button className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
@@ -101,41 +37,136 @@ export default function ProgressPage() {
         {/* View selector and Go to Today button */}
         <div className="flex gap-2">
           <div className="flex-1 flex gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1">
-            {(["day", "week", "month", "3months", "year"] as ViewType[]).map(v => (
+            {(['day', 'week', 'month', '3months', 'year'] as const).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={`flex-1 py-2 rounded-full text-xs font-medium transition-colors ${view === v ? "bg-[var(--accent-progress)] text-white" : "text-neutral-600 dark:text-neutral-400"}`}
               >
-                {v === "3months" ? "3M" : v.charAt(0).toUpperCase() + v.slice(1)}
+                {v === '3months' ? '3M' : v.charAt(0).toUpperCase() + v.slice(1)}
               </button>
             ))}
           </div>
-          <button
-            onClick={() => {
-              goToToday();
-              setView("day");
-            }}
-            className={`px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm font-medium transition-colors whitespace-nowrap ${
-              isToday && view === "day"
-                ? "bg-[var(--accent-progress)] text-white border-[var(--accent-progress)]"
-                : "bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-            }`}
-            aria-label="Go to today"
-          >
-            {isToday && view === "day" ? "Today" : "Go to Today"}
+          <button className="px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-[var(--accent-progress)] text-white text-sm font-medium whitespace-nowrap">
+            Today
           </button>
         </div>
       </header>
 
-      {/* Content based on view */}
-      <div className="mt-4">
-        {view === "day" && <DayView dateISO={dateISO} isToday={isToday} />}
-        {view === "week" && <WeekView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
-        {view === "month" && <MonthView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
-        {view === "3months" && <MonthView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
-        {view === "year" && <YearView dateISO={dateISO} setDateISO={setDateISO} setView={setView} currentView={view} />}
-      </div>
+      {/* Day View Content */}
+      {view === 'day' && (
+        <div className="mt-4 space-y-4">
+          {/* Weight card */}
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <h3 className="font-semibold mb-3">Weight</h3>
+            <div className="text-3xl font-bold text-center">{MOCK_WEIGHT} lbs</div>
+            <div className="text-sm text-neutral-500 dark:text-neutral-400 text-center mt-1">
+              {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
+            </div>
+          </div>
+
+          {/* Diet summary */}
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Diet</h3>
+              <button className="text-xs text-accent-diet font-medium">Open Diet →</button>
+            </div>
+            <div className="grid grid-cols-4 gap-3 text-center">
+              <div>
+                <div className="text-lg font-bold">{Math.round(MOCK_DIET_SUMMARY.calories)}</div>
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Cal</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold">{Math.round(MOCK_DIET_SUMMARY.protein)}g</div>
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Protein</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold">{Math.round(MOCK_DIET_SUMMARY.carbs)}g</div>
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Carbs</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold">{Math.round(MOCK_DIET_SUMMARY.fat)}g</div>
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Fat</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Workout summary */}
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Workout</h3>
+              <button className="text-xs text-[var(--accent-workout)] font-medium">Open Workout →</button>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold">{MOCK_WORKOUT_SUMMARY.exerciseCount}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Exercises</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{MOCK_WORKOUT_SUMMARY.setCount}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Sets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Week View */}
+      {view === 'week' && (
+        <div className="mt-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <h3 className="font-semibold mb-4 text-center">Week View</h3>
+            <div className="grid grid-cols-7 gap-2">
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+                <div key={i} className="aspect-square rounded-lg bg-neutral-200 dark:bg-neutral-700 p-2 flex flex-col items-center justify-center">
+                  <div className="text-xs font-medium">{day}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1">{i + 4}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Month View */}
+      {view === 'month' && (
+        <div className="mt-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <h3 className="font-semibold mb-4 text-center">Month View</h3>
+            <div className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+              Calendar grid would appear here
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3 Months View */}
+      {view === '3months' && (
+        <div className="mt-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <h3 className="font-semibold mb-4 text-center">3 Months View</h3>
+            <div className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+              3-month calendar view would appear here
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Year View */}
+      {view === 'year' && (
+        <div className="mt-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+            <h3 className="font-semibold mb-4 text-center">Year View</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, i) => (
+                <div key={i} className="aspect-square rounded-lg bg-neutral-200 dark:bg-neutral-700 p-2 flex items-center justify-center">
+                  <div className="text-xs font-medium">{month}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
