@@ -62,56 +62,43 @@ export default function DietPage() {
   }, [])
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)]">
-      {/* Header */}
-      <header className="pt-4 space-y-3">
-        {/* Date selector */}
-        <div className="flex items-center gap-2">
-          <button className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-          </button>
-
-          <div className="flex-1 rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.6),-9px_-9px_16px_rgba(255,255,255,0.08)] p-5">
-            <div className="text-center">
-              <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
-              </div>
-              <div className="text-lg font-semibold">
-                {todayObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </div>
+    <main className="mx-auto w-full max-w-[520px] px-4 sm:px-6 pb-[calc(env(safe-area-inset-bottom)+96px)] space-y-5">
+      {/* Header with M3 */}
+      <header className="pt-6 space-y-4">
+        <div className="m3-card bg-neutral-100 dark:bg-neutral-900 p-5">
+          <div className="text-center">
+            <div className="m3-label-large text-neutral-500 dark:text-neutral-400">
+              {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
+            </div>
+            <div className="m3-title-large font-semibold mt-1">
+              {todayObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
-
-          <button className="w-10 h-10 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-          </button>
         </div>
 
-        <button className="w-full px-3 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm font-medium">
+        <button className="m3-btn-outlined w-full border-accent-diet text-accent-diet">
           Today
         </button>
       </header>
 
-      {/* Macro Rings */}
-      <div className="mt-3 flex justify-center">
-        <div className="flex items-center gap-4">
-          {/* Large calorie ring */}
-          <MacroRing
-            label="Cal"
-            current={Math.round(totals.calories)}
-            target={MOCK_GOALS.cal}
-            color="var(--accent-diet)"
-            size={120}
-            strokeWidth={14}
-          />
+      {/* M3 Macro Rings */}
+      <div className="m3-card-filled bg-neutral-100 dark:bg-neutral-900 p-6">
+        <div className="flex items-center gap-5">
+          {/* Large calorie ring with M3 styling */}
+          <div className="flex-shrink-0">
+            <M3MacroRing
+              label="Cal"
+              current={Math.round(totals.calories)}
+              target={MOCK_GOALS.cal}
+              color="var(--accent-diet)"
+              size={120}
+              strokeWidth={12}
+            />
+          </div>
 
           {/* Smaller macro rings */}
-          <div className="grid grid-cols-3 gap-3">
-            <MacroRing
+          <div className="flex-1 grid grid-cols-3 gap-3">
+            <M3MacroRing
               label="P"
               current={Math.round(totals.protein)}
               target={MOCK_GOALS.p}
@@ -119,7 +106,7 @@ export default function DietPage() {
               size={70}
               strokeWidth={6}
             />
-            <MacroRing
+            <M3MacroRing
               label="F"
               current={Math.round(totals.fat)}
               target={MOCK_GOALS.f}
@@ -127,7 +114,7 @@ export default function DietPage() {
               size={70}
               strokeWidth={6}
             />
-            <MacroRing
+            <M3MacroRing
               label="C"
               current={Math.round(totals.carbs)}
               target={MOCK_GOALS.c}
@@ -137,20 +124,20 @@ export default function DietPage() {
             />
           </div>
         </div>
+
+        {/* M3 Action buttons */}
+        <div className="mt-5 flex gap-3 justify-center">
+          <button className="m3-btn-outlined flex-1 border-accent-diet text-accent-diet">
+            Details
+          </button>
+          <button className="m3-btn-outlined flex-1 border-accent-diet text-accent-diet">
+            Settings
+          </button>
+        </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="mt-3 flex gap-2 justify-center">
-        <button className="px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs font-medium">
-          Diet Details
-        </button>
-        <button className="px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs font-medium">
-          Diet Settings
-        </button>
-      </div>
-
-      {/* Meals list */}
-      <section className="space-y-6 mt-4">
+      {/* Meals list with M3 cards */}
+      <section className="space-y-4">
         {MOCK_MEALS.filter(meal => meal.items.length > 0).map((meal, i) => {
           const mealTotals = meal.items.reduce((sum, item) => ({
             calories: sum.calories + (item.calories * item.quantity),
@@ -160,13 +147,10 @@ export default function DietPage() {
           }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
 
           return (
-            <div
-              key={meal.name}
-              className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">{meal.name}</h3>
-                <div className="text-sm text-neutral-500 dark:text-neutral-400">
+            <div key={meal.name} className="m3-card-filled bg-neutral-100 dark:bg-neutral-900 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="m3-title-medium font-semibold">{meal.name}</h3>
+                <div className="m3-label-large text-neutral-600 dark:text-neutral-400">
                   {Math.round(mealTotals.calories)} cal
                 </div>
               </div>
@@ -176,17 +160,19 @@ export default function DietPage() {
                 {meal.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.15),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] dark:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.4),inset_-3px_-3px_6px_rgba(255,255,255,0.05)]"
+                    className="m3-surface-inset rounded-2xl bg-neutral-100 dark:bg-neutral-900 p-3"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="text-sm font-medium">{item.name}</div>
-                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <div className="m3-body-medium font-medium">{item.name}</div>
+                        <div className="m3-label-small text-neutral-500 dark:text-neutral-400">
                           {item.quantity}x • {Math.round(item.calories * item.quantity)} cal
                         </div>
                       </div>
-                      <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                        P: {Math.round(item.protein * item.quantity)}g • C: {Math.round(item.carbs * item.quantity)}g • F: {Math.round(item.fat * item.quantity)}g
+                      <div className="m3-label-small text-neutral-500 dark:text-neutral-400">
+                        P: {Math.round(item.protein * item.quantity)}g •
+                        C: {Math.round(item.carbs * item.quantity)}g •
+                        F: {Math.round(item.fat * item.quantity)}g
                       </div>
                     </div>
                   </div>
@@ -194,10 +180,10 @@ export default function DietPage() {
               </div>
 
               {/* Meal totals */}
-              <div className="mt-3 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/50">
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Total:</span>
-                  <div className="flex gap-4 font-medium">
+              <div className="mt-4 pt-4 border-t border-neutral-300/30 dark:border-neutral-700/30">
+                <div className="flex justify-between">
+                  <span className="m3-label-medium text-neutral-500 dark:text-neutral-400">Total:</span>
+                  <div className="flex gap-4 m3-label-medium font-semibold">
                     <span>{Math.round(mealTotals.calories)} cal</span>
                     <span>P: {Math.round(mealTotals.protein)}g</span>
                     <span>C: {Math.round(mealTotals.carbs)}g</span>
@@ -209,26 +195,28 @@ export default function DietPage() {
           )
         })}
 
-        {/* Log Meal button */}
+        {/* M3 Log Meal button */}
         <div className="flex items-center justify-center pt-4">
-          <button className="px-8 py-3 rounded-full text-base font-semibold bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-accent-diet">
+          <button className="m3-btn-filled bg-neutral-200 dark:bg-neutral-800 text-accent-diet px-8">
             + Log Meal
           </button>
         </div>
       </section>
 
-      {/* FAB */}
+      {/* M3 FAB */}
       <div className="fixed right-6 bottom-24 z-[9500]">
-        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[10px_10px_20px_rgba(0,0,0,0.25),-10px_-10px_20px_rgba(255,255,255,0.9)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.6),-10px_-10px_20px_rgba(255,255,255,0.08)] text-accent-diet flex items-center justify-center">
-          <span className="text-4xl leading-none font-bold" style={{ marginTop: '-2px' }}>+</span>
+        <button className="m3-fab bg-accent-diet text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
         </button>
       </div>
     </main>
   );
 }
 
-// Macro Ring Component
-function MacroRing({
+// M3 Macro Ring Component with Neomorphism
+function M3MacroRing({
   label,
   current,
   target,
@@ -245,12 +233,12 @@ function MacroRing({
 }) {
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
-  const pct = Math.max(0, Math.min(1.5, target > 0 ? current / target : 0))
+  const pct = Math.max(0, Math.min(1, target > 0 ? current / target : 0))
   const dash = circumference * pct
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className="flex flex-col items-center">
+      <div className="relative m3-elevation-1 rounded-full bg-neutral-100 dark:bg-neutral-900 p-2" style={{ width: size + 16, height: size + 16 }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg] w-full h-full">
           <circle
             cx={size / 2}
@@ -274,9 +262,9 @@ function MacroRing({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-lg font-bold">{current}</div>
-          <div className="text-[9px] text-neutral-500 dark:text-neutral-400">of {target}</div>
-          <div className="text-[8px] text-neutral-400 dark:text-neutral-500">{label}</div>
+          <div className={size > 80 ? "m3-title-large font-bold" : "m3-body-large font-bold"}>{current}</div>
+          <div className="m3-label-small text-neutral-500 dark:text-neutral-400">of {target}</div>
+          <div className="m3-label-small text-neutral-400 dark:text-neutral-500">{label}</div>
         </div>
       </div>
     </div>
