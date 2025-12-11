@@ -53,7 +53,7 @@ export default function TabsLayout({ children }: { children: ReactNode }) {
       <OnboardingCheck />
       {children}
       <nav className="fixed inset-x-0 bottom-4 z-[100] flex justify-center pointer-events-none">
-        <ul className="pointer-events-auto max-w-md w-[92%] h-16 px-2 flex items-center gap-1 rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[0_-4px_12px_rgba(0,0,0,0.1),0_4px_12px_rgba(255,255,255,0.7)] dark:shadow-[0_-4px_12px_rgba(0,0,0,0.5),0_4px_12px_rgba(255,255,255,0.05)]">
+        <ul className="pointer-events-auto max-w-md w-[92%] h-16 px-2 flex items-center gap-1 rounded-full bg-neutral-100 dark:bg-neutral-900 shadow-[0_-9px_18px_rgba(0,0,0,0.2),0_9px_18px_rgba(255,255,255,0.9)] dark:shadow-[0_-9px_18px_rgba(0,0,0,0.6),0_9px_18px_rgba(255,255,255,0.08)]">
           {tabs.map(t => {
             const isActive = active === t.key;
             const text = isActive ? "text-black dark:text-white" : "text-neutral-500 dark:text-neutral-400";
@@ -63,8 +63,8 @@ export default function TabsLayout({ children }: { children: ReactNode }) {
                   <span
                     className={`flex flex-col items-center justify-center rounded-full py-2 transition-all duration-200 ${
                       isActive
-                        ? "bg-neutral-200 dark:bg-neutral-700 shadow-[2px_2px_4px_rgba(0,0,0,0.1),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.4),-2px_-2px_4px_rgba(255,255,255,0.05)]"
-                        : "shadow-[inset_1px_1px_2px_rgba(0,0,0,0.05),inset_-1px_-1px_2px_rgba(255,255,255,0.5)] dark:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2),inset_-1px_-1px_2px_rgba(255,255,255,0.02)]"
+                        ? "bg-neutral-200 dark:bg-neutral-800 shadow-[4px_4px_8px_rgba(0,0,0,0.2),-4px_-4px_8px_rgba(255,255,255,0.9)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.08)]"
+                        : "shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3),inset_-2px_-2px_4px_rgba(255,255,255,0.04)]"
                     }`}
                     style={isActive ? { backgroundColor: t.color } : undefined}
                   >

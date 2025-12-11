@@ -13,7 +13,7 @@ export default function SettingsPage() {
       <h1 className="text-xl font-semibold pt-4">Settings</h1>
 
       {/* Profile */}
-      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Profile</h2>
           <button className="text-sm text-accent-home transition-colors">
@@ -30,7 +30,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Appearance */}
-      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <h2 className="font-semibold mb-3">Appearance</h2>
         <div className="space-y-3">
           <div>
@@ -42,8 +42,8 @@ export default function SettingsPage() {
                   onClick={() => setTheme(t)}
                   className={`flex-1 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     theme === t
-                      ? "bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-home)]"
-                      : "bg-neutral-100 dark:bg-neutral-800 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.02)] text-neutral-700 dark:text-neutral-300"
+                      ? "bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-[var(--accent-home)]"
+                      : "bg-neutral-100 dark:bg-neutral-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.1),inset_-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.3),inset_-3px_-3px_6px_rgba(255,255,255,0.04)] text-neutral-700 dark:text-neutral-300"
                   }`}
                 >
                   {t === 'light' && '☀️ Light'}
@@ -57,7 +57,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Units */}
-      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <h2 className="font-semibold mb-3">Units</h2>
         <div className="space-y-3">
           <div>
@@ -69,8 +69,8 @@ export default function SettingsPage() {
                   onClick={() => setWeightUnit(unit)}
                   className={`flex-1 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     weightUnit === unit
-                      ? "bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-home)]"
-                      : "bg-neutral-100 dark:bg-neutral-800 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.02)] text-neutral-700 dark:text-neutral-300"
+                      ? "bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-[var(--accent-home)]"
+                      : "bg-neutral-100 dark:bg-neutral-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.1),inset_-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.3),inset_-3px_-3px_6px_rgba(255,255,255,0.04)] text-neutral-700 dark:text-neutral-300"
                   }`}
                 >
                   {unit.toUpperCase()}
@@ -88,8 +88,8 @@ export default function SettingsPage() {
                   onClick={() => setEnergyUnit(unit)}
                   className={`flex-1 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     energyUnit === unit
-                      ? "bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-home)]"
-                      : "bg-neutral-100 dark:bg-neutral-800 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.02)] text-neutral-700 dark:text-neutral-300"
+                      ? "bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-[var(--accent-home)]"
+                      : "bg-neutral-100 dark:bg-neutral-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.1),inset_-3px_-3px_6px_rgba(255,255,255,0.7)] dark:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.3),inset_-3px_-3px_6px_rgba(255,255,255,0.04)] text-neutral-700 dark:text-neutral-300"
                   }`}
                 >
                   {unit}
@@ -101,7 +101,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Workout Settings link */}
-      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <div className="block">
           <div className="flex items-center justify-between">
             <div>
@@ -116,7 +116,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Diet Settings link */}
-      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <section className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <div className="block">
           <div className="flex items-center justify-between">
             <div>
@@ -131,7 +131,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Logout */}
-      <section className="rounded-3xl bg-red-50 dark:bg-red-950/30 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <section className="rounded-3xl bg-red-50 dark:bg-red-950/30 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <h2 className="font-semibold mb-2 text-red-600 dark:text-red-400">Logout</h2>
         <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-3">
           This will clear all app data including workouts, meals, and progress.
@@ -140,13 +140,13 @@ export default function SettingsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowLogoutConfirm(false)}
-              className="flex-1 px-6 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] font-semibold"
+              className="flex-1 px-6 py-2 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] font-semibold"
             >
               Cancel
             </button>
             <button
               onClick={() => setShowLogoutConfirm(false)}
-              className="flex-1 px-6 py-2 rounded-full bg-red-600 dark:bg-red-700 shadow-[4px_4px_8px_rgba(0,0,0,0.2),-4px_-4px_8px_rgba(255,255,255,0.3)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.05)] text-white font-semibold"
+              className="flex-1 px-6 py-2 rounded-full bg-red-600 dark:bg-red-700 shadow-[9px_9px_16px_rgba(0,0,0,0.3),-9px_-9px_16px_rgba(255,255,255,0.5)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.6),-9px_-9px_16px_rgba(255,255,255,0.08)] text-white font-semibold"
             >
               Confirm Logout
             </button>
@@ -154,7 +154,7 @@ export default function SettingsPage() {
         ) : (
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full px-6 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-red-600 dark:text-red-400 font-semibold"
+            className="w-full px-6 py-2 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-red-600 dark:text-red-400 font-semibold"
           >
             Logout
           </button>

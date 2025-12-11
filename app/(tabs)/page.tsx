@@ -27,10 +27,10 @@ export default function HomePage() {
   const todayObj = useMemo(() => new Date(MOCK_TODAY + 'T00:00:00'), [])
 
   return (
-    <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] space-y-4">
+    <main className="mx-auto w-full max-w-[520px] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] space-y-6">
       {/* Header with date display */}
-      <header className="pt-4">
-        <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.05)] p-3">
+      <header className="pt-6">
+        <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.6),-9px_-9px_16px_rgba(255,255,255,0.08)] p-5">
           <div className="text-center">
             <div className="text-sm text-neutral-500 dark:text-neutral-400">
               {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
@@ -47,9 +47,9 @@ export default function HomePage() {
       </header>
 
       {/* Weight card */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)]">
-        <div className="p-3">
-          <label className="block text-sm font-medium mb-2">Weight</label>
+      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)]">
+        <div className="p-5">
+          <label className="block text-sm font-medium mb-3 text-neutral-600 dark:text-neutral-400">Weight</label>
 
           {/* Saved mode - show weight with checkmark */}
           <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export default function HomePage() {
       </div>
 
       {/* Diet summary */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4 relative">
+      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5 relative">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-medium">Diet Summary</h2>
           <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-accent-diet text-xs font-semibold">
@@ -157,7 +157,7 @@ export default function HomePage() {
       </div>
 
       {/* Workout summary */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-medium">Workout Summary</h2>
           <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] text-xs font-semibold">
@@ -187,7 +187,7 @@ export default function HomePage() {
       </div>
 
       {/* Reminders inbox */}
-      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+      <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-medium">Inbox</h2>
           <button className="tap-target px-3 py-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-neutral-900 dark:text-neutral-100 text-xs font-semibold">

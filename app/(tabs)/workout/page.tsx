@@ -69,7 +69,7 @@ export default function WorkoutPage() {
             </svg>
           </button>
 
-          <div className="flex-1 rounded-2xl bg-neutral-100 dark:bg-neutral-800 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.05)] p-3">
+          <div className="flex-1 rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.6),-9px_-9px_16px_rgba(255,255,255,0.08)] p-5">
             <div className="text-center">
               <div className="text-sm text-neutral-500 dark:text-neutral-400">
                 {todayObj.toLocaleDateString('en-US', { weekday: 'long' })}
@@ -120,7 +120,7 @@ export default function WorkoutPage() {
         {MOCK_EXERCISES.map((exercise, i) => (
           <div
             key={`${exercise.name}-${i}`}
-            className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4"
+            className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">{exercise.name}</h3>
@@ -134,7 +134,7 @@ export default function WorkoutPage() {
               {exercise.sets.map((set, idx) => (
                 <div
                   key={idx}
-                  className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.08),inset_-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3),inset_-2px_-2px_4px_rgba(255,255,255,0.03)]"
+                  className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.15),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] dark:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.4),inset_-3px_-3px_6px_rgba(255,255,255,0.05)]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium">Set {idx + 1}</div>
@@ -161,7 +161,7 @@ export default function WorkoutPage() {
 
         {/* Log Workout button */}
         <div className="flex items-center justify-center pt-4">
-          <button className="px-8 py-3 rounded-full text-base font-semibold bg-neutral-200 dark:bg-neutral-700 shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.4),-4px_-4px_8px_rgba(255,255,255,0.05)] text-[var(--accent-workout)]">
+          <button className="px-8 py-3 rounded-full text-base font-semibold bg-neutral-200 dark:bg-neutral-800 shadow-[9px_9px_16px_rgba(0,0,0,0.2),-9px_-9px_16px_rgba(255,255,255,0.9)] dark:shadow-[9px_9px_16px_rgba(0,0,0,0.5),-9px_-9px_16px_rgba(255,255,255,0.08)] text-[var(--accent-workout)]">
             + Log Workout
           </button>
         </div>
@@ -170,11 +170,11 @@ export default function WorkoutPage() {
       {/* Workout-level notes */}
       {MOCK_WORKOUT_NOTES && (
         <section className="mt-6">
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <label className="block text-sm font-medium mb-2">
               Workout Notes
             </label>
-            <div className="w-full rounded-xl bg-neutral-100 dark:bg-neutral-800 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.03)] px-3 py-2 text-sm">
+            <div className="w-full rounded-xl bg-neutral-100 dark:bg-neutral-900 shadow-[inset_6px_6px_12px_rgba(0,0,0,0.2),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.4),inset_-6px_-6px_12px_rgba(255,255,255,0.05)] px-3 py-2 text-sm">
               {MOCK_WORKOUT_NOTES}
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function WorkoutPage() {
 
       {/* Clock button */}
       <div className="fixed right-24 bottom-24 z-[9400]">
-        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[6px_6px_12px_rgba(0,0,0,0.15),-6px_-6px_12px_rgba(255,255,255,0.7)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] grid place-items-center">
+        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[10px_10px_20px_rgba(0,0,0,0.25),-10px_-10px_20px_rgba(255,255,255,0.9)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.6),-10px_-10px_20px_rgba(255,255,255,0.08)] grid place-items-center">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -192,7 +192,7 @@ export default function WorkoutPage() {
 
       {/* FAB */}
       <div className="fixed right-6 bottom-24 z-[9500]">
-        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-700 shadow-[6px_6px_12px_rgba(0,0,0,0.15),-6px_-6px_12px_rgba(255,255,255,0.7)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] text-[var(--accent-workout)] flex items-center justify-center">
+        <button className="w-14 h-14 rounded-full bg-neutral-200 dark:bg-neutral-800 shadow-[10px_10px_20px_rgba(0,0,0,0.25),-10px_-10px_20px_rgba(255,255,255,0.9)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.6),-10px_-10px_20px_rgba(255,255,255,0.08)] text-[var(--accent-workout)] flex items-center justify-center">
           <span className="text-4xl leading-none font-bold" style={{ marginTop: '-2px' }}>+</span>
         </button>
       </div>

@@ -57,7 +57,7 @@ export default function ProgressPage() {
       {view === 'day' && (
         <div className="mt-4 space-y-4">
           {/* Weight card */}
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <h3 className="font-semibold mb-3">Weight</h3>
             <div className="text-3xl font-bold text-center">{MOCK_WEIGHT} lbs</div>
             <div className="text-sm text-neutral-500 dark:text-neutral-400 text-center mt-1">
@@ -66,7 +66,7 @@ export default function ProgressPage() {
           </div>
 
           {/* Diet summary */}
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">Diet</h3>
               <button className="text-xs text-accent-diet font-medium">Open Diet →</button>
@@ -92,7 +92,7 @@ export default function ProgressPage() {
           </div>
 
           {/* Workout summary */}
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold">Workout</h3>
               <button className="text-xs text-[var(--accent-workout)] font-medium">Open Workout →</button>
@@ -114,7 +114,7 @@ export default function ProgressPage() {
       {/* Week View */}
       {view === 'week' && (
         <div className="mt-4">
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <h3 className="font-semibold mb-4 text-center">Week View</h3>
             <div className="grid grid-cols-7 gap-2">
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
@@ -131,7 +131,7 @@ export default function ProgressPage() {
       {/* Month View */}
       {view === 'month' && (
         <div className="mt-4">
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <h3 className="font-semibold mb-4 text-center">Month View</h3>
             <div className="text-center text-sm text-neutral-500 dark:text-neutral-400">
               Calendar grid would appear here
@@ -143,7 +143,7 @@ export default function ProgressPage() {
       {/* 3 Months View */}
       {view === '3months' && (
         <div className="mt-4">
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <h3 className="font-semibold mb-4 text-center">3 Months View</h3>
             <div className="text-center text-sm text-neutral-500 dark:text-neutral-400">
               3-month calendar view would appear here
@@ -155,7 +155,7 @@ export default function ProgressPage() {
       {/* Year View */}
       {view === 'year' && (
         <div className="mt-4">
-          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-800 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.5),-8px_-8px_16px_rgba(255,255,255,0.05)] p-4">
+          <div className="rounded-3xl bg-neutral-100 dark:bg-neutral-900 shadow-[12px_12px_24px_rgba(0,0,0,0.2),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.6),-12px_-12px_24px_rgba(255,255,255,0.08)] p-5">
             <h3 className="font-semibold mb-4 text-center">Year View</h3>
             <div className="grid grid-cols-3 gap-3">
               {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, i) => (
