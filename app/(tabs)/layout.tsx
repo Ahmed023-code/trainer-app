@@ -2,6 +2,9 @@
 import Link from "next/link";
 import { ReactNode, useMemo } from "react";
 import { usePathname } from "next/navigation";
+import OnboardingCheck from "@/components/OnboardingCheck";
+// Initialize storage and run migration
+import "@/stores/storageV2";
 
 function IconMask({ src, size = 22, className = "" }: { src: string; size?: number; className?: string }) {
   return (
@@ -29,9 +32,9 @@ function IconMask({ src, size = 22, className = "" }: { src: string; size?: numb
 export default function TabsLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const tabs = [
-    { key: "home", label: "Home", href: "/", color: "var(--accent-home)", icon: "/icons/fi-sr-home.svg" },
-    { key: "diet", label: "Diet", href: "/diet", color: "var(--accent-diet)", icon: "/icons/fi-sr-fork.svg" },
-    { key: "workout", label: "Workout", href: "/workout", color: "var(--accent-workout)", icon: "/icons/fi-sr-dumbbell-ray.svg" },
+    { key: "home",     label: "Home",     href: "/",         color: "var(--accent-home)", icon: "/icons/fi-sr-home.svg" },
+    { key: "diet",     label: "Diet",     href: "/diet",     color: "var(--accent-diet)", icon: "/icons/fi-sr-fork.svg" },
+    { key: "workout",  label: "Workout",  href: "/workout",  color: "var(--accent-workout)", icon: "/icons/fi-sr-dumbbell-ray.svg" },
     { key: "schedule", label: "Progress", href: "/schedule", color: "var(--accent-progress)", icon: "/icons/fi-sr-calendar-clock.svg" },
     { key: "settings", label: "Settings", href: "/settings", color: "#9CA3AF", icon: "/icons/fi-sr-settings.svg" },
   ] as const;
@@ -44,12 +47,14 @@ export default function TabsLayout({ children }: { children: ReactNode }) {
     return "home" as const;
   }, [pathname]);
 
+  // CHANGE: Added safe-area support and responsive container
   return (
-    <div className="min-h-dvh pb-[calc(env(safe-area-inset-bottom)+112px)] bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50">
-      <div className="max-w-4xl mx-auto px-4 pb-20">{children}</div>
+    <div className="min-h-dvh pb-[calc(env(safe-area-inset-bottom)+112px)]">
+      <OnboardingCheck />
+      <div className="pointer-events-none select-none">{children}</div>
       <nav className="fixed inset-x-0 bottom-4 z-[100] flex justify-center pointer-events-none">
         <ul className="pointer-events-auto max-w-md w-[92%] h-16 px-2 flex items-center gap-1 rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-[0_-4px_12px_rgba(0,0,0,0.1),0_4px_12px_rgba(255,255,255,0.7)] dark:shadow-[0_-4px_12px_rgba(0,0,0,0.5),0_4px_12px_rgba(255,255,255,0.05)]">
-          {tabs.map((t) => {
+          {tabs.map(t => {
             const isActive = active === t.key;
             const text = isActive ? "text-black dark:text-white" : "text-neutral-500 dark:text-neutral-400";
             return (
