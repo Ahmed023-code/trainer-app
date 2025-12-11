@@ -153,24 +153,47 @@ input[type="number"] {
 
 /* M3 Filled Button with Neomorphism */
 .m3-btn-filled {
-  @apply m3-label-large rounded-full px-6 py-3 transition-all duration-200;
-  @apply m3-elevation-1 active:m3-surface-inset;
+  @apply m3-label-large rounded-full px-6 py-3 transition-all duration-200 m3-elevation-1;
+}
+.m3-btn-filled:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+}
+.dark .m3-btn-filled:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
 }
 
 /* M3 Outlined Button with Neomorphism */
 .m3-btn-outlined {
   @apply m3-label-large rounded-full px-6 py-3 border-2 transition-all duration-200;
-  @apply shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.7)];
-  @apply active:m3-surface-inset;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.1), -4px -4px 8px rgba(255,255,255,0.7);
 }
 .dark .m3-btn-outlined {
-  @apply shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.05)];
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.5), -4px -4px 8px rgba(255,255,255,0.05);
+}
+.m3-btn-outlined:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+}
+.dark .m3-btn-outlined:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
 }
 
 /* M3 Text Button */
 .m3-btn-text {
   @apply m3-label-large rounded-full px-6 py-3 transition-all duration-200;
-  @apply active:bg-black/10 dark:active:bg-white/10;
+}
+.m3-btn-text:active {
+  @apply bg-black/10;
+}
+.dark .m3-btn-text:active {
+  @apply bg-white/10;
 }
 
 /* M3 FAB (Floating Action Button) */
